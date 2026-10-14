@@ -1,0 +1,2 @@
+AI PROMPT LOG - append new entries at the END, never edit other people's entries.
+Format: Date, Student, Tool, Related Requirement, Prompt, How the output was used.
