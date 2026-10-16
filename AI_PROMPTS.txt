@@ -1,2 +1,12 @@
 AI PROMPT LOG - append new entries at the END, never edit other people's entries.
 Format: Date, Student, Tool, Related Requirement, Prompt, How the output was used.
+================================================
+Date: 2026-10-15
+Student: Hazem
+Tool: Claude
+Related Requirement: Core setup, ACC-01 to ACC-12
+Prompt:
+Plan Milestone 1, split it across 8 members, set up the repo, NestJS foundation, MongoDB Atlas, guards and auth endpoints.
+How the output was used:
+Used the team split, setup steps and code for the foundation and auth modules, and tested them in Swagger.
+================================================
