@@ -63,4 +63,8 @@
 \## Shared services (owned by Hasan)
 
 \- `AuditService.log(...)`, `NotificationsService.create(...)`, and the upload utility.
-
+## Reference data (loaded by the seed, see backend/seed-data)
+- Ids are text, not ObjectIds: country `EG`, city `cairo`, airport `CAI` (IATA code), attraction `att-1`.
+- Flight departure and arrival airports are IATA codes. Itinerary countries and day cities are country codes and city ids.
+- Collections: `countries`, `cities`, `airports`, `attractions`. Airports have an optional `timeZone` (IANA name).
+- Inject the models with `@InjectModel(Airport.name)`, and so on. `ReferenceModule` is global.
