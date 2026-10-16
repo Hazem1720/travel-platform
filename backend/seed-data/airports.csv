@@ -1,0 +1,8 @@
+iata_code,name,city_id,country_code
+CAI,Cairo International Airport,cairo,EG
+DXB,Dubai International Airport,dubai,AE
+LHR,Heathrow Airport,london,GB
+JFK,John F. Kennedy International Airport,new_york,US
+CDG,Charles de Gaulle Airport,paris,FR
+HND,Haneda Airport,tokyo,JP
+RUH,King Khalid International Airport,riyadh,SA
