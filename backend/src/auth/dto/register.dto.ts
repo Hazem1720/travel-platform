@@ -1,9 +1,19 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  Equals,
+  IsBoolean,
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 
-export const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,64}$/;
+// ACC-01: at least 8 characters, at least one letter and one digit.
+// The 72 limit is a technical bcrypt limit, not part of the requirement.
+export const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,72}$/;
 export const PASSWORD_MESSAGE =
-  'Password must be 8-64 characters with at least one lowercase letter, one uppercase letter and one digit';
+  'Password must be 8-72 characters and include at least one letter and one digit';
 
 export class RegisterDto {
   @ApiProperty({ example: 'Sara Ali' })
@@ -16,8 +26,13 @@ export class RegisterDto {
   @IsEmail()
   email: string;
 
-  @ApiProperty({ example: 'Passw0rdX' })
+  @ApiProperty({ example: 'Passw0rd1' })
   @IsString()
   @Matches(PASSWORD_REGEX, { message: PASSWORD_MESSAGE })
   password: string;
+
+  @ApiProperty({ example: true, description: 'Terms and privacy consent (required)' })
+  @IsBoolean()
+  @Equals(true, { message: 'You must accept the terms and privacy policy' })
+  acceptTerms: boolean;
 }
