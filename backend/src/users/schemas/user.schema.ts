@@ -29,8 +29,27 @@ export class User {
   @Prop({ type: Types.ObjectId, default: null })
   assignedProviderId: Types.ObjectId | null;
 
+  @Prop({ type: String, default: '' })
+  phone: string;
+
   @Prop({ type: String, default: 'USD' })
   preferredCurrency: string;
+
+  // ACC-01: consent to the terms and privacy policy.
+  @Prop({ type: Date, default: null })
+  acceptedTermsAt: Date | null;
+
+  // ACC-07a / ACC-13: true after an admin sets a temporary password.
+  @Prop({ type: Boolean, default: false })
+  mustChangePassword: boolean;
+
+  // ACC-06: only the SHA-256 hash of the refresh token is stored.
+  @Prop({ type: String, default: null, select: false })
+  refreshTokenHash: string | null;
+
+  // ACC-06: used for the 30-minute idle expiry.
+  @Prop({ type: Date, default: null })
+  lastActivityAt: Date | null;
 
   @Prop({ type: Number, default: 0 })
   failedLoginAttempts: number;

@@ -21,7 +21,7 @@ export class UsersController {
   }
 
   @Patch()
-  @ApiOperation({ summary: 'Update my profile (ACC-09)' })
+  @ApiOperation({ summary: 'Update my name, phone and preferred currency (ACC-09)' })
   update(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
     return this.auth.updateProfile(user.id, dto);
   }
@@ -33,7 +33,7 @@ export class UsersController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.auth.deactivate(user.id);
-    res.clearCookie('access_token', { path: '/' });
+    this.auth.clearCookies(res);
     return result;
   }
 }
