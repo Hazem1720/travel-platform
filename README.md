@@ -1,162 +1,92 @@
-# \# Travel Planning and Booking Platform
+# Travel Planning and Booking Platform
 
-# 
+GIU Software Project I, Winter 2026.
 
-# GIU Software Project I, Winter 2026.
+- Backend: NestJS + MongoDB Atlas (in `backend/`), Milestone 1
+- Frontend: Next.js (in `frontend/`), Milestone 2
+- Docs and requirements: `docs/` (the requirements tracker is in `docs/requirements/`)
+- AI usage log: `AI_PROMPTS.txt`
 
-# 
+## Run the backend locally
 
-# \- Backend: NestJS + MongoDB Atlas (in `backend/`), Milestone 1
+1. Install Node.js 20 or newer and Git.
+2. Clone the repo and switch to `develop`:
 
-# \- Frontend: Next.js (in `frontend/`), Milestone 2
+        git clone https://github.com/Hazem1720/travel-platform.git
+        cd travel-platform
+        git checkout develop
 
-# \- Docs and requirements: `docs/`
+3. Install the packages:
 
-# \- AI usage log: `AI\_PROMPTS.txt`
+        cd backend
+        npm install
 
-# 
+4. Create `backend/.env` (copy `.env.example` from the repo root and fill it in). **Never commit this file.**
 
-# \## Run the backend locally
+        PORT=3000
+        MONGODB_URI=<the team connection string, ask the team leader>
+        JWT_SECRET=<your own long random text, 32 or more characters>
+        JWT_EXPIRES_IN=15m
+        COOKIE_SECURE=false
+        FRONTEND_URL=http://localhost:3001
 
-# 
+   Generate a secret with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
-# 1\. Install Node.js 20 or newer and Git.
+5. Start the server:
 
-# 2\. Clone the repo and switch to `develop`:
+        npm run start:dev
 
-# 
+6. Open Swagger: http://localhost:3000/api/docs
 
-# &#x20;       git clone https://github.com/Hazem1720/travel-platform.git
+### MongoDB connection problem (`querySrv ECONNREFUSED`)
 
-# &#x20;       cd travel-platform
+Some networks block the DNS lookup used by `mongodb+srv://` strings. In MongoDB Atlas, open Connect, then Drivers, switch on **Legacy URI String**, copy that `mongodb://` string into your own `.env`, and add `/travel-platform` before the `?`.
 
-# &#x20;       git checkout develop
+### Seed the database (only needed once for the shared database)
 
-# 
+        npx ts-node src/seed/seed-reference.ts
+        npx ts-node src/seed/seed-admin.ts
 
-# 3\. Install the packages:
+The admin seed needs `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in your local `.env`.
 
-# 
+## Git workflow
 
-# &#x20;       cd backend
+- `main`: stable milestone versions. `develop`: integration branch.
+- Never push directly to `main` or `develop`.
+- Create a branch from the latest `develop`: `feature/<REQ-ID>-description` (for example `feature/FLT-22-seat-hold`).
+- Commit messages: `feat(flights): add round-trip search`, `fix(hotels): prevent double booking`.
+- Open a pull request to `develop`. Title: `[REQ-ID] Short title`. Put `Closes #<issue number>` in the description and explain how to test it in Swagger.
+- The team leader reviews and approves every PR.
+- Never commit `.env`, connection strings or API keys.
 
-# &#x20;       npm install
+## Project structure (backend)
 
-# 
+        backend/src/
+          common/       shared enums, decorators, helpers, pagination, error filter
+          auth/         authentication, guards (JwtAuthGuard, RolesGuard)
+          users/        user schema and profile
+          reference/    countries, cities, airports, attractions
+          seed/         seed scripts
+          ...           one feature folder per module (airlines, flights, hotels, payments, ...)
 
-# 4\. Create `backend/.env` (copy `.env.example` from the repo root and fill it in). \*\*Never commit this file.\*\*
+## Using the guards in your module
 
-# 
+        @ApiCookieAuth('access_token')
+        @UseGuards(JwtAuthGuard, RolesGuard)
+        @Roles(Role.AIRLINE_MODERATOR)
+        @Post()
+        create(@CurrentUser() user: AuthUser, @Body() dto: CreateDto) { ... }
 
-# &#x20;       PORT=3000
+Use `assertOwnsProvider(user, Role.AIRLINE_MODERATOR, airlineId)` so a moderator manages only their own airline or hotel.
 
-# &#x20;       MONGODB\_URI=<the team connection string, ask the team leader>
+## API conventions
 
-# &#x20;       JWT\_SECRET=<your own long random text, 32 or more characters>
+The full list is in `docs/api/conventions.md`. In short:
 
-# &#x20;       JWT\_EXPIRES\_IN=1d
+- Prefix `/api`. Errors: `{ statusCode, error, message, details?, path, timestamp }`.
+- Lists: `?page=1&limit=10&sort=field:asc`. Use `PaginationQueryDto` and `paginated()` from `common/pagination`.
+- Dates are ISO 8601 in UTC. One platform currency for all prices, stored in the smallest unit.
 
-# &#x20;       COOKIE\_SECURE=false
+## AI usage
 
-# &#x20;       FRONTEND\_URL=http://localhost:3001
-
-# 
-
-# &#x20;  Generate a secret with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
-
-# 
-
-# 5\. Start the server:
-
-# 
-
-# &#x20;       npm run start:dev
-
-# 
-
-# 6\. Open Swagger: http://localhost:3000/api/docs
-
-# 
-
-# \### MongoDB connection problem (`querySrv ECONNREFUSED`)
-
-# 
-
-# Some networks block the DNS lookup used by `mongodb+srv://` strings. In MongoDB Atlas, open Connect, then Drivers, switch on \*\*Legacy URI String\*\*, copy that `mongodb://` string into your own `.env`, and add `/travel-platform` before the `?`.
-
-# 
-
-# \## Git workflow
-
-# 
-
-# \- `main`: stable milestone versions. `develop`: integration branch.
-
-# \- Never push directly to `main` or `develop`.
-
-# \- Create a branch from the latest `develop`: `feature/<REQ-ID>-description` (for example `feature/FLT-22-seat-hold`).
-
-# \- Commit messages: `feat(flights): add round-trip search`, `fix(hotels): prevent double booking`.
-
-# \- Open a pull request to `develop`. Title: `\[REQ-ID] Short title`. Put `Closes #<issue number>` in the description and explain how to test it in Swagger.
-
-# \- The team leader reviews and approves every PR.
-
-# \- Never commit `.env`, connection strings or API keys.
-
-# 
-
-# \## Project structure (backend)
-
-# 
-
-# &#x20;   backend/src/
-
-# &#x20;     common/       shared enums, decorators, helpers, error filter
-
-# &#x20;     auth/         authentication, guards (JwtAuthGuard, RolesGuard)
-
-# &#x20;     users/        user schema and profile
-
-# &#x20;     ...           one feature folder per module (airlines, flights, hotels, payments, ...)
-
-# 
-
-# \## Using the guards in your module
-
-# 
-
-# &#x20;   @ApiCookieAuth('access\_token')
-
-# &#x20;   @UseGuards(JwtAuthGuard, RolesGuard)
-
-# &#x20;   @Roles(Role.AIRLINE\_MODERATOR)
-
-# &#x20;   @Post()
-
-# &#x20;   create(@CurrentUser() user: AuthUser, @Body() dto: CreateDto) { ... }
-
-# 
-
-# Use `assertOwnsProvider(user, Role.AIRLINE\_MODERATOR, airlineId)` so a moderator manages only their own airline or hotel.
-
-# 
-
-# \## API conventions
-
-# 
-
-# \- Prefix `/api`. Errors: `{ statusCode, error, message, details?, path, timestamp }`.
-
-# \- Lists: `?page=1\&limit=10\&sort=field:asc`.
-
-# \- Dates are ISO 8601 in UTC. Money is stored in the smallest unit plus a currency code.
-
-# 
-
-# \## AI usage
-
-# 
-
-# Every important AI prompt must be logged in `AI\_PROMPTS.txt` (append at the end only).
-
+Every important AI prompt must be logged in `AI_PROMPTS.txt` (append at the end only).
