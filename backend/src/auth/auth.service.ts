@@ -31,6 +31,12 @@ const REFRESH_DAYS = 7;
 // takes as long as a wrong password and the timing reveals nothing.
 const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-equaliser-not-a-password', 10);
 
+// cookie-parser turns "j:{...}" cookies into objects; only a string is a token.
+function readCookie(req: Request, name: string): string | null {
+  const value = req.cookies?.[name];
+  return typeof value === 'string' && value ? value : null;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -174,7 +180,7 @@ export class AuthService {
   }
 
   async refresh(req: Request, res: Response) {
-    const token = req.cookies?.['refresh_token'];
+    const token = readCookie(req, 'refresh_token');
     if (!token) throw new UnauthorizedException('No refresh token');
 
     const user = await this.userModel
@@ -201,7 +207,7 @@ export class AuthService {
   }
 
   async logout(req: Request, res: Response) {
-    const token = req.cookies?.['refresh_token'];
+    const token = readCookie(req, 'refresh_token');
     if (token) {
       await this.userModel.updateOne(
         { refreshTokenHash: this.hash(token) },
