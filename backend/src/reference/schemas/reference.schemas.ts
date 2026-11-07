@@ -28,7 +28,8 @@ export class Airport {
   @Prop({ required: true }) name: string;
   @Prop({ type: String, ref: 'City', required: true, index: true }) cityId: string;
   @Prop({ type: String, ref: 'Country', required: true }) countryCode: string;
-  @Prop({ type: String, default: null }) timeZone: string | null; // IANA, e.g. Africa/Cairo
+  // FLT-02, GEN-06: every airport has an IANA time zone, e.g. Africa/Cairo.
+  @Prop({ type: String, required: true }) timeZone: string;
 }
 export const AirportSchema = SchemaFactory.createForClass(Airport);
 export type AirportDocument = HydratedDocument<Airport>;
