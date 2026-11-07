@@ -64,3 +64,14 @@ Fix audit finding IM-12 on branch test/ACC-auth-tests-and-swagger: unit tests fo
 How the output was used:
 Kept the shared app setup, the Swagger response examples and cookie security schemes (which also fixed a scheme-name mismatch), the e2e suite and the new unit tests. Ran npm run build, npm test and npm run test:e2e, including the database flow against a local throwaway MongoDB, all passing, before committing.
 ================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-13, ITN-18, GEN-12, ACC-01
+Prompt:
+Fix audit findings IM-1, IM-4, IM-14, IM-15, IM-19, MI-6, MI-9, MI-11, MI-12 and MI-14 on branch chore/repo-hygiene: fix tracker IDs, name the official sources, reorder CODEOWNERS, fix the templates, complete .env.example, fix the ACC-03 reference, add .gitignore/.gitattributes/CI/backend README, make the issue scripts dry-run by default, apply Prettier, and add the IM-9 and MI-9 items to conventions.md as PROPOSED, needing team approval.
+How the output was used:
+Kept all changes, one commit per finding. The tracker was checked against the official sheet (all 115 rows match). The official PDF and sheets were not committed because the repository is public; that is left to the team leader. Ran npm run build, npm test, npm run test:e2e and the read-only eslint check (0 problems) before committing.
+================================================
