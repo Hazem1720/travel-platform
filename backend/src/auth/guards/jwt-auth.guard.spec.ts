@@ -7,9 +7,14 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 const SECRET = 'unit-test-secret-unit-test-secret-1234';
 
 function setup(user: Record<string, unknown> | null) {
-  const jwt = new JwtService({ secret: SECRET, signOptions: { expiresIn: '15m' } });
+  const jwt = new JwtService({
+    secret: SECRET,
+    signOptions: { expiresIn: '15m' },
+  });
   const userModel = {
-    findById: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(user) }),
+    findById: jest
+      .fn()
+      .mockReturnValue({ lean: jest.fn().mockResolvedValue(user) }),
     updateOne: jest.fn().mockResolvedValue(undefined),
   };
   const guard = new JwtAuthGuard(jwt, new Reflector(), userModel as any);
@@ -44,25 +49,29 @@ describe('JwtAuthGuard', () => {
     const { ctx, req } = contextFor({ access_token: token });
 
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
-    expect(req.user).toEqual({ id: 'user-1', role: Role.USER, assignedProviderId: null });
+    expect(req.user).toEqual({
+      id: 'user-1',
+      role: Role.USER,
+      assignedProviderId: null,
+    });
   });
 
   it('rejects a token issued before logout or a password change (ACC-06)', async () => {
     const { guard, jwt, contextFor } = setup(activeUser({ sessionVersion: 5 }));
     const token = await jwt.signAsync({ sub: 'user-1', sv: 4 });
 
-    await expect(guard.canActivate(contextFor({ access_token: token }).ctx)).rejects.toThrow(
-      'Session expired',
-    );
+    await expect(
+      guard.canActivate(contextFor({ access_token: token }).ctx),
+    ).rejects.toThrow('Session expired');
   });
 
   it('rejects a token without a sessionVersion', async () => {
     const { guard, jwt, contextFor } = setup(activeUser());
     const token = await jwt.signAsync({ sub: 'user-1' });
 
-    await expect(guard.canActivate(contextFor({ access_token: token }).ctx)).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(
+      guard.canActivate(contextFor({ access_token: token }).ctx),
+    ).rejects.toThrow(UnauthorizedException);
   });
 
   describe('30-minute idle expiry (ACC-06)', () => {
@@ -86,9 +95,9 @@ describe('JwtAuthGuard', () => {
       );
       const token = await jwt.signAsync({ sub: 'user-1', sv: 0 });
 
-      await expect(guard.canActivate(contextFor({ access_token: token }).ctx)).resolves.toBe(
-        true,
-      );
+      await expect(
+        guard.canActivate(contextFor({ access_token: token }).ctx),
+      ).resolves.toBe(true);
       expect(userModel.updateOne).toHaveBeenCalledWith(
         { _id: 'user-1' },
         { $set: { lastActivityAt: expect.any(Date) } },
@@ -107,12 +116,14 @@ describe('JwtAuthGuard', () => {
   });
 
   it('rejects a suspended account', async () => {
-    const { guard, jwt, contextFor } = setup(activeUser({ status: AccountStatus.SUSPENDED }));
+    const { guard, jwt, contextFor } = setup(
+      activeUser({ status: AccountStatus.SUSPENDED }),
+    );
     const token = await jwt.signAsync({ sub: 'user-1', sv: 0 });
 
-    await expect(guard.canActivate(contextFor({ access_token: token }).ctx)).rejects.toThrow(
-      'Account is suspended',
-    );
+    await expect(
+      guard.canActivate(contextFor({ access_token: token }).ctx),
+    ).rejects.toThrow('Account is suspended');
   });
 
   it('answers 401, not 500, for a non-string cookie (MI-2)', async () => {

@@ -60,7 +60,9 @@ export class JwtAuthGuard implements CanActivate {
 
     // ACC-06: idle for more than 30 minutes means the session is over.
     const now = Date.now();
-    const last = user.lastActivityAt ? new Date(user.lastActivityAt).getTime() : null;
+    const last = user.lastActivityAt
+      ? new Date(user.lastActivityAt).getTime()
+      : null;
     if (last !== null && now - last > SESSION_IDLE_MS) {
       throw new UnauthorizedException('Session expired. Please log in again.');
     }
@@ -77,7 +79,9 @@ export class JwtAuthGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
     if (user.mustChangePassword && !allowed) {
-      throw new ForbiddenException('You must change your temporary password first');
+      throw new ForbiddenException(
+        'You must change your temporary password first',
+      );
     }
 
     const authUser: AuthUser = {

@@ -50,13 +50,18 @@ function makeService(env: Record<string, string> = {}) {
     findByIdAndUpdate: jest.fn().mockResolvedValue(undefined),
     updateOne: jest.fn().mockResolvedValue({ modifiedCount: 1 }),
   };
-  const jwt = new JwtService({ secret: SECRET, signOptions: { expiresIn: '15m' } });
+  const jwt = new JwtService({
+    secret: SECRET,
+    signOptions: { expiresIn: '15m' },
+  });
   const config = { get: (key: string) => env[key] } as unknown as ConfigService;
   const service = new AuthService(userModel as any, jwt, config);
   return { service, userModel, jwt };
 }
 
-const withSelect = (value: unknown) => ({ select: jest.fn().mockResolvedValue(value) });
+const withSelect = (value: unknown) => ({
+  select: jest.fn().mockResolvedValue(value),
+});
 
 describe('AuthService', () => {
   describe('login', () => {
@@ -67,7 +72,10 @@ describe('AuthService', () => {
       userModel.findOneAndUpdate.mockResolvedValue({ failedLoginAttempts: 1 });
 
       await expect(
-        service.login({ email: user.email, password: 'wrong-pass1' }, fakeResponse().res),
+        service.login(
+          { email: user.email, password: 'wrong-pass1' },
+          fakeResponse().res,
+        ),
       ).rejects.toThrow('Invalid email or password');
 
       expect(userModel.findOneAndUpdate).toHaveBeenCalledWith(
@@ -88,11 +96,17 @@ describe('AuthService', () => {
 
       const before = Date.now();
       await expect(
-        service.login({ email: user.email, password: 'wrong-pass1' }, fakeResponse().res),
+        service.login(
+          { email: user.email, password: 'wrong-pass1' },
+          fakeResponse().res,
+        ),
       ).rejects.toThrow(UnauthorizedException);
 
       const [filter, update] = userModel.updateOne.mock.calls[0];
-      expect(filter).toEqual({ _id: user._id, failedLoginAttempts: { $gte: 5 } });
+      expect(filter).toEqual({
+        _id: user._id,
+        failedLoginAttempts: { $gte: 5 },
+      });
       expect(update.$set.failedLoginAttempts).toBe(0);
       const lockMs = update.$set.lockUntil.getTime() - before;
       expect(lockMs).toBeGreaterThanOrEqual(15 * 60 * 1000 - 50);
@@ -135,7 +149,10 @@ describe('AuthService', () => {
       const compare = jest.spyOn(bcrypt, 'compare');
 
       await expect(
-        service.login({ email: 'nobody@example.com', password: 'Passw0rd1' }, fakeResponse().res),
+        service.login(
+          { email: 'nobody@example.com', password: 'Passw0rd1' },
+          fakeResponse().res,
+        ),
       ).rejects.toThrow('Invalid email or password');
 
       expect(compare).toHaveBeenCalledTimes(1);
@@ -149,7 +166,10 @@ describe('AuthService', () => {
       userModel.findOne.mockReturnValue(withSelect(storedUser()));
       const { res, cookies } = fakeResponse();
 
-      await service.login({ email: 'sara@example.com', password: 'Passw0rd1' }, res);
+      await service.login(
+        { email: 'sara@example.com', password: 'Passw0rd1' },
+        res,
+      );
 
       for (const name of ['access_token', 'refresh_token']) {
         expect(cookies[name].options).toMatchObject({
@@ -165,7 +185,10 @@ describe('AuthService', () => {
       userModel.findOne.mockReturnValue(withSelect(storedUser()));
       const { res, cookies } = fakeResponse();
 
-      await service.login({ email: 'sara@example.com', password: 'Passw0rd1' }, res);
+      await service.login(
+        { email: 'sara@example.com', password: 'Passw0rd1' },
+        res,
+      );
       expect(cookies.access_token.options.secure).toBe(false);
     });
   });
@@ -188,7 +211,10 @@ describe('AuthService', () => {
       const { service, userModel, jwt } = makeService();
       const access = await jwt.signAsync({ sub: 'user-1', sv: 0 });
 
-      await service.logout(fakeRequest({ access_token: access }), fakeResponse().res);
+      await service.logout(
+        fakeRequest({ access_token: access }),
+        fakeResponse().res,
+      );
 
       expect(userModel.updateOne).toHaveBeenCalledWith(
         { _id: 'user-1' },
@@ -198,7 +224,10 @@ describe('AuthService', () => {
 
     it('ignores non-string cookies instead of crashing (MI-2)', async () => {
       const { service, userModel } = makeService();
-      const req = fakeRequest({ refresh_token: { $ne: null }, access_token: { a: 1 } });
+      const req = fakeRequest({
+        refresh_token: { $ne: null },
+        access_token: { a: 1 },
+      });
 
       await expect(service.logout(req, fakeResponse().res)).resolves.toEqual({
         message: 'Logged out',
@@ -227,7 +256,9 @@ describe('AuthService', () => {
 
     it('rotates the refresh token for an active session', async () => {
       const { service, userModel } = makeService();
-      const user = storedUser({ lastActivityAt: new Date(Date.now() - 5 * 60 * 1000) });
+      const user = storedUser({
+        lastActivityAt: new Date(Date.now() - 5 * 60 * 1000),
+      });
       userModel.findOne.mockReturnValue(withSelect(user));
       const { res, cookies } = fakeResponse();
 
@@ -238,9 +269,14 @@ describe('AuthService', () => {
 
     it('treats a missing lastActivityAt as expired', async () => {
       const { service, userModel } = makeService();
-      userModel.findOne.mockReturnValue(withSelect(storedUser({ lastActivityAt: null })));
+      userModel.findOne.mockReturnValue(
+        withSelect(storedUser({ lastActivityAt: null })),
+      );
       await expect(
-        service.refresh(fakeRequest({ refresh_token: 'tok' }), fakeResponse().res),
+        service.refresh(
+          fakeRequest({ refresh_token: 'tok' }),
+          fakeResponse().res,
+        ),
       ).rejects.toThrow('Session expired');
     });
   });
@@ -249,7 +285,10 @@ describe('AuthService', () => {
     it('answers 401, not 500, for a non-string refresh cookie (MI-2)', async () => {
       const { service, userModel } = makeService();
       await expect(
-        service.refresh(fakeRequest({ refresh_token: { $ne: null } }), fakeResponse().res),
+        service.refresh(
+          fakeRequest({ refresh_token: { $ne: null } }),
+          fakeResponse().res,
+        ),
       ).rejects.toThrow(UnauthorizedException);
       expect(userModel.findOne).not.toHaveBeenCalled();
     });

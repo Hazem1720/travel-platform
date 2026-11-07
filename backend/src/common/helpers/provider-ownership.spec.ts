@@ -32,9 +32,9 @@ describe('assertOwnsProvider', () => {
 
   it('rejects the wrong kind of moderator', () => {
     const hotelMod = { ...airlineMod, role: Role.HOTEL_MODERATOR };
-    expect(() => assertOwnsProvider(hotelMod, Role.AIRLINE_MODERATOR, 'airline-1')).toThrow(
-      ForbiddenException,
-    );
+    expect(() =>
+      assertOwnsProvider(hotelMod, Role.AIRLINE_MODERATOR, 'airline-1'),
+    ).toThrow(ForbiddenException);
   });
 
   it('rejects a moderator with no assigned provider', () => {
@@ -46,7 +46,11 @@ describe('assertOwnsProvider', () => {
 
   it.each([Role.USER, Role.ADMIN])('rejects a %s', (role) => {
     expect(() =>
-      assertOwnsProvider({ ...airlineMod, role }, Role.AIRLINE_MODERATOR, 'airline-1'),
+      assertOwnsProvider(
+        { ...airlineMod, role },
+        Role.AIRLINE_MODERATOR,
+        'airline-1',
+      ),
     ).toThrow('You can only manage your assigned provider');
   });
 });

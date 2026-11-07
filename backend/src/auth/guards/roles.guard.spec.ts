@@ -7,7 +7,8 @@ import { RolesGuard } from './roles.guard';
 
 function contextWith(meta: Record<string, unknown>, user?: { role: Role }) {
   const handler = () => undefined;
-  for (const [k, v] of Object.entries(meta)) Reflect.defineMetadata(k, v, handler);
+  for (const [k, v] of Object.entries(meta))
+    Reflect.defineMetadata(k, v, handler);
   return {
     getHandler: () => handler,
     getClass: () => class Controller {},
@@ -23,7 +24,10 @@ describe('RolesGuard', () => {
   });
 
   it('allows a listed role', () => {
-    const ctx = contextWith({ [ROLES_KEY]: [Role.ADMIN] }, { role: Role.ADMIN });
+    const ctx = contextWith(
+      { [ROLES_KEY]: [Role.ADMIN] },
+      { role: Role.ADMIN },
+    );
     expect(guard.canActivate(ctx)).toBe(true);
   });
 
@@ -38,6 +42,8 @@ describe('RolesGuard', () => {
   });
 
   it('skips @Public() routes', () => {
-    expect(guard.canActivate(contextWith({ [IS_PUBLIC_KEY]: true }))).toBe(true);
+    expect(guard.canActivate(contextWith({ [IS_PUBLIC_KEY]: true }))).toBe(
+      true,
+    );
   });
 });

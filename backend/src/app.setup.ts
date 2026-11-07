@@ -23,8 +23,16 @@ export function buildSwaggerDocument(app: INestApplication): OpenAPIObject {
     )
     .setVersion('1.0')
     // The third argument is the security name used by @ApiCookieAuth(...).
-    .addCookieAuth('access_token', { type: 'apiKey', in: 'cookie' }, 'access_token')
-    .addCookieAuth('refresh_token', { type: 'apiKey', in: 'cookie' }, 'refresh_token')
+    .addCookieAuth(
+      'access_token',
+      { type: 'apiKey', in: 'cookie' },
+      'access_token',
+    )
+    .addCookieAuth(
+      'refresh_token',
+      { type: 'apiKey', in: 'cookie' },
+      'refresh_token',
+    )
     .build();
   return SwaggerModule.createDocument(app, config);
 }

@@ -14,7 +14,16 @@ describe('reference seed data (GEN-12)', () => {
     expect(data.airports).toHaveLength(8);
     expect(data.attractions).toHaveLength(8);
     expect(data.airports.map((a) => a._id)).toEqual(
-      expect.arrayContaining(['CAI', 'DXB', 'LHR', 'JFK', 'CDG', 'HND', 'RUH', 'FRA']),
+      expect.arrayContaining([
+        'CAI',
+        'DXB',
+        'LHR',
+        'JFK',
+        'CDG',
+        'HND',
+        'RUH',
+        'FRA',
+      ]),
     );
     expect(data.cities.map((c) => c._id)).toContain('frankfurt');
     expect(data.attractions.map((a) => a._id)).toContain('att-8');

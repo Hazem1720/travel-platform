@@ -20,11 +20,16 @@ function run(exception: unknown) {
     }),
   } as unknown as ArgumentsHost;
   new AllExceptionsFilter().catch(exception, host);
-  return { status: res.status.mock.calls[0][0], body: res.json.mock.calls[0][0] };
+  return {
+    status: res.status.mock.calls[0][0],
+    body: res.json.mock.calls[0][0],
+  };
 }
 
 describe('AllExceptionsFilter', () => {
-  beforeAll(() => jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined));
+  beforeAll(() =>
+    jest.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined),
+  );
   afterAll(() => jest.restoreAllMocks());
 
   it('uses the shared error format', () => {
@@ -52,13 +57,18 @@ describe('AllExceptionsFilter', () => {
   });
 
   it('keeps custom status codes such as 423 Locked', () => {
-    const { status, body } = run(new HttpException('Account temporarily locked.', 423));
+    const { status, body } = run(
+      new HttpException('Account temporarily locked.', 423),
+    );
     expect(status).toBe(423);
     expect(body.message).toBe('Account temporarily locked.');
   });
 
   it('maps a Mongoose ValidationError to 400 keyed by field (MI-3)', async () => {
-    const Thing = model('FilterSpecThing', new Schema({ name: { type: String, required: true } }));
+    const Thing = model(
+      'FilterSpecThing',
+      new Schema({ name: { type: String, required: true } }),
+    );
     const err = await new Thing({}).validate().catch((e) => e);
     expect(err).toBeInstanceOf(MongooseError.ValidationError);
 
@@ -83,13 +93,17 @@ describe('AllExceptionsFilter', () => {
   });
 
   it('hides internal errors behind a generic 500', () => {
-    const { status, body } = run(new Error('connection string mongodb://secret@host'));
+    const { status, body } = run(
+      new Error('connection string mongodb://secret@host'),
+    );
     expect(status).toBe(500);
     expect(body.message).toBe('Internal server error');
     expect(JSON.stringify(body)).not.toContain('secret');
   });
 
   it('still returns 409 for ConflictException', () => {
-    expect(run(new ConflictException('Email is already registered')).status).toBe(409);
+    expect(
+      run(new ConflictException('Email is already registered')).status,
+    ).toBe(409);
   });
 });

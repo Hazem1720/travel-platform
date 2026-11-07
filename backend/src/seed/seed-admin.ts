@@ -25,7 +25,9 @@ async function run() {
     const email = config.get<string>('SEED_ADMIN_EMAIL')?.toLowerCase().trim();
     const password = config.get<string>('SEED_ADMIN_PASSWORD');
     if (!email || !password) {
-      throw new Error('Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in backend/.env');
+      throw new Error(
+        'Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in backend/.env',
+      );
     }
     // ACC-01: the admin password follows the same rule as every other account.
     if (!PASSWORD_REGEX.test(password)) {
@@ -58,7 +60,8 @@ async function run() {
 
     if (res.upsertedCount) console.log(`Admin account created: ${email}`);
     else if (resetPassword) console.log(`Admin password reset: ${email}`);
-    else console.log(`Admin account already exists, password unchanged: ${email}`);
+    else
+      console.log(`Admin account already exists, password unchanged: ${email}`);
   } finally {
     await app.close();
   }

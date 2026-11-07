@@ -45,7 +45,9 @@ class EnvironmentVariables {
   COOKIE_SECURE?: string;
 
   @IsString()
-  @Matches(/^https?:\/\/\S+$/, { message: 'FRONTEND_URL must be an http(s) URL' })
+  @Matches(/^https?:\/\/\S+$/, {
+    message: 'FRONTEND_URL must be an http(s) URL',
+  })
   FRONTEND_URL: string;
 }
 

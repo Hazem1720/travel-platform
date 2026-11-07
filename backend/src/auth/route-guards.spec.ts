@@ -36,7 +36,10 @@ interface Route {
 }
 
 // Walks the module tree from AppModule, including dynamic modules.
-function collectModules(root: unknown): { controllers: Type[]; providers: unknown[] } {
+function collectModules(root: unknown): {
+  controllers: Type[];
+  providers: unknown[];
+} {
   const seen = new Set<unknown>();
   const controllers: Type[] = [];
   const providers: unknown[] = [];
@@ -126,9 +129,9 @@ describe('route protection (GEN-13)', () => {
   });
 
   it('never combines @Public() with @Roles()', () => {
-    expect(routes.filter((r) => r.isPublic && r.hasRoles).map((r) => r.key)).toEqual(
-      [],
-    );
+    expect(
+      routes.filter((r) => r.isPublic && r.hasRoles).map((r) => r.key),
+    ).toEqual([]);
   });
 
   describe('over HTTP without a session', () => {
@@ -140,7 +143,11 @@ describe('route protection (GEN-13)', () => {
       const fakeModel = {};
       const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
         .overrideProvider(getConnectionToken())
-        .useValue({ models: {}, model: () => fakeModel, close: async () => undefined })
+        .useValue({
+          models: {},
+          model: () => fakeModel,
+          close: async () => undefined,
+        })
         .compile();
       app = moduleRef.createNestApplication({ logger: false });
       app.use(cookieParser());

@@ -21,7 +21,9 @@ import { RolesGuard } from './guards/roles.guard';
         secret: config.get<string>('JWT_SECRET'),
         // Short-lived access token; an empty value falls back to 15m too
         // (before, "JWT_EXPIRES_IN=" from .env.example made login fail).
-        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') || '15m' },
+        signOptions: {
+          expiresIn: config.get<string>('JWT_EXPIRES_IN') || '15m',
+        },
       }),
     }),
   ],

@@ -19,7 +19,10 @@ import type { Request, Response } from 'express';
 import { AllowPasswordChange } from '../common/decorators/allow-password-change.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Public } from '../common/decorators/public.decorator';
-import { ApiErrors, UNAUTHENTICATED } from '../common/swagger/api-error.decorator';
+import {
+  ApiErrors,
+  UNAUTHENTICATED,
+} from '../common/swagger/api-error.decorator';
 import { AuthUser } from '../common/types/auth-user.type';
 import { AuthService } from './auth.service';
 import { MessageDto, UserProfileDto } from './dto/auth-responses.dto';
@@ -45,7 +48,9 @@ export class AuthController {
       message: 'Validation failed',
       details: {
         email: ['email must be an email'],
-        password: ['Password must be 8-72 characters and include at least one letter and one digit'],
+        password: [
+          'Password must be 8-72 characters and include at least one letter and one digit',
+        ],
         acceptTerms: ['You must accept the terms and privacy policy'],
       },
     },
@@ -59,7 +64,8 @@ export class AuthController {
   @Public()
   @HttpCode(200)
   @ApiOperation({
-    summary: 'Log in; sets httpOnly access and refresh cookies (ACC-04, ACC-05, ACC-19)',
+    summary:
+      'Log in; sets httpOnly access and refresh cookies (ACC-04, ACC-05, ACC-19)',
   })
   @ApiOkResponse({ type: UserProfileDto, description: SETS_COOKIES })
   @ApiErrors(
@@ -73,7 +79,8 @@ export class AuthController {
     {
       status: 423,
       message: 'Account temporarily locked. Try again later.',
-      description: 'Locked for 15 minutes after 5 consecutive failed logins (ACC-05)',
+      description:
+        'Locked for 15 minutes after 5 consecutive failed logins (ACC-05)',
     },
   )
   login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: Response) {
@@ -84,7 +91,9 @@ export class AuthController {
   @Public()
   @HttpCode(200)
   @ApiCookieAuth('refresh_token')
-  @ApiOperation({ summary: 'Renew the access token with the refresh cookie (ACC-06, ACC-19)' })
+  @ApiOperation({
+    summary: 'Renew the access token with the refresh cookie (ACC-06, ACC-19)',
+  })
   @ApiOkResponse({
     type: UserProfileDto,
     description: `${SETS_COOKIES} The refresh token is rotated.`,
@@ -93,7 +102,8 @@ export class AuthController {
     {
       status: 401,
       message: 'Session expired. Please log in again.',
-      description: 'No refresh cookie, an unknown or revoked one, or 30 minutes idle (ACC-06)',
+      description:
+        'No refresh cookie, an unknown or revoked one, or 30 minutes idle (ACC-06)',
     },
     { status: 403, message: 'Account is suspended' },
   )
@@ -107,9 +117,13 @@ export class AuthController {
   @ApiCookieAuth('refresh_token')
   @ApiCookieAuth('access_token')
   @ApiOperation({
-    summary: 'Log out; clears cookies and revokes the refresh and access tokens (ACC-06)',
+    summary:
+      'Log out; clears cookies and revokes the refresh and access tokens (ACC-06)',
   })
-  @ApiOkResponse({ type: MessageDto, schema: { example: { message: 'Logged out' } } })
+  @ApiOkResponse({
+    type: MessageDto,
+    schema: { example: { message: 'Logged out' } },
+  })
   logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     return this.auth.logout(req, res);
   }
