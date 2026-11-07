@@ -1,13 +1,18 @@
 // Creates one GitHub issue per requirement from docs/requirements/requirements-tracker.csv
-//   node scripts/create-issues.js --dry      preview, creates nothing
-//   node scripts/create-issues.js            create the missing issues
-//   node scripts/create-issues.js --assign   add assignees from scripts/usernames.json
+// Dry run by default: nothing on GitHub changes unless you pass --apply.
+//   node scripts/create-issues.js                    preview, creates nothing
+//   node scripts/create-issues.js --apply            create the missing issues (and labels)
+//   node scripts/create-issues.js --assign           preview assignees from scripts/usernames.json
+//   node scripts/create-issues.js --assign --apply   add those assignees
+// scripts/usernames.json (not committed) maps tracker owner names to GitHub usernames,
+// e.g. { "Hazem": "Hazem1720" }.
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const REPO = 'Hazem1720/travel-platform';
-const DRY = process.argv.includes('--dry');
+// --dry is still accepted; it is now the default.
+const DRY = !process.argv.includes('--apply');
 const ASSIGN = process.argv.includes('--assign');
 
 let usernames = {};
