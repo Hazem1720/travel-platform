@@ -37,7 +37,7 @@ export class AuthController {
 
   @Post('register')
   @Public()
-  @ApiOperation({ summary: 'Register a traveler account (ACC-01, ACC-03)' })
+  @ApiOperation({ summary: 'Register a traveler account (ACC-01)' })
   @ApiCreatedResponse({ type: UserProfileDto, description: 'The new account' })
   @ApiErrors(
     {
