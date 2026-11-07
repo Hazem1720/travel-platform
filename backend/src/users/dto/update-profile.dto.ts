@@ -1,4 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import {
   IsSupportedCurrency,
@@ -7,6 +8,7 @@ import {
 
 export class UpdateProfileDto {
   @ApiPropertyOptional({ example: 'Sara Ali' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsOptional()
   @IsString()
   @IsNotEmpty()
