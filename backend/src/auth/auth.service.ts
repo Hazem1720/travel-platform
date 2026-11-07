@@ -128,12 +128,7 @@ export class AuthService {
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) {
-      user.failedLoginAttempts += 1;
-      if (user.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
-        user.lockUntil = new Date(Date.now() + LOCK_MINUTES * 60 * 1000);
-        user.failedLoginAttempts = 0;
-      }
-      await user.save();
+      await this.recordFailedLogin(user._id);
       throw invalid;
     }
 
@@ -141,12 +136,34 @@ export class AuthService {
       throw new ForbiddenException(`Account is ${user.status}`);
     }
 
-    user.failedLoginAttempts = 0;
-    user.lockUntil = null;
-    await user.save();
+    await this.userModel.updateOne(
+      { _id: user._id },
+      { $set: { failedLoginAttempts: 0, lockUntil: null } },
+    );
 
     await this.startSession(res, String(user._id));
     return this.toProfile(user);
+  }
+
+  // ACC-05: the counter is incremented atomically, so parallel wrong guesses
+  // cannot all read the same old value and slip past the limit.
+  private async recordFailedLogin(userId: unknown) {
+    const updated = await this.userModel.findOneAndUpdate(
+      { _id: userId },
+      { $inc: { failedLoginAttempts: 1 } },
+      { new: true },
+    );
+    if (updated && updated.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+      await this.userModel.updateOne(
+        { _id: userId, failedLoginAttempts: { $gte: MAX_FAILED_ATTEMPTS } },
+        {
+          $set: {
+            lockUntil: new Date(Date.now() + LOCK_MINUTES * 60 * 1000),
+            failedLoginAttempts: 0,
+          },
+        },
+      );
+    }
   }
 
   async refresh(req: Request, res: Response) {
