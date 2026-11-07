@@ -47,6 +47,11 @@ export class User {
   @Prop({ type: String, default: null, select: false })
   refreshTokenHash: string | null;
 
+  // ACC-06: copied into every access token as "sv". Incrementing it revokes
+  // all access tokens already issued (logout, password change, deactivation).
+  @Prop({ type: Number, default: 0 })
+  sessionVersion: number;
+
   // ACC-06: used for the 30-minute idle expiry.
   @Prop({ type: Date, default: null })
   lastActivityAt: Date | null;

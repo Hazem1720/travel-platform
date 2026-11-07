@@ -81,8 +81,10 @@ export class AuthService {
   }
 
   // Issues a short-lived access token and a rotating refresh token.
-  private async startSession(res: Response, userId: string) {
-    const accessToken = await this.jwt.signAsync({ sub: userId });
+  // The access token carries the user's sessionVersion ("sv"), which the
+  // guard compares on every request (ACC-06).
+  private async startSession(res: Response, userId: string, sessionVersion: number) {
+    const accessToken = await this.jwt.signAsync({ sub: userId, sv: sessionVersion });
     const { exp } = this.jwt.decode(accessToken) as { exp: number };
     const refreshToken = randomBytes(48).toString('hex');
 
@@ -154,7 +156,7 @@ export class AuthService {
       { $set: { failedLoginAttempts: 0, lockUntil: null } },
     );
 
-    await this.startSession(res, String(user._id));
+    await this.startSession(res, String(user._id), user.sessionVersion ?? 0);
     return this.toProfile(user);
   }
 
@@ -191,6 +193,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid session');
     }
     if (user.status !== AccountStatus.ACTIVE) {
+      this.clearCookies(res);
       throw new ForbiddenException(`Account is ${user.status}`);
     }
 
@@ -202,17 +205,33 @@ export class AuthService {
       throw new UnauthorizedException('Session expired. Please log in again.');
     }
 
-    await this.startSession(res, String(user._id)); // rotates the refresh token
+    // Rotates the refresh token; the session version stays the same.
+    await this.startSession(res, String(user._id), user.sessionVersion ?? 0);
     return this.toProfile(user);
   }
 
+  // ACC-06: revokes the refresh token and every access token already issued.
+  // Logout is a public route, so the user is found from either cookie.
   async logout(req: Request, res: Response) {
-    const token = readCookie(req, 'refresh_token');
-    if (token) {
-      await this.userModel.updateOne(
-        { refreshTokenHash: this.hash(token) },
-        { $set: { refreshTokenHash: null } },
+    const revoke = { $set: { refreshTokenHash: null }, $inc: { sessionVersion: 1 } };
+    const refreshToken = readCookie(req, 'refresh_token');
+    const accessToken = readCookie(req, 'access_token');
+
+    let revoked = false;
+    if (refreshToken) {
+      const r = await this.userModel.updateOne(
+        { refreshTokenHash: this.hash(refreshToken) },
+        revoke,
       );
+      revoked = r.modifiedCount > 0;
+    }
+    if (!revoked && accessToken) {
+      const payload = await this.jwt
+        .verifyAsync<{ sub: string }>(accessToken)
+        .catch(() => null);
+      if (payload?.sub) {
+        await this.userModel.updateOne({ _id: payload.sub }, revoke);
+      }
     }
     this.clearCookies(res);
     return { message: 'Logged out' };
@@ -234,7 +253,8 @@ export class AuthService {
     return this.toProfile(user);
   }
 
-  async changePassword(userId: string, dto: ChangePasswordDto) {
+  // ACC-08: every other session is revoked; this device gets a fresh session.
+  async changePassword(userId: string, dto: ChangePasswordDto, res: Response) {
     const user = await this.userModel.findById(userId).select('+passwordHash');
     if (!user) throw new NotFoundException('User not found');
     if (!(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
@@ -245,7 +265,10 @@ export class AuthService {
     }
     user.passwordHash = await bcrypt.hash(dto.newPassword, 10);
     user.mustChangePassword = false;
+    user.refreshTokenHash = null;
+    user.sessionVersion = (user.sessionVersion ?? 0) + 1;
     await user.save();
+    await this.startSession(res, String(user._id), user.sessionVersion);
     return { message: 'Password changed' };
   }
 
@@ -253,8 +276,8 @@ export class AuthService {
     // ACC-12: blocked while the user has upcoming Confirmed bookings.
     // TODO: add that check once the booking modules exist.
     await this.userModel.findByIdAndUpdate(userId, {
-      status: AccountStatus.DEACTIVATED,
-      refreshTokenHash: null,
+      $set: { status: AccountStatus.DEACTIVATED, refreshTokenHash: null },
+      $inc: { sessionVersion: 1 },
     });
     return { message: 'Account deactivated' };
   }
