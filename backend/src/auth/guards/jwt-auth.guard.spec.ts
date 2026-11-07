@@ -65,6 +65,56 @@ describe('JwtAuthGuard', () => {
     );
   });
 
+  describe('30-minute idle expiry (ACC-06)', () => {
+    const minutesAgo = (m: number) => new Date(Date.now() - m * 60 * 1000);
+
+    it('rejects a session idle for more than 30 minutes', async () => {
+      const { guard, jwt, contextFor, userModel } = setup(
+        activeUser({ lastActivityAt: minutesAgo(31) }),
+      );
+      const token = await jwt.signAsync({ sub: 'user-1', sv: 0 });
+
+      await expect(
+        guard.canActivate(contextFor({ access_token: token }).ctx),
+      ).rejects.toThrow('Session expired. Please log in again.');
+      expect(userModel.updateOne).not.toHaveBeenCalled();
+    });
+
+    it('accepts activity within 30 minutes and slides the window', async () => {
+      const { guard, jwt, contextFor, userModel } = setup(
+        activeUser({ lastActivityAt: minutesAgo(29) }),
+      );
+      const token = await jwt.signAsync({ sub: 'user-1', sv: 0 });
+
+      await expect(guard.canActivate(contextFor({ access_token: token }).ctx)).resolves.toBe(
+        true,
+      );
+      expect(userModel.updateOne).toHaveBeenCalledWith(
+        { _id: 'user-1' },
+        { $set: { lastActivityAt: expect.any(Date) } },
+      );
+    });
+
+    it('writes lastActivityAt at most once a minute', async () => {
+      const { guard, jwt, contextFor, userModel } = setup(
+        activeUser({ lastActivityAt: new Date(Date.now() - 10_000) }),
+      );
+      const token = await jwt.signAsync({ sub: 'user-1', sv: 0 });
+
+      await guard.canActivate(contextFor({ access_token: token }).ctx);
+      expect(userModel.updateOne).not.toHaveBeenCalled();
+    });
+  });
+
+  it('rejects a suspended account', async () => {
+    const { guard, jwt, contextFor } = setup(activeUser({ status: AccountStatus.SUSPENDED }));
+    const token = await jwt.signAsync({ sub: 'user-1', sv: 0 });
+
+    await expect(guard.canActivate(contextFor({ access_token: token }).ctx)).rejects.toThrow(
+      'Account is suspended',
+    );
+  });
+
   it('answers 401, not 500, for a non-string cookie (MI-2)', async () => {
     const { guard, contextFor, userModel } = setup(activeUser());
     await expect(
