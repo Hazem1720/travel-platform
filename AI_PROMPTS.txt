@@ -10,3 +10,13 @@ Plan Milestone 1, split it across 8 members, set up the repo, NestJS foundation,
 How the output was used:
 Used the team split, setup steps and code for the foundation and auth modules, and tested them in Swagger.
 ================================================
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-13, ACC-11
+Prompt:
+Fix audit finding CR-4 on branch fix/GEN-13-global-auth-guard: register JwtAuthGuard and RolesGuard as global APP_GUARDs, add a @Public() decorator, mark register/login/refresh public, and add a test that fails if a route is neither @Public nor guarded.
+How the output was used:
+Kept the decorator, guard changes, global registration and the route-protection test. Also made logout and the GET / health check public. Checked that the test fails when the global JwtAuthGuard is removed, then ran npm run build and npm test (all passing) before committing.
+================================================
