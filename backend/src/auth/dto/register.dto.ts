@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import {
   Equals,
   IsBoolean,
@@ -17,6 +18,9 @@ export const PASSWORD_MESSAGE =
 
 export class RegisterDto {
   @ApiProperty({ example: 'Sara Ali' })
+  // Trimmed first, so "   " is rejected here with a 400 instead of failing
+  // later in the schema with a 500.
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
