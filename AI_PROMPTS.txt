@@ -10,3 +10,13 @@ Plan Milestone 1, split it across 8 members, set up the repo, NestJS foundation,
 How the output was used:
 Used the team split, setup steps and code for the foundation and auth modules, and tested them in Swagger.
 ================================================
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-02, GEN-05, GEN-12, ACC-09
+Prompt:
+Fix audit findings MI-3, IM-10 and IM-11 on branch fix/GEN-02-validation-and-pagination: map Mongoose errors to 400, return field-keyed validation details, add a supported-currency list, and cap the page size at 10.
+How the output was used:
+Kept the validation pipe factory, the filter changes, the currency list (taken from the official countries dataset) and the page size cap, with unit tests for each. Ran npm run build and npm test (all passing) before committing.
+================================================
