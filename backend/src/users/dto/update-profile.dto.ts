@@ -1,5 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  IsSupportedCurrency,
+  SUPPORTED_CURRENCIES,
+} from '../../common/constants/currencies';
 
 export class UpdateProfileDto {
   @ApiPropertyOptional({ example: 'Sara Ali' })
@@ -14,8 +18,9 @@ export class UpdateProfileDto {
   @Matches(/^\+?[0-9\s-]{7,20}$/, { message: 'phone must be a valid phone number' })
   phone?: string;
 
-  @ApiPropertyOptional({ example: 'EGP', description: '3-letter currency code' })
+  // ACC-09, GEN-12: only the supported currencies.
+  @ApiPropertyOptional({ example: 'EGP', enum: SUPPORTED_CURRENCIES })
   @IsOptional()
-  @Matches(/^[A-Z]{3}$/, { message: 'preferredCurrency must be a 3-letter uppercase code' })
+  @IsSupportedCurrency()
   preferredCurrency?: string;
 }

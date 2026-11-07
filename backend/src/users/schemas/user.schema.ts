@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { SUPPORTED_CURRENCIES } from '../../common/constants/currencies';
 import { AccountStatus, Role } from '../../common/enums/role.enum';
 
 export type UserDocument = HydratedDocument<User>;
@@ -32,7 +33,7 @@ export class User {
   @Prop({ type: String, default: '' })
   phone: string;
 
-  @Prop({ type: String, default: 'USD' })
+  @Prop({ type: String, enum: SUPPORTED_CURRENCIES, default: 'USD' })
   preferredCurrency: string;
 
   // ACC-01: consent to the terms and privacy policy.
