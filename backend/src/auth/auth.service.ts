@@ -55,11 +55,12 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  // ACC-19: httpOnly cookies. Secure and SameSite are set here too.
+  // ACC-19: httpOnly, Secure and SameSite cookies. Secure is on unless
+  // COOKIE_SECURE=false, which env validation refuses in production.
   private cookieBase() {
     return {
       httpOnly: true,
-      secure: this.config.get<string>('COOKIE_SECURE') === 'true',
+      secure: this.config.get<string>('COOKIE_SECURE') !== 'false',
       sameSite: 'lax' as const,
     };
   }
