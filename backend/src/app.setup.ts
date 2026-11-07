@@ -16,9 +16,15 @@ export function configureApp(app: INestApplication): void {
 export function buildSwaggerDocument(app: INestApplication): OpenAPIObject {
   const config = new DocumentBuilder()
     .setTitle('Travel Platform API')
-    .setDescription('GIU Software Project I - Milestone 1 backend')
+    .setDescription(
+      'GIU Software Project I - Milestone 1 backend.\n\n' +
+        'Authentication uses httpOnly cookies (ACC-19). Call POST /api/auth/login ' +
+        'in this page and the browser stores both cookies; protected routes then work.',
+    )
     .setVersion('1.0')
-    .addCookieAuth('access_token')
+    // The third argument is the security name used by @ApiCookieAuth(...).
+    .addCookieAuth('access_token', { type: 'apiKey', in: 'cookie' }, 'access_token')
+    .addCookieAuth('refresh_token', { type: 'apiKey', in: 'cookie' }, 'refresh_token')
     .build();
   return SwaggerModule.createDocument(app, config);
 }
