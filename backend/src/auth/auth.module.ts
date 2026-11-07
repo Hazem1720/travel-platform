@@ -19,7 +19,9 @@ import { RolesGuard } from './guards/roles.guard';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') ?? '1d' },
+        // Short-lived access token; an empty value falls back to 15m too
+        // (before, "JWT_EXPIRES_IN=" from .env.example made login fail).
+        signOptions: { expiresIn: config.get<string>('JWT_EXPIRES_IN') || '15m' },
       }),
     }),
   ],
