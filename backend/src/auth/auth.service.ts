@@ -27,6 +27,10 @@ const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 const REFRESH_DAYS = 7;
 
+// MI-1: compared against when the email is unknown, so a missing account
+// takes as long as a wrong password and the timing reveals nothing.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-equaliser-not-a-password', 10);
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -120,7 +124,10 @@ export class AuthService {
     const email = dto.email.toLowerCase().trim();
     const user = await this.userModel.findOne({ email }).select('+passwordHash');
     const invalid = new UnauthorizedException('Invalid email or password');
-    if (!user) throw invalid;
+    if (!user) {
+      await bcrypt.compare(dto.password, DUMMY_PASSWORD_HASH);
+      throw invalid;
+    }
 
     if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
       throw new HttpException('Account temporarily locked. Try again later.', 423);
