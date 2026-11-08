@@ -4,14 +4,21 @@ import { UpdateProfileDto } from '../../users/dto/update-profile.dto';
 import { PaginationQueryDto } from '../pagination/pagination-query.dto';
 import { createValidationPipe } from './validation.pipe';
 
-async function validate(metatype: any, value: unknown, type: 'body' | 'query' = 'body') {
+async function validate(
+  metatype: any,
+  value: unknown,
+  type: 'body' | 'query' = 'body',
+) {
   const pipe = createValidationPipe();
   const meta: ArgumentMetadata = { type, metatype };
   try {
     return { ok: true as const, value: await pipe.transform(value, meta) };
   } catch (e) {
     expect(e).toBeInstanceOf(BadRequestException);
-    return { ok: false as const, body: (e as BadRequestException).getResponse() as any };
+    return {
+      ok: false as const,
+      body: (e as BadRequestException).getResponse() as any,
+    };
   }
 }
 
@@ -24,7 +31,11 @@ const validRegister = {
 
 describe('createValidationPipe (GEN-02)', () => {
   it('keys validation messages by field', async () => {
-    const r = await validate(RegisterDto, { ...validRegister, email: 'nope', password: 'short' });
+    const r = await validate(RegisterDto, {
+      ...validRegister,
+      email: 'nope',
+      password: 'short',
+    });
     expect(r.ok).toBe(false);
     if (r.ok) return;
     expect(r.body.message).toBe('Validation failed');
@@ -39,14 +50,18 @@ describe('createValidationPipe (GEN-02)', () => {
   });
 
   it('trims names', async () => {
-    const r = await validate(RegisterDto, { ...validRegister, name: '  Sara Ali  ' });
+    const r = await validate(RegisterDto, {
+      ...validRegister,
+      name: '  Sara Ali  ',
+    });
     expect(r.ok && r.value.name).toBe('Sara Ali');
   });
 
   it('reports unknown fields by name', async () => {
     const r = await validate(RegisterDto, { ...validRegister, role: 'admin' });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.body.details.role).toEqual(['property role should not exist']);
+    if (!r.ok)
+      expect(r.body.details.role).toEqual(['property role should not exist']);
   });
 });
 
@@ -60,7 +75,9 @@ describe('preferredCurrency (ACC-09, IM-10)', () => {
     const r = await validate(UpdateProfileDto, { preferredCurrency: 'CHF' });
     expect(r.ok).toBe(false);
     if (!r.ok) {
-      expect(r.body.details.preferredCurrency[0]).toMatch(/must be one of: AED, EGP/);
+      expect(r.body.details.preferredCurrency[0]).toMatch(
+        /must be one of: AED, EGP/,
+      );
     }
   });
 });
@@ -79,6 +96,9 @@ describe('PaginationQueryDto (GEN-05, IM-11)', () => {
   it('rejects a page size above 10', async () => {
     const r = await validate(PaginationQueryDto, { limit: '11' }, 'query');
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.body.details.limit).toEqual(['limit must not be greater than 10']);
+    if (!r.ok)
+      expect(r.body.details.limit).toEqual([
+        'limit must not be greater than 10',
+      ]);
   });
 });

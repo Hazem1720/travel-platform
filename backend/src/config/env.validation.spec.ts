@@ -8,7 +8,9 @@ describe('validateEnv (IM-6)', () => {
   };
 
   it('accepts a complete environment', () => {
-    expect(() => validateEnv({ ...valid, JWT_EXPIRES_IN: '15m' })).not.toThrow();
+    expect(() =>
+      validateEnv({ ...valid, JWT_EXPIRES_IN: '15m' }),
+    ).not.toThrow();
   });
 
   it('treats an empty JWT_EXPIRES_IN as not set', () => {

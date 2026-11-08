@@ -1,5 +1,10 @@
 import { Body, Controller, Delete, Get, Patch, Res } from '@nestjs/common';
-import { ApiCookieAuth, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCookieAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 import { MessageDto, UserProfileDto } from '../auth/dto/auth-responses.dto';
 import { AuthService } from '../auth/auth.service';
@@ -27,13 +32,17 @@ export class UsersController {
   }
 
   @Patch()
-  @ApiOperation({ summary: 'Update my name, phone and preferred currency (ACC-09)' })
+  @ApiOperation({
+    summary: 'Update my name, phone and preferred currency (ACC-09)',
+  })
   @ApiOkResponse({ type: UserProfileDto, description: 'The updated profile' })
   @ApiErrors({
     status: 400,
     message: 'Validation failed',
     details: {
-      preferredCurrency: ['preferredCurrency must be one of: AED, EGP, EUR, GBP, JPY, SAR, USD'],
+      preferredCurrency: [
+        'preferredCurrency must be one of: AED, EGP, EUR, GBP, JPY, SAR, USD',
+      ],
     },
   })
   update(@CurrentUser() user: AuthUser, @Body() dto: UpdateProfileDto) {
@@ -41,7 +50,9 @@ export class UsersController {
   }
 
   @Delete()
-  @ApiOperation({ summary: 'Deactivate my account; signs out every session (ACC-12)' })
+  @ApiOperation({
+    summary: 'Deactivate my account; signs out every session (ACC-12)',
+  })
   @ApiOkResponse({
     type: MessageDto,
     schema: { example: { message: 'Account deactivated' } },

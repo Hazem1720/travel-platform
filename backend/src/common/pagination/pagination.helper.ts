@@ -13,7 +13,9 @@ export function buildSort(
 ): Record<string, 1 | -1> {
   const [field, dir = 'asc'] = (sort ?? fallback).split(':');
   if (!allowed.includes(field) && field !== 'createdAt') {
-    throw new BadRequestException(`Cannot sort by "${field}". Allowed: ${allowed.join(', ')}`);
+    throw new BadRequestException(
+      `Cannot sort by "${field}". Allowed: ${allowed.join(', ')}`,
+    );
   }
   if (dir !== 'asc' && dir !== 'desc') {
     throw new BadRequestException('Sort direction must be asc or desc');
@@ -27,5 +29,8 @@ export function paginated<T>(
   page: number,
   limit: number,
 ): PaginatedResult<T> {
-  return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  return {
+    data,
+    meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+  };
 }

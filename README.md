@@ -23,12 +23,21 @@ GIU Software Project I, Winter 2026.
 
 4. Create `backend/.env` (copy `.env.example` from the repo root and fill it in). **Never commit this file.**
 
+        NODE_ENV=development
         PORT=3000
         MONGODB_URI=<the team connection string, ask the team leader>
         JWT_SECRET=<your own long random text, 32 or more characters>
-        JWT_EXPIRES_IN=15m
-        COOKIE_SECURE=false
         FRONTEND_URL=http://localhost:3001
+        JWT_EXPIRES_IN=15m
+        COOKIE_SECURE=true
+        SEED_ADMIN_EMAIL=<only if you run the admin seed>
+        SEED_ADMIN_PASSWORD=<8+ characters with a letter and a digit>
+        STRIPE_SECRET_KEY=<Stripe test-mode secret key>
+        STRIPE_WEBHOOK_SECRET=<from the Stripe CLI or dashboard>
+        FXRATES_API_KEY=<FXRatesAPI key>
+        E2E_MONGODB_URI=<optional throwaway database for npm run test:e2e>
+
+   The server checks these at startup and stops with a message if `MONGODB_URI`, `JWT_SECRET` or `FRONTEND_URL` is missing or invalid. Keep `COOKIE_SECURE=true`; set it to `false` only if your browser drops cookies on `http://localhost` (for example Safari). It is refused when `NODE_ENV=production`.
 
    Generate a secret with: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 

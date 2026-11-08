@@ -64,12 +64,17 @@ export class AllExceptionsFilter implements ExceptionFilter {
         statusCode: HttpStatus.BAD_REQUEST,
         error: 'Bad Request',
         message: `Invalid value for "${exception.path}"`,
-        details: { [exception.path]: [`"${String(exception.value)}" is not valid`] },
+        details: {
+          [exception.path]: [`"${String(exception.value)}" is not valid`],
+        },
       };
     }
 
     // Unique index violation (MongoServerError code 11000).
-    const mongo = exception as { code?: number; keyValue?: Record<string, unknown> };
+    const mongo = exception as {
+      code?: number;
+      keyValue?: Record<string, unknown>;
+    };
     if (mongo?.code === 11000) {
       const fields = Object.keys(mongo.keyValue ?? {});
       return {
@@ -100,11 +105,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const b = body as Record<string, any>;
     const error = b.error ?? exception.name;
     if (b.details !== undefined) {
-      return { statusCode, error, message: b.message ?? 'Request failed', details: b.details };
+      return {
+        statusCode,
+        error,
+        message: b.message ?? 'Request failed',
+        details: b.details,
+      };
     }
     // A plain array of messages (e.g. a ValidationPipe created elsewhere).
     if (Array.isArray(b.message)) {
-      return { statusCode, error, message: 'Validation failed', details: { _: b.message } };
+      return {
+        statusCode,
+        error,
+        message: 'Validation failed',
+        details: { _: b.message },
+      };
     }
     return { statusCode, error, message: b.message ?? exception.message };
   }

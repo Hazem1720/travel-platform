@@ -1,85 +1,57 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend (NestJS + MongoDB)
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Milestone 1 backend for the Travel Planning and Booking Platform. For setup (Node.js, cloning, `backend/.env`) see the [root README](../README.md); the variables are listed in [`.env.example`](../.env.example).
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Commands (run in `backend/`)
 
-## Description
+| Command | What it does |
+|---|---|
+| `npm run start:dev` | Start with reload. Swagger UI at http://localhost:3000/api/docs |
+| `npm run build` | Compile to `dist/` |
+| `npm test` | Unit tests. They need no database and no `.env` |
+| `npm run test:e2e` | HTTP tests through the real app setup. The database flow runs only when `E2E_MONGODB_URI` is set (see below) |
+| `npm run seed:reference` | Load the official countries, cities, airports and attractions from `seed-data/` |
+| `npm run seed:admin` | Create the admin from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` |
+| `npx eslint "{src,test}/**/*.ts"` | Lint without changing files |
+| `npm run lint` | Lint **and fix**: this edits files |
+| `npm run format` | Format `src/` and `test/` with Prettier |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## How it is organised
 
-## Project setup
-
-```bash
-$ npm install
+```
+src/
+  main.ts, app.setup.ts   bootstrap; configureApp() is shared with the e2e tests
+  config/                 environment validation (the app stops if a setting is wrong)
+  auth/                   register, login, refresh, logout, change password, /auth/me, guards
+  users/                  user schema and /users/me
+  reference/              countries, cities, airports, attractions (read-only reference data)
+  seed/                   seed scripts and seed-data validation
+  common/                 decorators, error filter, validation pipe, pagination, currencies, Swagger helpers
+seed-data/                exact copies of the official datasets
+test/                     e2e tests and Jest setup files
 ```
 
-## Compile and run the project
+## Rules every module follows
+
+- **Authentication (GEN-13).** `JwtAuthGuard` and `RolesGuard` are global: every route needs a session unless it is marked `@Public()`. Public routes are listed in `src/auth/route-guards.spec.ts`, and that test fails if a route is public without being listed. Restrict by role with `@Roles(...)`. Moderator routes call `assertOwnsProvider()`.
+- **Sessions (ACC-06, ACC-19).** Tokens live only in httpOnly, Secure, SameSite cookies. 30 minutes without activity ends the session. Logout and password change revoke every token issued before.
+- **Validation and errors (GEN-02).** Every body and query uses a DTO with class-validator. Errors use one format, `{ statusCode, error, message, details?, path, timestamp }`, with `details` keyed by field.
+- **Lists (GEN-05).** Use `PaginationQueryDto` and `paginated()`; the page size is 10.
+- **Currencies (GEN-12).** Validate currency fields with `@IsSupportedCurrency()`.
+- **Swagger.** Every route has `@ApiOperation` (with requirement IDs), a success response and its error responses (`ApiErrors(...)`).
+
+The team conventions, including open proposals, are in [`docs/api/conventions.md`](../docs/api/conventions.md).
+
+## End-to-end tests with a database
+
+The e2e database flow registers a user, logs in, logs out and checks that the old token is rejected. It writes to the database, so it runs only against a database you name in `E2E_MONGODB_URI`, never against `MONGODB_URI`:
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+E2E_MONGODB_URI=mongodb://127.0.0.1:27017/travel_platform_e2e npm run test:e2e
 ```
 
-## Run tests
+Use a local MongoDB or a separate Atlas database, **never the shared team database**. The test deletes the user it creates.
 
-```bash
-# unit tests
-$ npm run test
+## Seeding
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+`seed-data/*.csv` must stay identical to the official `Mock Data.xlsx`; `npm test` checks the record counts and identifiers. `npm run seed:reference` validates every row (required fields, IANA time zones, city and country links) before writing anything, and is safe to repeat. Add `-- --prune` to delete records that are no longer in the files.

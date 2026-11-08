@@ -35,7 +35,10 @@ export class RegisterDto {
   @Matches(PASSWORD_REGEX, { message: PASSWORD_MESSAGE })
   password: string;
 
-  @ApiProperty({ example: true, description: 'Terms and privacy consent (required)' })
+  @ApiProperty({
+    example: true,
+    description: 'Terms and privacy consent (required)',
+  })
   @IsBoolean()
   @Equals(true, { message: 'You must accept the terms and privacy policy' })
   acceptTerms: boolean;

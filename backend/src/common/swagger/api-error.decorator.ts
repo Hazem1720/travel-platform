@@ -51,5 +51,6 @@ export const UNAUTHENTICATED: ApiErrorExample = {
 export const MUST_CHANGE_PASSWORD: ApiErrorExample = {
   status: 403,
   message: 'You must change your temporary password first',
-  description: 'The account is suspended, or must change a temporary password (ACC-07a)',
+  description:
+    'The account is suspended, or must change a temporary password (ACC-07a)',
 };

@@ -29,7 +29,9 @@ async function upsertAll(
   );
   let removed = 0;
   if (prune) {
-    const res = await model.deleteMany({ _id: { $nin: docs.map((d) => d._id) } });
+    const res = await model.deleteMany({
+      _id: { $nin: docs.map((d) => d._id) },
+    });
     removed = res.deletedCount ?? 0;
   }
   return `${docs.length} upserted${prune ? `, ${removed} removed` : ''}`;
@@ -50,9 +52,18 @@ async function run() {
   });
   try {
     const model = (name: string) => app.get<Model<any>>(getModelToken(name));
-    console.log('countries   :', await upsertAll(model(Country.name), data.countries, prune));
-    console.log('cities      :', await upsertAll(model(City.name), data.cities, prune));
-    console.log('airports    :', await upsertAll(model(Airport.name), data.airports, prune));
+    console.log(
+      'countries   :',
+      await upsertAll(model(Country.name), data.countries, prune),
+    );
+    console.log(
+      'cities      :',
+      await upsertAll(model(City.name), data.cities, prune),
+    );
+    console.log(
+      'airports    :',
+      await upsertAll(model(Airport.name), data.airports, prune),
+    );
     console.log(
       'attractions :',
       await upsertAll(model(Attraction.name), data.attractions, prune),

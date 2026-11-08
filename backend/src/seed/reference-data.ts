@@ -167,7 +167,9 @@ export function validateReferenceData(data: ReferenceData): string[] {
       );
     }
     if (a.timeZone && !isIanaTimeZone(a.timeZone)) {
-      errors.push(`airport "${a._id}": "${a.timeZone}" is not an IANA time zone`);
+      errors.push(
+        `airport "${a._id}": "${a.timeZone}" is not an IANA time zone`,
+      );
     }
   }
   for (const a of data.attractions) {

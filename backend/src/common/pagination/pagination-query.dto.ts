@@ -22,7 +22,10 @@ export class PaginationQueryDto {
   @Max(PAGE_SIZE)
   limit: number = PAGE_SIZE;
 
-  @ApiPropertyOptional({ example: 'createdAt:desc', description: 'field:asc or field:desc' })
+  @ApiPropertyOptional({
+    example: 'createdAt:desc',
+    description: 'field:asc or field:desc',
+  })
   @IsOptional()
   @IsString()
   sort?: string;

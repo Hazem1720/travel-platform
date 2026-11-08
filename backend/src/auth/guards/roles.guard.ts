@@ -22,12 +22,17 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const required = this.reflector.getAllAndOverride<Role[]>(ROLES_KEY, targets);
+    const required = this.reflector.getAllAndOverride<Role[]>(
+      ROLES_KEY,
+      targets,
+    );
     if (!required || required.length === 0) return true;
 
     const user = context.switchToHttp().getRequest().user;
     if (!user || !required.includes(user.role)) {
-      throw new ForbiddenException('You do not have permission for this action');
+      throw new ForbiddenException(
+        'You do not have permission for this action',
+      );
     }
     return true;
   }

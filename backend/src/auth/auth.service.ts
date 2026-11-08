@@ -29,7 +29,10 @@ const REFRESH_DAYS = 7;
 
 // MI-1: compared against when the email is unknown, so a missing account
 // takes as long as a wrong password and the timing reveals nothing.
-const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-equaliser-not-a-password', 10);
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
+  'timing-equaliser-not-a-password',
+  10,
+);
 
 // cookie-parser turns "j:{...}" cookies into objects; only a string is a token.
 function readCookie(req: Request, name: string): string | null {
@@ -77,20 +80,35 @@ export class AuthService {
 
   clearCookies(res: Response) {
     res.clearCookie('access_token', { ...this.cookieBase(), path: '/' });
-    res.clearCookie('refresh_token', { ...this.cookieBase(), path: '/api/auth' });
+    res.clearCookie('refresh_token', {
+      ...this.cookieBase(),
+      path: '/api/auth',
+    });
   }
 
   // Issues a short-lived access token and a rotating refresh token.
   // The access token carries the user's sessionVersion ("sv"), which the
   // guard compares on every request (ACC-06).
-  private async startSession(res: Response, userId: string, sessionVersion: number) {
-    const accessToken = await this.jwt.signAsync({ sub: userId, sv: sessionVersion });
+  private async startSession(
+    res: Response,
+    userId: string,
+    sessionVersion: number,
+  ) {
+    const accessToken = await this.jwt.signAsync({
+      sub: userId,
+      sv: sessionVersion,
+    });
     const { exp } = this.jwt.decode(accessToken) as { exp: number };
     const refreshToken = randomBytes(48).toString('hex');
 
     await this.userModel.updateOne(
       { _id: userId },
-      { $set: { refreshTokenHash: this.hash(refreshToken), lastActivityAt: new Date() } },
+      {
+        $set: {
+          refreshTokenHash: this.hash(refreshToken),
+          lastActivityAt: new Date(),
+        },
+      },
     );
 
     res.cookie('access_token', accessToken, {
@@ -130,7 +148,9 @@ export class AuthService {
 
   async login(dto: LoginDto, res: Response) {
     const email = dto.email.toLowerCase().trim();
-    const user = await this.userModel.findOne({ email }).select('+passwordHash');
+    const user = await this.userModel
+      .findOne({ email })
+      .select('+passwordHash');
     const invalid = new UnauthorizedException('Invalid email or password');
     if (!user) {
       await bcrypt.compare(dto.password, DUMMY_PASSWORD_HASH);
@@ -138,7 +158,10 @@ export class AuthService {
     }
 
     if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
-      throw new HttpException('Account temporarily locked. Try again later.', 423);
+      throw new HttpException(
+        'Account temporarily locked. Try again later.',
+        423,
+      );
     }
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
@@ -213,7 +236,10 @@ export class AuthService {
   // ACC-06: revokes the refresh token and every access token already issued.
   // Logout is a public route, so the user is found from either cookie.
   async logout(req: Request, res: Response) {
-    const revoke = { $set: { refreshTokenHash: null }, $inc: { sessionVersion: 1 } };
+    const revoke = {
+      $set: { refreshTokenHash: null },
+      $inc: { sessionVersion: 1 },
+    };
     const refreshToken = readCookie(req, 'refresh_token');
     const accessToken = readCookie(req, 'access_token');
 

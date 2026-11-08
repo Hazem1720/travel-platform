@@ -1,11 +1,13 @@
-// node scripts/sync-owners.js --dry   preview what would change
-// node scripts/sync-owners.js         fix owner labels, assignees and the Owner line of each issue
+// Dry run by default: nothing on GitHub changes unless you pass --apply.
+// node scripts/sync-owners.js           preview what would change
+// node scripts/sync-owners.js --apply   fix owner labels, assignees and the Owner line of each issue
 const { execFileSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
 const REPO = 'Hazem1720/travel-platform';
-const DRY = process.argv.includes('--dry');
+// --dry is still accepted; it is now the default.
+const DRY = !process.argv.includes('--apply');
 const unPath = path.join(__dirname, 'usernames.json');
 const usernames = fs.existsSync(unPath) ? JSON.parse(fs.readFileSync(unPath, 'utf8')) : {};
 const known = new Set(Object.values(usernames));

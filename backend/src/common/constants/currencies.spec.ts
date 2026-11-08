@@ -10,7 +10,9 @@ describe('SUPPORTED_CURRENCIES (GEN-12)', () => {
     );
     const [header, ...rows] = csv.split(/\r?\n/).filter((l) => l.trim());
     const col = header.split(',').indexOf('currency');
-    const fromData = [...new Set(rows.map((r) => r.split(',')[col].trim()))].sort();
+    const fromData = [
+      ...new Set(rows.map((r) => r.split(',')[col].trim())),
+    ].sort();
 
     expect([...SUPPORTED_CURRENCIES].sort()).toEqual(fromData);
   });

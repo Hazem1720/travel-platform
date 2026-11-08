@@ -17,7 +17,8 @@ export type CountryDocument = HydratedDocument<Country>;
 export class City {
   @Prop({ type: String }) _id: string; // e.g. cairo
   @Prop({ required: true }) name: string;
-  @Prop({ type: String, ref: 'Country', required: true, index: true }) countryCode: string;
+  @Prop({ type: String, ref: 'Country', required: true, index: true })
+  countryCode: string;
 }
 export const CitySchema = SchemaFactory.createForClass(City);
 export type CityDocument = HydratedDocument<City>;
@@ -26,7 +27,8 @@ export type CityDocument = HydratedDocument<City>;
 export class Airport {
   @Prop({ type: String }) _id: string; // IATA code, e.g. CAI
   @Prop({ required: true }) name: string;
-  @Prop({ type: String, ref: 'City', required: true, index: true }) cityId: string;
+  @Prop({ type: String, ref: 'City', required: true, index: true })
+  cityId: string;
   @Prop({ type: String, ref: 'Country', required: true }) countryCode: string;
   // FLT-02, GEN-06: every airport has an IANA time zone, e.g. Africa/Cairo.
   @Prop({ type: String, required: true }) timeZone: string;
@@ -38,7 +40,8 @@ export type AirportDocument = HydratedDocument<Airport>;
 export class Attraction {
   @Prop({ type: String }) _id: string; // e.g. att-1
   @Prop({ required: true }) name: string;
-  @Prop({ type: String, ref: 'City', required: true, index: true }) cityId: string;
+  @Prop({ type: String, ref: 'City', required: true, index: true })
+  cityId: string;
 }
 export const AttractionSchema = SchemaFactory.createForClass(Attraction);
 export type AttractionDocument = HydratedDocument<Attraction>;

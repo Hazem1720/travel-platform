@@ -9,13 +9,19 @@ import { User } from '../src/users/schemas/user.schema';
 
 // Same pipeline as main.ts: /api prefix, cookies, validation pipe, error filter.
 async function createApp(fakeDatabase: boolean): Promise<INestApplication> {
+  const fakeConnection = {
+    models: {},
+    model: () => ({}),
+    close: async () => undefined,
+  };
   let builder = Test.createTestingModule({ imports: [AppModule] });
   if (fakeDatabase) {
-    builder = builder
-      .overrideProvider(getConnectionToken())
-      .useValue({ models: {}, model: () => ({}), close: async () => undefined });
+    const override = builder.overrideProvider(getConnectionToken());
+    builder = override.useValue(fakeConnection);
   }
-  const app = (await builder.compile()).createNestApplication({ logger: false });
+  const app = (await builder.compile()).createNestApplication({
+    logger: false,
+  });
   configureApp(app);
   await app.init();
   return app;
@@ -37,12 +43,17 @@ describe('HTTP pipeline (no database)', () => {
   afterAll(async () => app?.close());
 
   it('serves the health check under /api', async () => {
-    await request(app.getHttpServer()).get('/api').expect(200).expect('Hello World!');
+    await request(app.getHttpServer())
+      .get('/api')
+      .expect(200)
+      .expect('Hello World!');
     await request(app.getHttpServer()).get('/').expect(404);
   });
 
   it('answers protected routes with 401 in the shared error format (GEN-13)', async () => {
-    const res = await request(app.getHttpServer()).get('/api/users/me').expect(401);
+    const res = await request(app.getHttpServer())
+      .get('/api/users/me')
+      .expect(401);
     expect(res.body).toEqual({
       statusCode: 401,
       error: 'Unauthorized',
@@ -55,7 +66,12 @@ describe('HTTP pipeline (no database)', () => {
   it('returns field-keyed validation errors (GEN-02)', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/auth/register')
-      .send({ name: '  ', email: 'not-an-email', password: 'short', acceptTerms: false })
+      .send({
+        name: '  ',
+        email: 'not-an-email',
+        password: 'short',
+        acceptTerms: false,
+      })
       .expect(400);
     expect(res.body.message).toBe('Validation failed');
     expect(Object.keys(res.body.details).sort()).toEqual([
@@ -81,7 +97,9 @@ describe('HTTP pipeline (no database)', () => {
   });
 
   it('logout always clears both cookies', async () => {
-    const res = await request(app.getHttpServer()).post('/api/auth/logout').expect(200);
+    const res = await request(app.getHttpServer())
+      .post('/api/auth/logout')
+      .expect(200);
     const cookies = cookiesOf(res).join(';');
     expect(cookies).toMatch(/access_token=;/);
     expect(cookies).toMatch(/refresh_token=;/);
@@ -111,16 +129,24 @@ describe('HTTP pipeline (no database)', () => {
 
     it('documents a success response on every route', () => {
       const missing = operations()
-        .filter(({ op }) => !Object.keys(op.responses).some((s) => s.startsWith('2')))
+        .filter(
+          ({ op }) => !Object.keys(op.responses).some((s) => s.startsWith('2')),
+        )
         .map(({ key }) => key);
       expect(missing).toEqual([]);
     });
 
     it('documents a 401 example on every protected route', () => {
       const missing = operations()
-        .filter(({ op }) => (op.security ?? []).some((s: object) => 'access_token' in s))
+        .filter(({ op }) =>
+          (op.security ?? []).some((s: object) => 'access_token' in s),
+        )
         .filter(({ key }) => key !== 'POST /api/auth/logout')
-        .filter(({ op }) => !op.responses['401']?.content?.['application/json']?.schema?.example)
+        .filter(
+          ({ op }) =>
+            !op.responses['401']?.content?.['application/json']?.schema
+              ?.example,
+        )
         .map(({ key }) => key);
       expect(missing).toEqual([]);
     });
@@ -147,7 +173,12 @@ withDatabase('auth flow (database: E2E_MONGODB_URI)', () => {
     const http = request(app.getHttpServer());
     await http
       .post('/api/auth/register')
-      .send({ name: 'E2E User', email, password: 'Passw0rd1', acceptTerms: true })
+      .send({
+        name: 'E2E User',
+        email,
+        password: 'Passw0rd1',
+        acceptTerms: true,
+      })
       .expect(201);
 
     const login = await request(app.getHttpServer())

@@ -3,3 +3,21 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Build and test output (backend and the Next.js frontend in Milestone 2)
+coverage/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
