@@ -86,3 +86,14 @@ Update chore/repo-hygiene for the latest develop: merge develop, resolve the req
 How the output was used:
 Kept the merge resolution. The tracker keeps #134 unchanged plus the 12 ID fixes, and was checked against the official sheet and against the xlsx member sheets. CODEOWNERS kept PR #135's single rule (my choice when asked), because Hazem is already covered. Ran npm run build, npm test, npm run test:e2e and the read-only eslint check before committing.
 ================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-04, HTL-18, ACC-11, FLT-23, GEN-11
+Prompt:
+Settle the 17 PROPOSED items in docs/api/conventions.md (approve all recommendations: USD platform currency, room-night locks, price snapshots, per-minute hold expiry with lazy checks, flight Completed after last arrival, 404 for other users' private resources, FL-/HT- booking references, and the ten items that restate official requirements) and merge them without waiting for Hazem.
+How the output was used:
+Approved all 17 as acting lead. Moved each decision into the matching section of conventions.md, removed the PROPOSED section, and added a decision record. Checked that every earlier rule is still present.
+================================================
