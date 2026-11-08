@@ -27,6 +27,16 @@ const MAX_FAILED_ATTEMPTS = 5;
 const LOCK_MINUTES = 15;
 const REFRESH_DAYS = 7;
 
+// MI-1: compared against when the email is unknown, so a missing account
+// takes as long as a wrong password and the timing reveals nothing.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-equaliser-not-a-password', 10);
+
+// cookie-parser turns "j:{...}" cookies into objects; only a string is a token.
+function readCookie(req: Request, name: string): string | null {
+  const value = req.cookies?.[name];
+  return typeof value === 'string' && value ? value : null;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -55,11 +65,12 @@ export class AuthService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  // ACC-19: httpOnly cookies. Secure and SameSite are set here too.
+  // ACC-19: httpOnly, Secure and SameSite cookies. Secure is on unless
+  // COOKIE_SECURE=false, which env validation refuses in production.
   private cookieBase() {
     return {
       httpOnly: true,
-      secure: this.config.get<string>('COOKIE_SECURE') === 'true',
+      secure: this.config.get<string>('COOKIE_SECURE') !== 'false',
       sameSite: 'lax' as const,
     };
   }
@@ -70,8 +81,10 @@ export class AuthService {
   }
 
   // Issues a short-lived access token and a rotating refresh token.
-  private async startSession(res: Response, userId: string) {
-    const accessToken = await this.jwt.signAsync({ sub: userId });
+  // The access token carries the user's sessionVersion ("sv"), which the
+  // guard compares on every request (ACC-06).
+  private async startSession(res: Response, userId: string, sessionVersion: number) {
+    const accessToken = await this.jwt.signAsync({ sub: userId, sv: sessionVersion });
     const { exp } = this.jwt.decode(accessToken) as { exp: number };
     const refreshToken = randomBytes(48).toString('hex');
 
@@ -119,7 +132,10 @@ export class AuthService {
     const email = dto.email.toLowerCase().trim();
     const user = await this.userModel.findOne({ email }).select('+passwordHash');
     const invalid = new UnauthorizedException('Invalid email or password');
-    if (!user) throw invalid;
+    if (!user) {
+      await bcrypt.compare(dto.password, DUMMY_PASSWORD_HASH);
+      throw invalid;
+    }
 
     if (user.lockUntil && user.lockUntil.getTime() > Date.now()) {
       throw new HttpException('Account temporarily locked. Try again later.', 423);
@@ -127,12 +143,7 @@ export class AuthService {
 
     const ok = await bcrypt.compare(dto.password, user.passwordHash);
     if (!ok) {
-      user.failedLoginAttempts += 1;
-      if (user.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
-        user.lockUntil = new Date(Date.now() + LOCK_MINUTES * 60 * 1000);
-        user.failedLoginAttempts = 0;
-      }
-      await user.save();
+      await this.recordFailedLogin(user._id);
       throw invalid;
     }
 
@@ -140,16 +151,38 @@ export class AuthService {
       throw new ForbiddenException(`Account is ${user.status}`);
     }
 
-    user.failedLoginAttempts = 0;
-    user.lockUntil = null;
-    await user.save();
+    await this.userModel.updateOne(
+      { _id: user._id },
+      { $set: { failedLoginAttempts: 0, lockUntil: null } },
+    );
 
-    await this.startSession(res, String(user._id));
+    await this.startSession(res, String(user._id), user.sessionVersion ?? 0);
     return this.toProfile(user);
   }
 
+  // ACC-05: the counter is incremented atomically, so parallel wrong guesses
+  // cannot all read the same old value and slip past the limit.
+  private async recordFailedLogin(userId: unknown) {
+    const updated = await this.userModel.findOneAndUpdate(
+      { _id: userId },
+      { $inc: { failedLoginAttempts: 1 } },
+      { new: true },
+    );
+    if (updated && updated.failedLoginAttempts >= MAX_FAILED_ATTEMPTS) {
+      await this.userModel.updateOne(
+        { _id: userId, failedLoginAttempts: { $gte: MAX_FAILED_ATTEMPTS } },
+        {
+          $set: {
+            lockUntil: new Date(Date.now() + LOCK_MINUTES * 60 * 1000),
+            failedLoginAttempts: 0,
+          },
+        },
+      );
+    }
+  }
+
   async refresh(req: Request, res: Response) {
-    const token = req.cookies?.['refresh_token'];
+    const token = readCookie(req, 'refresh_token');
     if (!token) throw new UnauthorizedException('No refresh token');
 
     const user = await this.userModel
@@ -160,6 +193,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid session');
     }
     if (user.status !== AccountStatus.ACTIVE) {
+      this.clearCookies(res);
       throw new ForbiddenException(`Account is ${user.status}`);
     }
 
@@ -171,17 +205,33 @@ export class AuthService {
       throw new UnauthorizedException('Session expired. Please log in again.');
     }
 
-    await this.startSession(res, String(user._id)); // rotates the refresh token
+    // Rotates the refresh token; the session version stays the same.
+    await this.startSession(res, String(user._id), user.sessionVersion ?? 0);
     return this.toProfile(user);
   }
 
+  // ACC-06: revokes the refresh token and every access token already issued.
+  // Logout is a public route, so the user is found from either cookie.
   async logout(req: Request, res: Response) {
-    const token = req.cookies?.['refresh_token'];
-    if (token) {
-      await this.userModel.updateOne(
-        { refreshTokenHash: this.hash(token) },
-        { $set: { refreshTokenHash: null } },
+    const revoke = { $set: { refreshTokenHash: null }, $inc: { sessionVersion: 1 } };
+    const refreshToken = readCookie(req, 'refresh_token');
+    const accessToken = readCookie(req, 'access_token');
+
+    let revoked = false;
+    if (refreshToken) {
+      const r = await this.userModel.updateOne(
+        { refreshTokenHash: this.hash(refreshToken) },
+        revoke,
       );
+      revoked = r.modifiedCount > 0;
+    }
+    if (!revoked && accessToken) {
+      const payload = await this.jwt
+        .verifyAsync<{ sub: string }>(accessToken)
+        .catch(() => null);
+      if (payload?.sub) {
+        await this.userModel.updateOne({ _id: payload.sub }, revoke);
+      }
     }
     this.clearCookies(res);
     return { message: 'Logged out' };
@@ -203,7 +253,8 @@ export class AuthService {
     return this.toProfile(user);
   }
 
-  async changePassword(userId: string, dto: ChangePasswordDto) {
+  // ACC-08: every other session is revoked; this device gets a fresh session.
+  async changePassword(userId: string, dto: ChangePasswordDto, res: Response) {
     const user = await this.userModel.findById(userId).select('+passwordHash');
     if (!user) throw new NotFoundException('User not found');
     if (!(await bcrypt.compare(dto.currentPassword, user.passwordHash))) {
@@ -214,7 +265,10 @@ export class AuthService {
     }
     user.passwordHash = await bcrypt.hash(dto.newPassword, 10);
     user.mustChangePassword = false;
+    user.refreshTokenHash = null;
+    user.sessionVersion = (user.sessionVersion ?? 0) + 1;
     await user.save();
+    await this.startSession(res, String(user._id), user.sessionVersion);
     return { message: 'Password changed' };
   }
 
@@ -222,8 +276,8 @@ export class AuthService {
     // ACC-12: blocked while the user has upcoming Confirmed bookings.
     // TODO: add that check once the booking modules exist.
     await this.userModel.findByIdAndUpdate(userId, {
-      status: AccountStatus.DEACTIVATED,
-      refreshTokenHash: null,
+      $set: { status: AccountStatus.DEACTIVATED, refreshTokenHash: null },
+      $inc: { sessionVersion: 1 },
     });
     return { message: 'Account deactivated' };
   }

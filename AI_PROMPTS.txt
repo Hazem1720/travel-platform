@@ -14,6 +14,39 @@ Used the team split, setup steps and code for the foundation and auth modules, a
 Date: 2026-11-08
 Student: Mohamad Amr Khallaf
 Tool: Claude Code
+Related Requirement: GEN-12, FLT-02, ACC-18, ACC-01
+Prompt:
+Fix audit findings CR-1, MI-5 and MI-7 on branch fix/GEN-12-seed-official-data: replace the seed CSVs with the official datasets exactly, make the airport time zone required, remove FALLBACK_TIME_ZONES, add npm seed scripts, and make the admin seed enforce the password rule.
+How the output was used:
+Kept the generated CSVs (copied from Mock Data.xlsx), the seed validation module and its unit tests, the seed-admin changes and the npm scripts. Checked the CSVs against the official sheets, then ran npm run build and npm test (all passing) before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-13, ACC-11
+Prompt:
+Fix audit finding CR-4 on branch fix/GEN-13-global-auth-guard: register JwtAuthGuard and RolesGuard as global APP_GUARDs, add a @Public() decorator, mark register/login/refresh public, and add a test that fails if a route is neither @Public nor guarded.
+How the output was used:
+Kept the decorator, guard changes, global registration and the route-protection test. Also made logout and the GET / health check public. Checked that the test fails when the global JwtAuthGuard is removed, then ran npm run build and npm test (all passing) before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-04, ACC-05, ACC-06, ACC-08, ACC-19, GEN-13
+Prompt:
+Fix audit findings IM-5, IM-6, IM-7, IM-8, MI-1 and MI-2 on branch fix/ACC-04-auth-hardening: Secure cookies by default, env validation schema, 15-minute access token with a sessionVersion revoked on logout and password change, atomic lockout counter, dummy-hash login timing, and cookie type checks. Do not do MI-4.
+How the output was used:
+Kept the env validation, cookie, lockout, timing and sessionVersion changes and their unit tests, split into one commit per finding. MI-4 (per-device sessions) was left as a follow-up. Ran npm run build and npm test (all passing) before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
 Related Requirement: GEN-02, GEN-05, GEN-12, ACC-09
 Prompt:
 Fix audit findings MI-3, IM-10 and IM-11 on branch fix/GEN-02-validation-and-pagination: map Mongoose errors to 400, return field-keyed validation details, add a supported-currency list, and cap the page size at 10.
