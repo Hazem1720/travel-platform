@@ -135,7 +135,6 @@ describe('route protection (GEN-13)', () => {
     let app: INestApplication;
 
     beforeAll(async () => {
-      process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
       // The real AppModule with only the database replaced, so the real
       // global guards and controllers are exercised.
       const fakeModel = {};

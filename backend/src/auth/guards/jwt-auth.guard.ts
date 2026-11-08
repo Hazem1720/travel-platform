@@ -34,11 +34,12 @@ export class JwtAuthGuard implements CanActivate {
 
     const req = context.switchToHttp().getRequest();
     const token = req.cookies?.['access_token'];
-    if (!token) {
+    // cookie-parser turns "j:{...}" cookies into objects; only a string is a token.
+    if (typeof token !== 'string' || !token) {
       throw new UnauthorizedException('Authentication required');
     }
 
-    let payload: { sub: string };
+    let payload: { sub: string; sv?: number };
     try {
       payload = await this.jwt.verifyAsync(token);
     } catch {
@@ -48,6 +49,10 @@ export class JwtAuthGuard implements CanActivate {
     const user = await this.userModel.findById(payload.sub).lean();
     if (!user) {
       throw new UnauthorizedException('Account not found');
+    }
+    // ACC-06: tokens issued before logout or a password change are revoked.
+    if (payload.sv !== (user.sessionVersion ?? 0)) {
+      throw new UnauthorizedException('Session expired. Please log in again.');
     }
     if (user.status !== AccountStatus.ACTIVE) {
       throw new ForbiddenException(`Account is ${user.status}`);

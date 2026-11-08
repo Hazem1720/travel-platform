@@ -59,8 +59,12 @@ export class AuthController {
   @AllowPasswordChange()
   @ApiCookieAuth('access_token')
   @ApiOperation({ summary: 'Change my password (ACC-08)' })
-  changePassword(@CurrentUser() user: AuthUser, @Body() dto: ChangePasswordDto) {
-    return this.auth.changePassword(user.id, dto);
+  changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    return this.auth.changePassword(user.id, dto, res);
   }
 
   @Get('me')
