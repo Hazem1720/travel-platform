@@ -207,6 +207,44 @@ describe('AuthService', () => {
     });
   });
 
+  describe('refresh (ACC-06 idle expiry)', () => {
+    it('ends a session idle for more than 30 minutes', async () => {
+      const { service, userModel } = makeService();
+      const user = storedUser({
+        refreshTokenHash: 'h',
+        lastActivityAt: new Date(Date.now() - 31 * 60 * 1000),
+      });
+      userModel.findOne.mockReturnValue(withSelect(user));
+      const { res, cleared } = fakeResponse();
+
+      await expect(
+        service.refresh(fakeRequest({ refresh_token: 'tok' }), res),
+      ).rejects.toThrow('Session expired. Please log in again.');
+      expect(user.refreshTokenHash).toBeNull();
+      expect(user.save).toHaveBeenCalled();
+      expect(cleared).toEqual(['access_token', 'refresh_token']);
+    });
+
+    it('rotates the refresh token for an active session', async () => {
+      const { service, userModel } = makeService();
+      const user = storedUser({ lastActivityAt: new Date(Date.now() - 5 * 60 * 1000) });
+      userModel.findOne.mockReturnValue(withSelect(user));
+      const { res, cookies } = fakeResponse();
+
+      await service.refresh(fakeRequest({ refresh_token: 'old-token' }), res);
+      expect(cookies.refresh_token.value).not.toBe('old-token');
+      expect(cookies.access_token.value).toBeTruthy();
+    });
+
+    it('treats a missing lastActivityAt as expired', async () => {
+      const { service, userModel } = makeService();
+      userModel.findOne.mockReturnValue(withSelect(storedUser({ lastActivityAt: null })));
+      await expect(
+        service.refresh(fakeRequest({ refresh_token: 'tok' }), fakeResponse().res),
+      ).rejects.toThrow('Session expired');
+    });
+  });
+
   describe('refresh', () => {
     it('answers 401, not 500, for a non-string refresh cookie (MI-2)', async () => {
       const { service, userModel } = makeService();

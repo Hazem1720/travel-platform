@@ -53,3 +53,14 @@ Fix audit findings MI-3, IM-10 and IM-11 on branch fix/GEN-02-validation-and-pag
 How the output was used:
 Kept the validation pipe factory, the filter changes, the currency list (taken from the official countries dataset) and the page size cap, with unit tests for each. Ran npm run build and npm test (all passing) before committing.
 ================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-01, ACC-04, ACC-06, ACC-13, ACC-19, GEN-13
+Prompt:
+Fix audit finding IM-12 on branch test/ACC-auth-tests-and-swagger: unit tests for lockout, idle expiry, password rule, assertOwnsProvider and the exception filter; make the e2e test use the main.ts bootstrap; add @ApiResponse examples on all existing routes; add cookie auth in Swagger.
+How the output was used:
+Kept the shared app setup, the Swagger response examples and cookie security schemes (which also fixed a scheme-name mismatch), the e2e suite and the new unit tests. Ran npm run build, npm test and npm run test:e2e, including the database flow against a local throwaway MongoDB, all passing, before committing.
+================================================
