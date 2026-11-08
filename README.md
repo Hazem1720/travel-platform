@@ -44,10 +44,12 @@ Some networks block the DNS lookup used by `mongodb+srv://` strings. In MongoDB 
 
 ### Seed the database (only needed once for the shared database)
 
-        npx ts-node src/seed/seed-reference.ts
-        npx ts-node src/seed/seed-admin.ts
+        npm run seed:reference
+        npm run seed:admin
 
-The admin seed needs `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in your local `.env`.
+`seed:reference` loads the official datasets in `backend/seed-data` (countries, cities, airports, attractions). It checks every file first and writes nothing if a record is invalid. It is safe to run again. Add `-- --prune` to also delete records that are no longer in the files.
+
+`seed:admin` needs `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `backend/.env`. The password must follow the account rule (at least 8 characters, a letter and a digit). Running it again never changes an existing admin's password unless you add `-- --reset-password`.
 
 ## Git workflow
 
