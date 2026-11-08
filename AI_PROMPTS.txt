@@ -14,6 +14,17 @@ Used the team split, setup steps and code for the foundation and auth modules, a
 Date: 2026-11-08
 Student: Mohamad Amr Khallaf
 Tool: Claude Code
+Related Requirement: GEN-12, FLT-02, ACC-18, ACC-01
+Prompt:
+Fix audit findings CR-1, MI-5 and MI-7 on branch fix/GEN-12-seed-official-data: replace the seed CSVs with the official datasets exactly, make the airport time zone required, remove FALLBACK_TIME_ZONES, add npm seed scripts, and make the admin seed enforce the password rule.
+How the output was used:
+Kept the generated CSVs (copied from Mock Data.xlsx), the seed validation module and its unit tests, the seed-admin changes and the npm scripts. Checked the CSVs against the official sheets, then ran npm run build and npm test (all passing) before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
 Related Requirement: GEN-13, ACC-11
 Prompt:
 Fix audit finding CR-4 on branch fix/GEN-13-global-auth-guard: register JwtAuthGuard and RolesGuard as global APP_GUARDs, add a @Public() decorator, mark register/login/refresh public, and add a test that fails if a route is neither @Public nor guarded.
