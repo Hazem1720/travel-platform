@@ -1,5 +1,6 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersController } from '../users/users.controller';
@@ -23,7 +24,15 @@ import { RolesGuard } from './guards/roles.guard';
     }),
   ],
   controllers: [AuthController, UsersController],
-  providers: [AuthService, JwtAuthGuard, RolesGuard],
+  providers: [
+    AuthService,
+    JwtAuthGuard,
+    RolesGuard,
+    // GEN-13: default-deny. Every route needs a session unless it is @Public(),
+    // and @Roles() is checked on every route. Order matters: JWT runs first.
+    { provide: APP_GUARD, useExisting: JwtAuthGuard },
+    { provide: APP_GUARD, useExisting: RolesGuard },
+  ],
   exports: [JwtModule, MongooseModule, JwtAuthGuard, RolesGuard, AuthService],
 })
 export class AuthModule {}

@@ -11,6 +11,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { SESSION_IDLE_MS } from '../../common/constants/session.constants';
 import { ALLOW_PASSWORD_CHANGE_KEY } from '../../common/decorators/allow-password-change.decorator';
+import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator';
 import { AccountStatus } from '../../common/enums/role.enum';
 import { AuthUser } from '../../common/types/auth-user.type';
 import { User, UserDocument } from '../../users/schemas/user.schema';
@@ -24,6 +25,13 @@ export class JwtAuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    // GEN-13: registered globally (APP_GUARD), so only @Public() routes skip it.
+    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (isPublic) return true;
+
     const req = context.switchToHttp().getRequest();
     const token = req.cookies?.['access_token'];
     if (!token) {
