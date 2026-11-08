@@ -1,19 +1,2 @@
-/backend/src/auth/ @Hazem1720
-/backend/src/users/ @Hazem1720
-/backend/src/common/ @Hazem1720
-/backend/src/reference/ @Hazem1720
-/backend/src/seed/ @Hazem1720
-/backend/src/admin/ @hasanmsaeid
-/backend/src/audit/ @hasanmsaeid
-/backend/src/notifications/ @hasanmsaeid
-/backend/src/uploads/ @hasanmsaeid
-/backend/src/airlines/ @hasanmsaeid
-/backend/src/flights/ @hasanmsaeid
-/backend/src/flight-bookings/ @mostafaabuelabbas-wq
-/backend/src/hotels/ @rawdawaffaey
-/backend/src/hotel-bookings/ @mohamadkhallaf
-/backend/src/payments/ @mohamadkhallaf
-/backend/src/itineraries/ @ZiadMoharam6
-/backend/src/fx/ @ZiadMoharam6
-/backend/src/blog/ @MohamedHafez16002668
-* @Hazem1720
+# Every change needs approval from Hazem or Memo
+* @Hazem1720 @mohamadkhallaf
