@@ -75,3 +75,14 @@ Fix audit findings IM-1, IM-4, IM-14, IM-15, IM-19, MI-6, MI-9, MI-11, MI-12 and
 How the output was used:
 Kept all changes, one commit per finding. The tracker was checked against the official sheet (all 115 rows match). The official PDF and sheets were not committed because the repository is public; that is left to the team leader. Ran npm run build, npm test, npm run test:e2e and the read-only eslint check (0 problems) before committing.
 ================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-18, GEN-12, FLT-01, FLT-30
+Prompt:
+Update chore/repo-hygiene for the latest develop: merge develop, resolve the requirements-tracker.csv/.xlsx conflict by keeping Hazem's PR #134 owner changes and re-applying only the NEW-xx to official ID fixes, update CODEOWNERS for airlines/ and flights/, run build and tests, commit, and push only chore/repo-hygiene.
+How the output was used:
+Kept the merge resolution. The tracker keeps #134 unchanged plus the 12 ID fixes, and was checked against the official sheet and against the xlsx member sheets. CODEOWNERS kept PR #135's single rule (my choice when asked), because Hazem is already covered. Ran npm run build, npm test, npm run test:e2e and the read-only eslint check before committing.
+================================================
