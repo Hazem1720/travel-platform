@@ -108,3 +108,14 @@ Prompt:
 How the output was used:
 Ran the non-breaking npm audit fix, then added package.json overrides that pin patched releases (same major) of the libraries Nest 10 locks: express, body-parser, qs, multer, lodash, file-type, js-yaml (swagger) and uuid (schedule). Production audit went from 18 (1 critical, 9 high) to 5 moderate, all one @nestjs/core SSE advisory that does not apply (no SSE endpoints) and needs Nest 12. Did not run npm audit fix --force. Checked with build, unit tests, e2e, lint and live auth checks against a local DB.
 ================================================
+
+================================================
+Date: 2026-11-09
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-11, HTL-12, HTL-15
+Prompt:
+Rebalance the work: Hasan is the lightest after the flight items moved to Hazem and Rawda is one of the heaviest. Move the hotel search group off Rawda, giving some to me (Memo) and some to Hasan.
+How the output was used:
+Claude weighed each member's remaining M1 load by the Complexity column and proposed HTL-11 to Memo (it shares the room-availability query with HTL-16/HTL-18) and HTL-12, HTL-15 to Hasan. Kept that split. Updated the tracker CSV, the Tracker sheet, the per-member sheets and the Summary cache in the xlsx, plus the owner label, assignee and Owner line of issues #62, #63, #64. Pending Hazem's approval in the PR.
+================================================
