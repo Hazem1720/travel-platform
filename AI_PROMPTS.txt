@@ -97,3 +97,14 @@ Settle the 17 PROPOSED items in docs/api/conventions.md (approve all recommendat
 How the output was used:
 Approved all 17 as acting lead. Moved each decision into the matching section of conventions.md, removed the PROPOSED section, and added a decision record. Checked that every earlier rule is still present.
 ================================================
+
+================================================
+Date: 2026-11-09
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-13
+Prompt:
+(Pasted the full `npm audit` output for backend/: 50 vulnerabilities, 2 critical, 19 high.)
+How the output was used:
+Ran the non-breaking npm audit fix, then added package.json overrides that pin patched releases (same major) of the libraries Nest 10 locks: express, body-parser, qs, multer, lodash, file-type, js-yaml (swagger) and uuid (schedule). Production audit went from 18 (1 critical, 9 high) to 5 moderate, all one @nestjs/core SSE advisory that does not apply (no SSE endpoints) and needs Nest 12. Did not run npm audit fix --force. Checked with build, unit tests, e2e, lint and live auth checks against a local DB.
+================================================
