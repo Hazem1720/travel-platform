@@ -119,3 +119,14 @@ Rebalance the work: Hasan is the lightest after the flight items moved to Hazem 
 How the output was used:
 Claude weighed each member's remaining M1 load by the Complexity column and proposed HTL-11 to Memo (it shares the room-availability query with HTL-16/HTL-18) and HTL-12, HTL-15 to Hasan. Kept that split. Updated the tracker CSV, the Tracker sheet, the per-member sheets and the Summary cache in the xlsx, plus the owner label, assignee and Owner line of issues #62, #63, #64. Pending Hazem's approval in the PR.
 ================================================
+
+================================================
+Date: 2026-11-10
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-22, ACC-02, ACC-07, FLT-27, FLT-28, GEN-01-B, BON-01, ITN-27, ITN-28, BLG-13, BON-02
+Prompt:
+Modify the work distribution: move HTL-22 to Aabsy and give all the bonus items to me (Memo).
+How the output was used:
+Claude checked the dependency column for the moved items: HTL-22 reads the hotel bookings from HTL-17, so it fits with the booking-side work. Claude updated requirements-tracker.csv/.xlsx (Owner column, member sheets and Summary counts) and the owner labels, assignees and Owner lines on the GitHub issues, then verified the xlsx sheets match the csv. I chose the split; Claude made the edits.
+================================================
