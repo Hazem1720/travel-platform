@@ -126,7 +126,7 @@ Student: Mohamad Amr Khallaf
 Tool: Claude Code
 Related Requirement: HTL-22, ACC-02, ACC-07, FLT-27, FLT-28, GEN-01-B, BON-01, ITN-27, ITN-28, BLG-13, BON-02
 Prompt:
-Rawda and Hafez should each do all of their work in one go (not at the same time as each other) without stopping to wait for someone. Give all the bonus items to me (Memo); I won't take extra mandatory work.
+Modify the work distribution: move HTL-22 to Aabsy and give all the bonus items to me (Memo).
 How the output was used:
-Claude checked each member's cross-owner dependencies in the tracker. Rawda's HTL-22 waits on Memo's HTL-17, so it moved to Aabsy; all 11 bonus items moved to Memo. Rawda now only waits on Hasan's GEN-08 before starting, and Hafez only on GEN-08 and Moharm's ITN-20 (moved to the start of Moharm's order in the team plan). Updated requirements-tracker.csv/.xlsx (Owner column, member sheets and Summary counts) and the owner labels and assignees on the GitHub issues. I chose the split; Claude made the edits and verified the xlsx sheets match the csv.
+Claude checked the dependency column for the moved items: HTL-22 reads the hotel bookings from HTL-17, so it fits with the booking-side work. Claude updated requirements-tracker.csv/.xlsx (Owner column, member sheets and Summary counts) and the owner labels, assignees and Owner lines on the GitHub issues, then verified the xlsx sheets match the csv. I chose the split; Claude made the edits.
 ================================================
