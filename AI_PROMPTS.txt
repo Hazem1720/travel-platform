@@ -130,3 +130,14 @@ Modify the work distribution: move HTL-22 to Aabsy and give all the bonus items 
 How the output was used:
 Claude checked the dependency column for the moved items: HTL-22 reads the hotel bookings from HTL-17, so it fits with the booking-side work. Claude updated requirements-tracker.csv/.xlsx (Owner column, member sheets and Summary counts) and the owner labels, assignees and Owner lines on the GitHub issues, then verified the xlsx sheets match the csv. I chose the split; Claude made the edits.
 ================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-11
+Prompt:
+Gave Claude the team plan (Milestone 1) and the project description and asked it to do my Phase 1 (foundations) part only, without touching anyone else's work: start with the ACC-11 assertOwner() helper in common/helpers.
+How the output was used:
+Claude wrote assertOwner(resourceUserId, user, message) that throws 404 for anyone but the owner (no admin or moderator exception, they use ACC-17/FLT-29/HTL-22), plus isOwner() for query filters, with unit tests for the owner, another user, ObjectId vs string ids and missing owners. I reviewed the 404 rule against conventions.md before merging.
+================================================
