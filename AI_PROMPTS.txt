@@ -130,3 +130,14 @@ Modify the work distribution: move HTL-22 to Aabsy and give all the bonus items 
 How the output was used:
 Claude checked the dependency column for the moved items: HTL-22 reads the hotel bookings from HTL-17, so it fits with the booking-side work. Claude updated requirements-tracker.csv/.xlsx (Owner column, member sheets and Summary counts) and the owner labels, assignees and Owner lines on the GitHub issues, then verified the xlsx sheets match the csv. I chose the split; Claude made the edits.
 ================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-09, HTL-10, FLT-26, PAY-03
+Prompt:
+Phase 1 of my team-plan chapter: ship the shared cancellation-tier helper in common/helpers/cancellation-tiers.ts (CancellationTierDto, a unique daysBefore check, refundPercent(tiers, daysRemaining)) so Rawda, Memo and Aabsy can reuse it. The PUT /airlines/:id/cancellation-policy route comes later with the airline work.
+How the output was used:
+Claude wrote CancellationTierDto, CancellationPolicyDto with a @UniqueDaysBefore() validator, a CancellationTier sub-schema for the Airline and Hotel schemas, refundPercent() and refundAmount() in integer cents, with unit tests for the plan's cases (tiers 30/7/0: 45->100, 30->100, 10->50, 3->0, no tiers->0; duplicate daysBefore, refundPercent 101 or -1 and daysBefore 1.5 rejected). I checked the tier rule against the official FLT-09 text.
+================================================
