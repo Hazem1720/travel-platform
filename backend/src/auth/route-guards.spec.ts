@@ -24,6 +24,7 @@ const PUBLIC_ROUTES = [
   'POST /auth/login',
   'POST /auth/refresh',
   'POST /auth/logout',
+  'GET /airlines/:id',
 ];
 
 interface Route {

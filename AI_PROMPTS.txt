@@ -141,3 +141,14 @@ Phase 1 of my team-plan chapter: ship the shared cancellation-tier helper in com
 How the output was used:
 Claude wrote CancellationTierDto, CancellationPolicyDto with a @UniqueDaysBefore() validator, a CancellationTier sub-schema for the Airline and Hotel schemas, refundPercent() and refundAmount() in integer cents, with unit tests for the plan's cases (tiers 30/7/0: 45->100, 30->100, 10->50, 3->0, no tiers->0; duplicate daysBefore, refundPercent 101 or -1 and daysBefore 1.5 rejected). I checked the tier rule against the official FLT-09 text.
 ================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-01
+Prompt:
+Phase 1 of my team-plan chapter: FLT-01, a new src/airlines module. Admin creates an airline (name, unique uppercase code), anyone can view it, and only the moderator assigned to that airline edits it (assertOwnsProvider). Schema per conventions.md: name, code, logo, isActive, extraBagPrice, maxExtraBags, cancellationTiers. Ship early because Hasan's ACC-13 needs real airline ids.
+How the output was used:
+Claude wrote the Airline schema (reusing the shared CancellationTier sub-schema), CreateAirlineDto/UpdateAirlineDto, AirlinesService (exported with the model for ACC-13, ACC-15 and FLT-11) and the controller with POST (admin), GET :id (public) and PATCH :id (own moderator), Swagger examples and unit tests. The logo upload route waits for Hasan's GEN-08 upload utility and comes in a follow-up PR. I tested the routes in Swagger with TEST data.
+================================================
