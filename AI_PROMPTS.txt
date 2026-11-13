@@ -130,3 +130,14 @@ Modify the work distribution: move HTL-22 to Aabsy and give all the bonus items 
 How the output was used:
 Claude checked the dependency column for the moved items: HTL-22 reads the hotel bookings from HTL-17, so it fits with the booking-side work. Claude updated requirements-tracker.csv/.xlsx (Owner column, member sheets and Summary counts) and the owner labels, assignees and Owner lines on the GitHub issues, then verified the xlsx sheets match the csv. I chose the split; Claude made the edits.
 ================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-06, FLT-03, FLT-11, FLT-26
+Prompt:
+Phase 1 of my team-plan chapter: ship the shared time-zone helper common/helpers/time-zone.ts with localToUtc(local, timeZone) and utcToLocal(date, timeZone), handling daylight saving, so Aabsy can build search, details and the e-ticket against it.
+How the output was used:
+The plan suggested luxon, but package installs were not possible in the session, so Claude used the Intl API built into Node instead (no new dependency, no lock-file change). It added localToUtc (400 for malformed input, unknown zones and times skipped by a DST change; first occurrence for repeated times), utcToLocal, utcOffset, toZonedTime for flight responses, localDayRangeUtc for search by local date, and localDaysUntil for refund tiers, with unit tests for Cairo, Dubai and Berlin including the March and October DST changes. I checked the results against the plan's test cases.
+================================================
