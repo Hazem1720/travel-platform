@@ -130,3 +130,14 @@ Modify the work distribution: move HTL-22 to Aabsy and give all the bonus items 
 How the output was used:
 Claude checked the dependency column for the moved items: HTL-22 reads the hotel bookings from HTL-17, so it fits with the booking-side work. Claude updated requirements-tracker.csv/.xlsx (Owner column, member sheets and Summary counts) and the owner labels, assignees and Owner lines on the GitHub issues, then verified the xlsx sheets match the csv. I chose the split; Claude made the edits.
 ================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-02
+Prompt:
+Phase 1 of my team-plan chapter: FLT-02, a public paginated GET /api/airports with optional ?search over the seeded airports (IATA code, name, city, country, IANA time zone), plus an exported assertAirportExists(code) for FLT-03 and Aabsy's search.
+How the output was used:
+Claude added src/airports (controller, service, DTOs, module) reading the global reference models, with city and country names joined in, search escaped as literal text, sort by code or name, and assertAirportExists() returning the airport (with its time zone) or 400. Registered the module in app.module.ts and added 'GET /airports' to PUBLIC_ROUTES. Unit tests cover the mapping, search, sorting, pagination and unknown codes; I tested the route in Swagger.
+================================================
