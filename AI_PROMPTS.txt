@@ -135,21 +135,6 @@ Claude checked the dependency column for the moved items: HTL-22 reads the hotel
 Date: 2026-11-14
 Student: Hazem Ahmed
 Tool: Claude Code
-Related Requirement: FLT-02
-Prompt:
-Phase 1 of my team-plan chapter: FLT-02, a public paginated GET /api/airports with optional ?search over the seeded airports (IATA code, name, city, country, IANA time zone), plus an exported assertAirportExists(code) for FLT-03 and Aabsy's search.
-How the output was used:
-Claude added src/airports (controller, service, DTOs, module) reading the global reference models, with city and country names joined in, search escaped as literal text, sort by code or name, and assertAirportExists() returning the airport (with its time zone) or 400. Registered the module in app.module.ts and added 'GET /airports' to PUBLIC_ROUTES. Unit tests cover the mapping, search, sorting, pagination and unknown codes; I tested the route in Swagger.
-Related Requirement: GEN-06, FLT-03, FLT-11, FLT-26
-Prompt:
-Phase 1 of my team-plan chapter: ship the shared time-zone helper common/helpers/time-zone.ts with localToUtc(local, timeZone) and utcToLocal(date, timeZone), handling daylight saving, so Aabsy can build search, details and the e-ticket against it.
-How the output was used:
-The plan suggested luxon, but package installs were not possible in the session, so Claude used the Intl API built into Node instead (no new dependency, no lock-file change). It added localToUtc (400 for malformed input, unknown zones and times skipped by a DST change; first occurrence for repeated times), utcToLocal, utcOffset, toZonedTime for flight responses, localDayRangeUtc for search by local date, and localDaysUntil for refund tiers, with unit tests for Cairo, Dubai and Berlin including the March and October DST changes. I checked the results against the plan's test cases.
-Related Requirement: FLT-09, HTL-10, FLT-26, PAY-03
-Prompt:
-Phase 1 of my team-plan chapter: ship the shared cancellation-tier helper in common/helpers/cancellation-tiers.ts (CancellationTierDto, a unique daysBefore check, refundPercent(tiers, daysRemaining)) so Rawda, Memo and Aabsy can reuse it. The PUT /airlines/:id/cancellation-policy route comes later with the airline work.
-How the output was used:
-Claude wrote CancellationTierDto, CancellationPolicyDto with a @UniqueDaysBefore() validator, a CancellationTier sub-schema for the Airline and Hotel schemas, refundPercent() and refundAmount() in integer cents, with unit tests for the plan's cases (tiers 30/7/0: 45->100, 30->100, 10->50, 3->0, no tiers->0; duplicate daysBefore, refundPercent 101 or -1 and daysBefore 1.5 rejected). I checked the tier rule against the official FLT-09 text.
 Related Requirement: ACC-11
 Prompt:
 Gave Claude the team plan (Milestone 1) and the project description and asked it to do my Phase 1 (foundations) part only, without touching anyone else's work: start with the ACC-11 assertOwner() helper in common/helpers.
@@ -161,9 +146,53 @@ Claude wrote assertOwner(resourceUserId, user, message) that throws 404 for anyo
 Date: 2026-11-14
 Student: Hazem Ahmed
 Tool: Claude Code
+Related Requirement: FLT-09, HTL-10, FLT-26, PAY-03
+Prompt:
+Phase 1 of my team-plan chapter: ship the shared cancellation-tier helper in common/helpers/cancellation-tiers.ts (CancellationTierDto, a unique daysBefore check, refundPercent(tiers, daysRemaining)) so Rawda, Memo and Aabsy can reuse it. The PUT /airlines/:id/cancellation-policy route comes later with the airline work.
+How the output was used:
+Claude wrote CancellationTierDto, CancellationPolicyDto with a @UniqueDaysBefore() validator, a CancellationTier sub-schema for the Airline and Hotel schemas, refundPercent() and refundAmount() in integer cents, with unit tests for the plan's cases (tiers 30/7/0: 45->100, 30->100, 10->50, 3->0, no tiers->0; duplicate daysBefore, refundPercent 101 or -1 and daysBefore 1.5 rejected). I checked the tier rule against the official FLT-09 text.
+================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-06, FLT-03, FLT-11, FLT-26
+Prompt:
+Phase 1 of my team-plan chapter: ship the shared time-zone helper common/helpers/time-zone.ts with localToUtc(local, timeZone) and utcToLocal(date, timeZone), handling daylight saving, so Aabsy can build search, details and the e-ticket against it.
+How the output was used:
+The plan suggested luxon, but package installs were not possible in the session, so Claude used the Intl API built into Node instead (no new dependency, no lock-file change). It added localToUtc (400 for malformed input, unknown zones and times skipped by a DST change; first occurrence for repeated times), utcToLocal, utcOffset, toZonedTime for flight responses, localDayRangeUtc for search by local date, and localDaysUntil for refund tiers, with unit tests for Cairo, Dubai and Berlin including the March and October DST changes. I checked the results against the plan's test cases.
+================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-02
+Prompt:
+Phase 1 of my team-plan chapter: FLT-02, a public paginated GET /api/airports with optional ?search over the seeded airports (IATA code, name, city, country, IANA time zone), plus an exported assertAirportExists(code) for FLT-03 and Aabsy's search.
+How the output was used:
+Claude added src/airports (controller, service, DTOs, module) reading the global reference models, with city and country names joined in, search escaped as literal text, sort by code or name, and assertAirportExists() returning the airport (with its time zone) or 400. Registered the module in app.module.ts and added 'GET /airports' to PUBLIC_ROUTES. Unit tests cover the mapping, search, sorting, pagination and unknown codes; I tested the route in Swagger.
+================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
 Related Requirement: FLT-01
 Prompt:
 Phase 1 of my team-plan chapter: FLT-01, a new src/airlines module. Admin creates an airline (name, unique uppercase code), anyone can view it, and only the moderator assigned to that airline edits it (assertOwnsProvider). Schema per conventions.md: name, code, logo, isActive, extraBagPrice, maxExtraBags, cancellationTiers. Ship early because Hasan's ACC-13 needs real airline ids.
 How the output was used:
 Claude wrote the Airline schema (reusing the shared CancellationTier sub-schema), CreateAirlineDto/UpdateAirlineDto, AirlinesService (exported with the model for ACC-13, ACC-15 and FLT-11) and the controller with POST (admin), GET :id (public) and PATCH :id (own moderator), Swagger examples and unit tests. The logo upload route waits for Hasan's GEN-08 upload utility and comes in a follow-up PR. I tested the routes in Swagger with TEST data.
+================================================
+
+================================================
+Date: 2026-11-15
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-11, FLT-09, GEN-06, FLT-02, FLT-01
+Prompt:
+Check Hazem's five open PRs (#146 to #150) and, if they are correct, merge them.
+How the output was used:
+Claude read each diff against conventions.md and the requirement text, merged all five together on a temporary branch, and ran the build, tests (167 passed), e2e tests and typecheck. It then updated each branch with develop and merged the PRs in order (#146, #147, #148, #149, #150). Its merge of AI_PROMPTS.txt (a union merge) dropped the header lines of the GEN-06, FLT-09 and ACC-11 entries, so Claude rebuilt the log from the original feature commits in this follow-up; no entry text was changed.
 ================================================
