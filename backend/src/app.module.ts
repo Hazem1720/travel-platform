@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AirportsModule } from './airports/airports.module';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.validation';
 import { ReferenceModule } from './reference/reference.module';
@@ -20,6 +21,7 @@ import { ReferenceModule } from './reference/reference.module';
     ScheduleModule.forRoot(),
     AuthModule,
     ReferenceModule,
+    AirportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
