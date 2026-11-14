@@ -156,3 +156,14 @@ Gave Claude the team plan (Milestone 1) and the project description and asked it
 How the output was used:
 Claude wrote assertOwner(resourceUserId, user, message) that throws 404 for anyone but the owner (no admin or moderator exception, they use ACC-17/FLT-29/HTL-22), plus isOwner() for query filters, with unit tests for the owner, another user, ObjectId vs string ids and missing owners. I reviewed the 404 rule against conventions.md before merging.
 ================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-01
+Prompt:
+Phase 1 of my team-plan chapter: FLT-01, a new src/airlines module. Admin creates an airline (name, unique uppercase code), anyone can view it, and only the moderator assigned to that airline edits it (assertOwnsProvider). Schema per conventions.md: name, code, logo, isActive, extraBagPrice, maxExtraBags, cancellationTiers. Ship early because Hasan's ACC-13 needs real airline ids.
+How the output was used:
+Claude wrote the Airline schema (reusing the shared CancellationTier sub-schema), CreateAirlineDto/UpdateAirlineDto, AirlinesService (exported with the model for ACC-13, ACC-15 and FLT-11) and the controller with POST (admin), GET :id (public) and PATCH :id (own moderator), Swagger examples and unit tests. The logo upload route waits for Hasan's GEN-08 upload utility and comes in a follow-up PR. I tested the routes in Swagger with TEST data.
+================================================
