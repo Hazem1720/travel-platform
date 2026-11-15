@@ -6,8 +6,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AirlinesModule } from './airlines/airlines.module';
 import { AirportsModule } from './airports/airports.module';
+import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.validation';
+import { NotificationsModule } from './notifications/notifications.module';
 import { ReferenceModule } from './reference/reference.module';
 
 @Module({
@@ -24,6 +26,8 @@ import { ReferenceModule } from './reference/reference.module';
     ReferenceModule,
     AirlinesModule,
     AirportsModule,
+    NotificationsModule,
+    AuditModule,
   ],
   controllers: [AppController],
   providers: [AppService],
