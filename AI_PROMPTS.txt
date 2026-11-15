@@ -207,3 +207,14 @@ Distribute all of Hasan's work in the first four phases of the team plan to Memo
 How the output was used:
 Claude proposed a split that keeps each item near its module and evens the weighted load: Aabsy takes the shared services (GEN-08, GEN-01, GEN-07), Hazem the moderator accounts and suspensions (ACC-13, ACC-15, ACC-16), Memo the account list, password reset and hotel search extras (ACC-14, ACC-07a, HTL-15, HTL-12), and Hasan every phase 5 item. It moved the owners in the tracker CSV and xlsx (member sheets and Summary counts too), set FLT-02 to Done and FLT-01, FLT-09 and GEN-06 to In Progress after PRs #146-#150, and rebuilt the team plan PDF: finished requirements are no longer listed and partly done ones show only what is left. I reviewed the split before it was shared with the team.
 ================================================
+
+================================================
+Date: 2026-11-16
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: GEN-11
+Prompt:
+Finish the parts of my chapter that depend on no one, starting with GEN-11's first small PR: common/enums/booking-status.enum.ts with PendingPayment, Confirmed, Completed, Expired and Cancelled, assertTransition(from, to) allowing only PendingPayment to Confirmed or Expired and Confirmed to Completed or Cancelled, and generateBookingReference('FL' | 'HT'). Explain each part.
+How the output was used:
+Claude wrote the BookingStatus enum (values as in conventions.md), the BOOKING_TRANSITIONS table, canTransition() and assertTransition() (409 Conflict for any other change, with a comment showing how to put the old status in the update filter so two requests cannot both change it), and generateBookingReference() using crypto.randomInt for 8 uppercase letters or digits after FL- or HT-. Unit tests check the 4 allowed transitions, all 21 forbidden ones, the message, the reference format and 10,000 references without a repeat. The expiry and Completed jobs come later with FLT-22.
+================================================
