@@ -9,6 +9,7 @@ import { AirportsModule } from './airports/airports.module';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.validation';
 import { ReferenceModule } from './reference/reference.module';
+import { HotelsModule } from './hotels/hotels.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ReferenceModule } from './reference/reference.module';
     ReferenceModule,
     AirlinesModule,
     AirportsModule,
+    HotelsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
