@@ -209,6 +209,17 @@ Claude proposed a split that keeps each item near its module and evens the weigh
 ================================================
 
 ================================================
+Date: 2026-11-15
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: GEN-08
+Prompt:
+Explain the project and my chapter of the team plan, then build GEN-08 with me and explain each file: a shared upload utility in src/uploads that accepts only JPG and PNG (checked from the file's first bytes, not the extension or mimetype), at most 5 MB each, with a maxCount per route (5 for posts, activities and hotels, 1 for an airline logo), stores files on the server and serves them by URL, with a Swagger multipart example the team can copy.
+How the output was used:
+Claude wrote image-file.ts (5 MB limit, IMAGE_LIMITS, magic-byte check for PNG and JPG, assertValidImage and assertImageLimit), the @ImageUpload(field, maxCount) decorator (multer in memory, its 413 and "unexpected field" errors turned into 400s in the shared format, plus @ApiConsumes and @ApiBody for Swagger), a global UploadsModule with UploadsService.save(files) (random UUID names in backend/uploads, returns /api/uploads/... URLs), remove(url) and a public GET /api/uploads/:file that only serves names the service generated. POST /api/uploads/images (logged-in users, up to 5) shows the rules in Swagger. backend/uploads/ was added to .gitignore and 'GET /uploads/:file' to PUBLIC_ROUTES. Unit and HTTP tests cover a 1 MB PNG, a 6 MB JPG, a GIF, a text file renamed to .png, six files, no file and unsafe file names. I reviewed each file with Claude's explanation before committing.
+================================================
+
+================================================
 Date: 2026-11-16
 Student: Mostafa Abuelabbas
 Tool: Claude (claude.ai)
