@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Types } from 'mongoose';
+import { SUPPORTED_CURRENCIES } from '../../common/constants/currencies';
 
 export const MAX_TITLE_LENGTH = 100;
 export const MAX_ITINERARY_DAYS = 60;
@@ -9,6 +10,43 @@ export enum ItineraryVisibility {
   PUBLIC = 'Public',
   PRIVATE = 'Private',
 }
+
+// ITN-10, ITN-14: an amount in a supported currency. Amounts are in the
+// currency's main unit with up to 2 decimals (150.5 EGP), not cents: they are
+// planning figures in many currencies, never charged (PAY-04).
+@Schema({ _id: false })
+export class Money {
+  @Prop({ type: Number, required: true, min: 0 })
+  amount: number;
+
+  @Prop({ type: String, enum: SUPPORTED_CURRENCIES, required: true })
+  currency: string;
+}
+export const MoneySchema = SchemaFactory.createForClass(Money);
+
+// ITN-10: an activity on a day. Its cost counts under Activities in the
+// budget (ITN-14). Images: ITN-12.
+@Schema({ _id: true })
+export class Activity {
+  _id: Types.ObjectId;
+
+  @Prop({ type: String, required: true, trim: true, maxlength: 100 })
+  name: string;
+
+  @Prop({ type: String, trim: true, maxlength: 2000, default: '' })
+  description: string;
+
+  // "HH:mm", 24-hour, optional.
+  @Prop({ type: String, default: null })
+  time: string | null;
+
+  @Prop({ type: MoneySchema, default: null })
+  cost: Money | null;
+
+  @Prop({ type: [String], default: [] })
+  images: string[];
+}
+export const ActivitySchema = SchemaFactory.createForClass(Activity);
 
 // ITN-05: one day of the itinerary. Its number and date are not stored: they
 // are computed from its position in `days` and the itinerary's startDate
@@ -24,6 +62,9 @@ export class ItineraryDay {
 
   @Prop({ type: String, trim: true, default: '' })
   notes: string;
+
+  @Prop({ type: [ActivitySchema], default: [] })
+  activities: Activity[];
 }
 export const ItineraryDaySchema = SchemaFactory.createForClass(ItineraryDay);
 
