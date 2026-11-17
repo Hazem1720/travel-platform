@@ -248,3 +248,14 @@ Finish testing and completing Rawda's and Aabsy's phase 1 work, and merge everyt
 How the output was used:
 Claude reviewed #154, #155 and #157 against the team plan and conventions.md and merged the latest develop into each branch. The conflicts were in AI_PROMPTS.txt, app.module.ts and route-guards.spec.ts, and both sides were kept. It found that HTL-01 was missing the hotel photo routes, so it added POST /hotels/:id/images (at most 5 in total, checked in one conditional update, and saved files are removed if the push fails) and DELETE /hotels/:id/images/:imageId, both moderator-only with assertOwnsProvider. It used the GEN-08 upload utility and added unit tests. It also fixed the indentation in room.schema.ts. I ran the build, unit and e2e tests before pushing.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-08, GEN-01, GEN-07, GEN-11, FLT-11, FLT-12, FLT-15, FLT-19, FLT-21, HTL-01, HTL-03, HTL-04, HTL-09, HTL-10
+Prompt:
+Revise everything and make sure it is up to date with GitHub, then update the tracker statuses for merged work.
+How the output was used:
+Claude compared the tracker with the merged and open PRs. It set GEN-08 to Done (#153). It set the items in open PRs to In Review when the PR completes them (#154 GEN-01/GEN-07, #157 HTL-01/03/04/09/10) and to In Progress when the PR is partial or a draft (#155 GEN-11, #156 FLT-11/12/15/19/21). It also added the PR links in requirements-tracker.csv and .xlsx (Tracker sheet, owner sheets and Summary counts). ACC-11, FLT-01, FLT-09 and GEN-06 were left In Progress because their PRs say the routes follow later. I checked the PR descriptions and the Summary counts before committing.
+================================================
