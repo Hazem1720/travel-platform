@@ -35,6 +35,7 @@ import {
   ITINERARY_NOT_FOUND,
   ItinerariesService,
 } from './itineraries.service';
+import { PublicItinerariesService } from './public-itineraries.service';
 
 export const ID_PARAM = { name: 'id', example: '6735a1f4c1a2b3c4d5e6f901' };
 export const NOT_FOUND = {
@@ -62,7 +63,10 @@ export const BAD_ID = {
 @Roles(Role.USER)
 @Controller('itineraries')
 export class ItinerariesController {
-  constructor(private readonly itineraries: ItinerariesService) {}
+  constructor(
+    private readonly itineraries: ItinerariesService,
+    private readonly publicItineraries: PublicItinerariesService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: 'Create an itinerary, Private by default (ITN-01)' })
@@ -152,5 +156,24 @@ export class ItinerariesController {
   @ApiErrors(BAD_ID, UNAUTHENTICATED, NOT_A_USER, NOT_FOUND)
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.itineraries.remove(user, id);
+  }
+
+  @Post(':id/clone')
+  @ApiParam(ID_PARAM)
+  @ApiOperation({
+    summary:
+      'Clone a public itinerary into my own Private copy that credits the author (ITN-21)',
+  })
+  @ApiCreatedResponse({
+    type: ItineraryDto,
+    description: 'The new Private copy, with clonedFrom set',
+  })
+  @ApiErrors(BAD_ID, UNAUTHENTICATED, NOT_A_USER, {
+    status: 404,
+    message: ITINERARY_NOT_FOUND,
+    description: 'No such itinerary, or it is not public',
+  })
+  clone(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.publicItineraries.clone(user, id);
   }
 }

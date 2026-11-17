@@ -15,7 +15,7 @@ export const OWNER: AuthUser = {
 export const STRANGER: AuthUser = { ...OWNER, id: '6735a1f4c1a2b3c4d5e6f002' };
 export const ITN_ID = '6735a1f4c1a2b3c4d5e6f901';
 
-export function day(cityId: string, extra: object = {}) {
+export function day(cityId: string, extra: object = {}): any {
   return { _id: new Types.ObjectId(), cityId, notes: '', ...extra };
 }
 

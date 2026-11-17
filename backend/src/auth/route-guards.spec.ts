@@ -28,6 +28,8 @@ const PUBLIC_ROUTES = [
   'GET /airports',
   'GET /uploads/:file',
   'GET /hotels/:id',
+  'GET /itineraries/public/search',
+  'GET /itineraries/public/:id',
 ];
 
 interface Route {

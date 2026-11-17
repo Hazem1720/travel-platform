@@ -14,6 +14,8 @@ import { DaysController } from './days.controller';
 import { DaysService } from './days.service';
 import { ItinerariesController } from './itineraries.controller';
 import { ItinerariesService } from './itineraries.service';
+import { PublicItinerariesController } from './public-itineraries.controller';
+import { PublicItinerariesService } from './public-itineraries.service';
 import { Itinerary, ItinerarySchema } from './schemas/itinerary.schema';
 import { TransportCostsController } from './transport-costs.controller';
 import { TransportCostsService } from './transport-costs.service';
@@ -32,7 +34,10 @@ import { TransportCostsService } from './transport-costs.service';
     ]),
     ExchangeRatesModule,
   ],
+  // PublicItinerariesController first: GET /itineraries/public/... must be
+  // matched before the :id routes.
   controllers: [
+    PublicItinerariesController,
     ItinerariesController,
     DaysController,
     DayActivitiesController,
@@ -47,7 +52,8 @@ import { TransportCostsService } from './transport-costs.service';
     ActivityImagesService,
     TransportCostsService,
     BudgetsService,
+    PublicItinerariesService,
   ],
-  exports: [ItinerariesService, MongooseModule],
+  exports: [ItinerariesService, PublicItinerariesService, MongooseModule],
 })
 export class ItinerariesModule {}
