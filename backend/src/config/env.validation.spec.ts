@@ -38,6 +38,26 @@ describe('validateEnv (IM-6)', () => {
     );
   });
 
+  // PAY-04: one platform currency, USD unless set.
+  it('accepts a missing, empty or supported PLATFORM_CURRENCY', () => {
+    expect(() => validateEnv(valid)).not.toThrow();
+    expect(() =>
+      validateEnv({ ...valid, PLATFORM_CURRENCY: '' }),
+    ).not.toThrow();
+    expect(() =>
+      validateEnv({ ...valid, PLATFORM_CURRENCY: 'USD' }),
+    ).not.toThrow();
+  });
+
+  it('rejects an unsupported PLATFORM_CURRENCY', () => {
+    expect(() => validateEnv({ ...valid, PLATFORM_CURRENCY: 'ABC' })).toThrow(
+      /PLATFORM_CURRENCY must be one of: AED, EGP, EUR, GBP, JPY, SAR, USD/,
+    );
+    expect(() => validateEnv({ ...valid, PLATFORM_CURRENCY: 'usd' })).toThrow(
+      /PLATFORM_CURRENCY/,
+    );
+  });
+
   it('refuses insecure cookies in production', () => {
     expect(() =>
       validateEnv({ ...valid, NODE_ENV: 'production', COOKIE_SECURE: 'false' }),
