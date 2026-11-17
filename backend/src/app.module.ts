@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.validation';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReferenceModule } from './reference/reference.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ReferenceModule } from './reference/reference.module';
     ReferenceModule,
     AirlinesModule,
     AirportsModule,
+    UploadsModule,
     NotificationsModule,
     AuditModule,
   ],

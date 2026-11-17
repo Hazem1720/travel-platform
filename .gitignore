@@ -11,6 +11,9 @@ out/
 build/
 *.tsbuildinfo
 
+# Uploaded images (GEN-08), stored on the server only
+backend/uploads/
+
 # Logs
 *.log
 npm-debug.log*
