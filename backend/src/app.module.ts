@@ -12,6 +12,7 @@ import { validateEnv } from './config/env.validation';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PaymentsModule } from './payments/payments.module';
 import { ReferenceModule } from './reference/reference.module';
 import { UploadsModule } from './uploads/uploads.module';
 
@@ -36,6 +37,7 @@ import { UploadsModule } from './uploads/uploads.module';
     // before GET /hotels/:id.
     HotelBookingsModule,
     HotelsModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

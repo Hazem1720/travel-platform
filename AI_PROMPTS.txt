@@ -292,3 +292,14 @@ Start my next phase 1 item: the Review schema (HTL-23, schema only, with the GEN
 How the output was used:
 Claude Code added backend/src/hotel-bookings/schemas/review.schema.ts: hotelId, bookingId (unique, one review per reservation), userId, rating (whole number 1-5), text (optional, trimmed, max 1000 characters) and hidden (default false), with timestamps and an index for a hotel's visible reviews newest first. The model is registered and exported by HotelBookingsModule. I reviewed it and left the routes and the rating recalculation to Hasan (HTL-23 owner). 9 unit tests were added. A temporary test against a throwaway Atlas database (travel-platform-e2e-reviews, dropped afterwards, never committed) checked that three parallel reviews of one reservation give exactly one success and two duplicate-key errors, and that the newest-first list of visible reviews uses the index. npm run build, npm test (340 passed) and npm run test:e2e passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-01
+Prompt:
+Start my last phase 1 item: the payments contract stub (PAY-01) so Aabsy (FLT-23) and Hasan (refunds for FLT-06, FLT-26, HTL-21) can build against it. Use the team plan's contract: payments.registerHandler('flight' | 'hotel', { getPayable, confirm, expire }), createPayment, confirmBooking, releaseInventory and refund(type, bookingId, amount), as in conventions.md.
+How the output was used:
+Claude Code added backend/src/payments: payment-handler.ts (PaymentBookingType, PaymentStatus, RefundStatus, PayableBooking, the PaymentHandler interface, CreatedPayment, RefundResult), PaymentsService (handler registry; getPayableFor with the shared PAY-01 rules: 404 for a missing or another user's booking, 409 when not PendingPayment or the hold expired, 400 until policies are accepted; confirmBooking and releaseInventory call the handler; refund returns null for 0 cents) and PaymentsModule, registered in app.module.ts. The Stripe steps (createPayment, refund of a positive amount) answer 501 until PAY-01 and PAY-03. I reviewed the contract, chose to keep the payability checks in Payments so flights and hotels follow the same rules, and added userId to createPayment for the ownership check. 17 unit tests were added, including one showing that a handler registered from another module reaches the same PaymentsService. npm run build, npm test (357 passed) and npm run test:e2e passed.
+================================================
