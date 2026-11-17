@@ -237,3 +237,14 @@ Build GEN-01 and GEN-07 from my team-plan chapter in one PR and explain each par
 How the output was used:
 Claude wrote src/notifications (schema with readAt null meaning unread, NotificationType enum, service, controller with GET /notifications, GET /notifications/unread-count, PATCH /notifications/read-all and PATCH /notifications/:id/read; every query filters by the logged-in user) and src/audit (AuditAction and AuditTargetType enums, schema hooks that make every Mongoose update or delete on the audit log fail, AuditService with only log() and list(), and the admin-only list route with inclusive from/to dates). Both modules are @Global() and registered in app.module.ts. Unit tests use mocked models, as in the existing modules, and cover the owner filter, 404 for another user's notification, 11 notifications giving 2 pages, the filters, from after to (400) and the blocked updates and deletes. I reviewed each file with Claude's explanation before committing.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-01, GEN-08, GEN-01, GEN-07, GEN-11
+Prompt:
+Finish testing and completing Rawda's and Aabsy's phase 1 work, and merge everything after making sure it is correct and tested.
+How the output was used:
+Claude reviewed #154, #155 and #157 against the team plan and conventions.md and merged the latest develop into each branch. The conflicts were in AI_PROMPTS.txt, app.module.ts and route-guards.spec.ts, and both sides were kept. It found that HTL-01 was missing the hotel photo routes, so it added POST /hotels/:id/images (at most 5 in total, checked in one conditional update, and saved files are removed if the push fails) and DELETE /hotels/:id/images/:imageId, both moderator-only with assertOwnsProvider. It used the GEN-08 upload utility and added unit tests. It also fixed the indentation in room.schema.ts. I ran the build, unit and e2e tests before pushing.
+================================================
