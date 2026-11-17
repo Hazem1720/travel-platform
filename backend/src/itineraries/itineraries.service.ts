@@ -4,8 +4,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { assertOwner } from '../common/helpers/ownership';
+import { buildSort, paginated } from '../common/pagination/pagination.helper';
+import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
 import { AuthUser } from '../common/types/auth-user.type';
 import {
   Country,
@@ -81,6 +83,49 @@ export class ItinerariesService {
       throw new NotFoundException(ITINERARY_NOT_FOUND);
     }
     return { message: ITINERARY_DELETED };
+  }
+
+  // ITN-03: the user's own itineraries, most recently updated first, with
+  // the number of days instead of the days themselves.
+  async listMine(user: AuthUser, { page, limit, sort }: PaginationQueryDto) {
+    const filter = { ownerId: new Types.ObjectId(user.id) };
+    const [data, total] = await Promise.all([
+      this.itineraries.aggregate([
+        { $match: filter },
+        {
+          $sort: {
+            ...buildSort(
+              sort,
+              ['updatedAt', 'title', 'startDate'],
+              'updatedAt:desc',
+            ),
+            _id: -1,
+          },
+        },
+        { $skip: (page - 1) * limit },
+        { $limit: limit },
+        {
+          $project: {
+            title: 1,
+            countries: 1,
+            startDate: 1,
+            dayCount: { $size: '$days' },
+            visibility: 1,
+            hidden: 1,
+            clonedFrom: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
+      ]),
+      this.itineraries.countDocuments(filter),
+    ]);
+    return paginated(data, total, page, limit);
+  }
+
+  // ITN-03: the full itinerary, for its owner only.
+  async getMine(user: AuthUser, id: string) {
+    return this.findOwned(user, id);
   }
 
   // ACC-11: another user's itinerary answers 404, as if it did not exist.

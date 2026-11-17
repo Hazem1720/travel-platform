@@ -314,3 +314,14 @@ I am Moharm. Build ITN-01 (create, edit and delete an itinerary) in src/itinerar
 How the output was used:
 Claude Code proposed a plan, which I checked against the official requirement and the project description (section 8.8), then built src/itineraries: the Itinerary schema (ownerId, title up to 100 characters, countries, startDate as UTC midnight, visibility Private by default, the GEN-10 hidden flag, embedded days capped at 60, and clonedFrom for ITN-21), CreateItineraryDto and UpdateItineraryDto (only title, countries and startDate; unknown fields give 400), ItinerariesService (countries checked against the seeded countries collection, assertOwner on every edit and delete so other users get 404, delete removes only the one document so clones survive) and ItinerariesController (POST, PATCH and DELETE /api/itineraries, @Roles(Role.USER), Swagger examples with the requirement ID). The model and service are exported for Hafez (BLG-12, GEN-09, GEN-10) and Memo (BON-02). I chose "users only" for the role. 17 unit tests were added. npm run build, npm test (374 passed) and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-03
+Prompt:
+I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+How the output was used:
+Claude Code added GET /api/itineraries (my itineraries: title, countries, start date, number of days and visibility, most recently updated first, 10 per page) and GET /api/itineraries/:id (the full itinerary, 404 for another user's). 4 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================

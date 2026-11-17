@@ -1,4 +1,13 @@
-import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -11,6 +20,7 @@ import { MessageDto } from '../auth/dto/auth-responses.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
+import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
 import {
   ApiErrors,
   MUST_CHANGE_PASSWORD,
@@ -18,7 +28,7 @@ import {
 } from '../common/swagger/api-error.decorator';
 import { AuthUser } from '../common/types/auth-user.type';
 import { CreateItineraryDto } from './dto/create-itinerary.dto';
-import { ItineraryDto } from './dto/itinerary.dto';
+import { ItineraryDto, ItineraryListDto } from './dto/itinerary.dto';
 import { UpdateItineraryDto } from './dto/update-itinerary.dto';
 import {
   ITINERARY_DELETED,
@@ -71,6 +81,32 @@ export class ItinerariesController {
   )
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateItineraryDto) {
     return this.itineraries.create(user, dto);
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'List my itineraries, most recently updated first (ITN-03)',
+  })
+  @ApiOkResponse({ type: ItineraryListDto, description: 'One page of 10' })
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'Cannot sort by "price". Allowed: updatedAt, title, startDate',
+    },
+    UNAUTHENTICATED,
+    NOT_A_USER,
+  )
+  listMine(@CurrentUser() user: AuthUser, @Query() q: PaginationQueryDto) {
+    return this.itineraries.listMine(user, q);
+  }
+
+  @Get(':id')
+  @ApiParam(ID_PARAM)
+  @ApiOperation({ summary: 'Open one of my itineraries (ITN-03)' })
+  @ApiOkResponse({ type: ItineraryDto, description: 'The full itinerary' })
+  @ApiErrors(BAD_ID, UNAUTHENTICATED, NOT_A_USER, NOT_FOUND)
+  getMine(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.itineraries.getMine(user, id);
   }
 
   @Patch(':id')
