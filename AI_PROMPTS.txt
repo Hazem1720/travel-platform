@@ -218,3 +218,14 @@ Explain the project and my chapter of the team plan, then build GEN-08 with me a
 How the output was used:
 Claude wrote image-file.ts (5 MB limit, IMAGE_LIMITS, magic-byte check for PNG and JPG, assertValidImage and assertImageLimit), the @ImageUpload(field, maxCount) decorator (multer in memory, its 413 and "unexpected field" errors turned into 400s in the shared format, plus @ApiConsumes and @ApiBody for Swagger), a global UploadsModule with UploadsService.save(files) (random UUID names in backend/uploads, returns /api/uploads/... URLs), remove(url) and a public GET /api/uploads/:file that only serves names the service generated. POST /api/uploads/images (logged-in users, up to 5) shows the rules in Swagger. backend/uploads/ was added to .gitignore and 'GET /uploads/:file' to PUBLIC_ROUTES. Unit and HTTP tests cover a 1 MB PNG, a 6 MB JPG, a GIF, a text file renamed to .png, six files, no file and unsafe file names. I reviewed each file with Claude's explanation before committing.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-01, GEN-08, GEN-01, GEN-07, GEN-11
+Prompt:
+Finish testing and completing Rawda's and Aabsy's phase 1 work, and merge everything after making sure it is correct and tested.
+How the output was used:
+Claude reviewed #154, #155 and #157 against the team plan and conventions.md and merged the latest develop into each branch. The conflicts were in AI_PROMPTS.txt, app.module.ts and route-guards.spec.ts, and both sides were kept. It found that HTL-01 was missing the hotel photo routes, so it added POST /hotels/:id/images (at most 5 in total, checked in one conditional update, and saved files are removed if the push fails) and DELETE /hotels/:id/images/:imageId, both moderator-only with assertOwnsProvider. It used the GEN-08 upload utility and added unit tests. It also fixed the indentation in room.schema.ts. I ran the build, unit and e2e tests before pushing.
+================================================

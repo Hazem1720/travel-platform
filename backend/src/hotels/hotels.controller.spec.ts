@@ -29,10 +29,19 @@ describe('hotel controllers: ownership', () => {
     cancellationTiers: [],
   };
 
+  const image = {
+    originalname: 'a.png',
+    mimetype: 'image/png',
+    size: 1,
+    buffer: Buffer.from('x'),
+  };
+
   function setup() {
     const hotels = {
       update: jest.fn(async () => ({})),
       setPolicies: jest.fn(async () => ({})),
+      addImages: jest.fn(async () => ({})),
+      removeImage: jest.fn(async () => ({})),
     };
     const rooms = {
       create: jest.fn(async () => ({})),
@@ -52,6 +61,10 @@ describe('hotel controllers: ownership', () => {
     await hotelsController.setPolicies(moderator, MINE, policies);
     await roomsController.create(moderator, MINE, room);
     await roomsController.addAvailability(moderator, MINE, ROOM, range);
+    await hotelsController.addImages(moderator, MINE, [image]);
+    await hotelsController.removeImage(moderator, MINE, 'a.png');
+    expect(hotels.addImages).toHaveBeenCalledWith(MINE, [image]);
+    expect(hotels.removeImage).toHaveBeenCalledWith(MINE, 'a.png');
     expect(hotels.update).toHaveBeenCalledWith(MINE, { name: 'TEST New' });
     expect(hotels.setPolicies).toHaveBeenCalledWith(MINE, policies);
     expect(rooms.create).toHaveBeenCalledWith(MINE, room);
@@ -65,8 +78,12 @@ describe('hotel controllers: ownership', () => {
       () => hotelsController.setPolicies(moderator, OTHER, policies),
       () => roomsController.create(moderator, OTHER, room),
       () => roomsController.addAvailability(moderator, OTHER, ROOM, range),
+      () => hotelsController.addImages(moderator, OTHER, [image]),
+      () => hotelsController.removeImage(moderator, OTHER, 'a.png'),
     ];
     for (const call of calls) expect(call).toThrow(ForbiddenException);
+    expect(hotels.addImages).not.toHaveBeenCalled();
+    expect(hotels.removeImage).not.toHaveBeenCalled();
     expect(hotels.update).not.toHaveBeenCalled();
     expect(hotels.setPolicies).not.toHaveBeenCalled();
     expect(rooms.create).not.toHaveBeenCalled();

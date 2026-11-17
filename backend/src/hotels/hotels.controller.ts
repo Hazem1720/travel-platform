@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Param, Patch, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  UploadedFiles,
+} from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -18,13 +28,24 @@ import {
   UNAUTHENTICATED,
 } from '../common/swagger/api-error.decorator';
 import { AuthUser } from '../common/types/auth-user.type';
+import { IMAGE_LIMITS, UploadedImage } from '../uploads/image-file';
+import { ImageUpload } from '../uploads/image-upload.decorator';
 import { CreateHotelDto } from './dto/create-hotel.dto';
 import { HotelDto } from './dto/hotel.dto';
 import { HotelPoliciesDto } from './dto/policies.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
-import { HOTEL_NOT_FOUND, HotelsService } from './hotels.service';
+import {
+  HOTEL_NOT_FOUND,
+  HotelsService,
+  IMAGE_NOT_FOUND,
+} from './hotels.service';
 
 const ID_PARAM = { name: 'id', example: '6735a1f4c1a2b3c4d5e6f801' };
+const IMAGE_PARAM = {
+  name: 'imageId',
+  example: '3f2b8c1e-4a5d-4e6f-9a7b-1c2d3e4f5a6b.png',
+  description: 'The file name at the end of the image URL',
+};
 const NOT_FOUND = { status: 404, message: HOTEL_NOT_FOUND };
 const NOT_YOUR_HOTEL = {
   status: 403,
@@ -111,6 +132,62 @@ export class HotelsController {
   ) {
     assertOwnsProvider(user, Role.HOTEL_MODERATOR, id);
     return this.hotels.update(id, dto);
+  }
+
+  @Post(':id/images')
+  @Roles(Role.HOTEL_MODERATOR)
+  @ApiCookieAuth('access_token')
+  @ApiParam(ID_PARAM)
+  @ImageUpload('images', IMAGE_LIMITS.HOTEL)
+  @ApiOperation({
+    summary: 'Add photos to your hotel, its moderator only (HTL-01, GEN-08)',
+    description:
+      'Up to 5 photos per hotel in total, JPG or PNG, at most 5 MB each. ' +
+      'Returns the hotel with the new photo URLs at the end of `images`.',
+  })
+  @ApiCreatedResponse({ type: HotelDto, description: 'The updated hotel' })
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'At most 5 images allowed (4 already uploaded)',
+      description:
+        'More than 5 photos in total, not a JPG or PNG, larger than 5 MB, ' +
+        'or no file',
+    },
+    UNAUTHENTICATED,
+    NOT_YOUR_HOTEL,
+    NOT_FOUND,
+  )
+  addImages(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @UploadedFiles() files: UploadedImage[],
+  ) {
+    assertOwnsProvider(user, Role.HOTEL_MODERATOR, id);
+    return this.hotels.addImages(id, files);
+  }
+
+  @Delete(':id/images/:imageId')
+  @Roles(Role.HOTEL_MODERATOR)
+  @ApiCookieAuth('access_token')
+  @ApiParam(ID_PARAM)
+  @ApiParam(IMAGE_PARAM)
+  @ApiOperation({
+    summary: 'Remove a photo from your hotel, its moderator only (HTL-01)',
+  })
+  @ApiOkResponse({ type: HotelDto, description: 'The updated hotel' })
+  @ApiErrors(UNAUTHENTICATED, NOT_YOUR_HOTEL, {
+    status: 404,
+    message: IMAGE_NOT_FOUND,
+    description: 'The hotel does not exist or does not have this photo',
+  })
+  removeImage(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+  ) {
+    assertOwnsProvider(user, Role.HOTEL_MODERATOR, id);
+    return this.hotels.removeImage(id, imageId);
   }
 
   @Put(':id/policies')

@@ -4,8 +4,10 @@ import {
   CancellationTier,
   CancellationTierSchema,
 } from '../../common/helpers/cancellation-tiers';
+import { IMAGE_LIMITS } from '../../uploads/image-file';
 
-export const MAX_HOTEL_IMAGES = 5;
+// GEN-08: up to 5 photos per hotel.
+export const MAX_HOTEL_IMAGES = IMAGE_LIMITS.HOTEL;
 export const DEFAULT_CHECK_IN_TIME = '14:00';
 export const DEFAULT_CHECK_OUT_TIME = '12:00';
 
