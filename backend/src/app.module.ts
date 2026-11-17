@@ -6,9 +6,11 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AirlinesModule } from './airlines/airlines.module';
 import { AirportsModule } from './airports/airports.module';
+import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.validation';
 import { HotelsModule } from './hotels/hotels.module';
+import { NotificationsModule } from './notifications/notifications.module';
 import { ReferenceModule } from './reference/reference.module';
 import { UploadsModule } from './uploads/uploads.module';
 
@@ -27,6 +29,8 @@ import { UploadsModule } from './uploads/uploads.module';
     AirlinesModule,
     AirportsModule,
     UploadsModule,
+    NotificationsModule,
+    AuditModule,
     HotelsModule,
   ],
   controllers: [AppController],

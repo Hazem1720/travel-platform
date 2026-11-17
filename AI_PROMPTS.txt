@@ -220,6 +220,25 @@ Claude wrote image-file.ts (5 MB limit, IMAGE_LIMITS, magic-byte check for PNG a
 ================================================
 
 ================================================
+Date: 2026-11-16
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: GEN-11
+Prompt:
+Finish the parts of my chapter that depend on no one, starting with GEN-11's first small PR: common/enums/booking-status.enum.ts with PendingPayment, Confirmed, Completed, Expired and Cancelled, assertTransition(from, to) allowing only PendingPayment to Confirmed or Expired and Confirmed to Completed or Cancelled, and generateBookingReference('FL' | 'HT'). Explain each part.
+How the output was used:
+Claude wrote the BookingStatus enum (values as in conventions.md), the BOOKING_TRANSITIONS table, canTransition() and assertTransition() (409 Conflict for any other change, with a comment showing how to put the old status in the update filter so two requests cannot both change it), and generateBookingReference() using crypto.randomInt for 8 uppercase letters or digits after FL- or HT-. Unit tests check the 4 allowed transitions, all 21 forbidden ones, the message, the reference format and 10,000 references without a repeat. The expiry and Completed jobs come later with FLT-22.
+================================================
+
+================================================
+Related Requirement: GEN-01, GEN-07
+Prompt:
+Build GEN-01 and GEN-07 from my team-plan chapter in one PR and explain each part while doing it: a global NotificationsService.create(userId, type, message, data?) with the six notification types and the user routes (list newest first, unread count, mark one read, mark all read, 404 for another user's notification), and a global, append-only AuditService.log({ adminId, action, targetType, targetId, details }) with GET /api/admin/audit-logs for admins, filtered by action, admin and date range.
+How the output was used:
+Claude wrote src/notifications (schema with readAt null meaning unread, NotificationType enum, service, controller with GET /notifications, GET /notifications/unread-count, PATCH /notifications/read-all and PATCH /notifications/:id/read; every query filters by the logged-in user) and src/audit (AuditAction and AuditTargetType enums, schema hooks that make every Mongoose update or delete on the audit log fail, AuditService with only log() and list(), and the admin-only list route with inclusive from/to dates). Both modules are @Global() and registered in app.module.ts. Unit tests use mocked models, as in the existing modules, and cover the owner filter, 404 for another user's notification, 11 notifications giving 2 pages, the filters, from after to (400) and the blocked updates and deletes. I reviewed each file with Claude's explanation before committing.
+================================================
+
+================================================
 Date: 2026-11-17
 Student: Mohamad Amr Khallaf
 Tool: Claude Code
