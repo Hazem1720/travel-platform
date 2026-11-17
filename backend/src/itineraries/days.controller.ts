@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -85,5 +85,24 @@ export class DaysController {
     @Body() dto: UpdateDayDto,
   ) {
     return this.days.updateDay(user, id, dayId, dto);
+  }
+
+  // The frontend asks for confirmation first (Milestone 2).
+  @Delete(':dayId')
+  @ApiParam(ID_PARAM)
+  @ApiParam(DAY_PARAM)
+  @ApiOperation({
+    summary:
+      'Delete a day; the rest are renumbered and re-dated, and budget ' +
+      'totals recalculated (ITN-07)',
+  })
+  @ApiOkResponse({ type: ItineraryDto })
+  @ApiErrors(UNAUTHENTICATED, NOT_A_USER, DAY_NOT_FOUND_ERROR)
+  remove(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('dayId') dayId: string,
+  ) {
+    return this.days.removeDay(user, id, dayId);
   }
 }

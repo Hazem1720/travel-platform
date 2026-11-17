@@ -347,3 +347,14 @@ I am Moharm. Build all my remaining ITN requirements in the order of my chapter 
 How the output was used:
 Claude Code added POST /api/itineraries/:id/days and PATCH /api/itineraries/:id/days/:dayId (DaysService, DaysController). The city must be a seeded city; day numbers and dates are computed from the position and the start date (itinerary.view.ts), never stored, so changing the start date moves every date. The 60-day limit is in the update filter, so two requests at once cannot pass it. GET /api/itineraries/:id now shows numbered, dated days. 7 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-07
+Prompt:
+I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+How the output was used:
+Claude Code added DELETE /api/itineraries/:id/days/:dayId. The day and its contents are removed in one update; the remaining days are renumbered and re-dated automatically because numbers and dates are computed from position, and budget totals are computed from the remaining days. Shared test fixtures moved to itinerary.fixtures-spec.ts. 2 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================

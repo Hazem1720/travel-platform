@@ -87,6 +87,23 @@ export class DaysService {
     return presentItinerary(updated);
   }
 
+  // ITN-07: deletes a day (the frontend confirms first). Its activities and
+  // budget entries go with it. Numbers, dates and budget totals are always
+  // computed from the remaining days, so they are recalculated at once.
+  async removeDay(user: AuthUser, id: string, dayId: string) {
+    const itinerary = await this.itinerariesService.findOwned(user, id);
+    this.assertHasDay(itinerary, dayId);
+    const updated = await this.itineraries
+      .findOneAndUpdate(
+        { _id: id, ownerId: user.id, 'days._id': dayId },
+        { $pull: { days: { _id: new Types.ObjectId(dayId) } } },
+        { new: true },
+      )
+      .lean();
+    if (!updated) throw new NotFoundException(DAY_NOT_FOUND);
+    return presentItinerary(updated);
+  }
+
   assertHasDay(itinerary: { days: { _id: unknown }[] }, dayId: string) {
     const index = itinerary.days.findIndex((d) => String(d._id) === dayId);
     if (index < 0) throw new NotFoundException(DAY_NOT_FOUND);
