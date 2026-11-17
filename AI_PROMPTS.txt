@@ -310,7 +310,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-01
 Prompt:
-I am Moharm. Build ITN-01 (create, edit and delete an itinerary) in src/itineraries, following conventions.md, the existing hotels and users modules, and my chapter of the team plan. Show me the plan first. Only registered users (role user) may use these routes.
+Build ITN-01 (create, edit and delete an itinerary) in src/itineraries, following conventions.md and my chapter of the team plan. Show me the plan first so I can review it against the requirement before any code is written. Role: users only — not moderators or admins.
 How the output was used:
 Claude Code proposed a plan, which I checked against the official requirement and the project description (section 8.8), then built src/itineraries: the Itinerary schema (ownerId, title up to 100 characters, countries, startDate as UTC midnight, visibility Private by default, the GEN-10 hidden flag, embedded days capped at 60, and clonedFrom for ITN-21), CreateItineraryDto and UpdateItineraryDto (only title, countries and startDate; unknown fields give 400), ItinerariesService (countries checked against the seeded countries collection, assertOwner on every edit and delete so other users get 404, delete removes only the one document so clones survive) and ItinerariesController (POST, PATCH and DELETE /api/itineraries, @Roles(Role.USER), Swagger examples with the requirement ID). The model and service are exported for Hafez (BLG-12, GEN-09, GEN-10) and Memo (BON-02). I chose "users only" for the role. 17 unit tests were added. npm run build, npm test (374 passed) and eslint on the new files passed.
 ================================================
@@ -387,7 +387,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-10
 Prompt:
-Build ITN-10: add, edit and delete activities on a day (name, description, time, optional cost and images), following conventions.md and the team plan.
+Build ITN-10: add, edit and delete activities on a day (name, description, optional HH:mm time, optional cost, images for ITN-12), following conventions.md and the team plan. Store cost amounts in the currency's main unit with up to 2 decimals — not integer cents — because these are multi-currency planning figures that are never charged through the payment system.
 How the output was used:
 Claude Code added embedded activities on each day (name, description, optional HH:mm time, optional cost { amount >= 0, supported currency }, images for ITN-12), POST /api/itineraries/:id/days/:dayId/activities, PATCH /api/activities/:id and DELETE /api/activities/:id (ActivitiesService with array-filter updates). The /api/activities/:id routes find the itinerary holding the activity and answer 404 to anyone but its owner. I chose to store budget amounts in the currency's main unit with up to 2 decimals (they are planning figures in many currencies, never charged). 8 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -442,7 +442,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-21
 Prompt:
-Build ITN-21: public search and view of Public itineraries, and clone (registered users only), following conventions.md and the team plan.
+Build ITN-21: public search and view of Public itineraries, and clone (registered users only), following conventions.md and the team plan. The clone must share image URLs with the original rather than copying the files — ITN-12's reference counting already handles cleanup when either copy is deleted.
 How the output was used:
 Claude Code added PublicItinerariesService and PublicItinerariesController: GET /api/itineraries/public/search (guests too; keyword matches the title, a country name or code, or a city name; filters minDays/maxDays, country, city; minDays above maxDays gives 400), GET /api/itineraries/public/:id (read-only with author, numbered days, activities and budget) and POST /api/itineraries/:id/clone (registered users only). Only Public, not hidden (GEN-10) itineraries by authors who are not deactivated (ACC-12) are shown; anything else is 404, so setting Private (ITN-20) removes it at once. The clone is a deep copy with new ids of days, activities, budgets and transport costs, Private, with clonedFrom crediting the author, and independent of the original. The public controller is registered before the :id routes, and both public routes were added to PUBLIC_ROUTES in src/auth/route-guards.spec.ts as the team plan says. I reviewed the clone sharing image URLs; ITN-12 keeps a file while any copy uses it. 6 unit tests were added. npm run build, npm test (439 passed) and eslint on the new files passed.
 ================================================
@@ -453,7 +453,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-25
 Prompt:
-Build ITN-25: hotel availability for an itinerary city group (check-in/out from the group's days, using Memo's HotelAvailabilityService), following conventions.md and the team plan.
+Build ITN-25: hotel availability for an itinerary city group (check-in/out from the group's days), following conventions.md and the team plan. Memo's hotel search route is not merged yet, so use the available part of HTL-11 (HotelAvailabilityService.freeRoomsByHotel) as a stand-in. Leave a TODO so it is easy to swap for the real search route once it ships, ensuring both endpoints always agree.
 How the output was used:
 Claude Code added GET /api/itineraries/:id/hotels?groupIndex&guests&rooms (ItineraryHotelsService): check-in is the city group's first day and check-out the day after its last day. Memo's hotel search route (HTL-11) is not in develop yet, so it uses the part of HTL-11 that is merged, HotelAvailabilityService.freeRoomsByHotel, over the city's active hotels, with a guests/rooms capacity check, cheapest first. I left a note to replace this with one call to Memo's search service once GET /hotels/search is merged, so the two always return the same hotels. 4 unit tests were added. npm run build, npm test (443 passed) and eslint on the new files passed.
 ================================================
