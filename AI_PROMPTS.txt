@@ -270,3 +270,14 @@ Start PAY-04 (my first phase 1 item): add PLATFORM_CURRENCY (default USD) to the
 How the output was used:
 Claude Code added backend/src/common/helpers/money.ts: platformCurrency() (USD unless PLATFORM_CURRENCY is set), isPlatformCurrency() (case-insensitive, for the Stripe webhook check in PAY-01), stripeCurrency(), isCents(), the IsCents(min) DTO decorator and platformCurrencyProp() for the currency field of price snapshots, Payment and Refund records (defaults to the platform currency and refuses any other). env.validation.ts now accepts only a supported currency for PLATFORM_CURRENCY, and .env.example sets USD with a warning never to change it once prices are stored. I reviewed the code, chose to read the setting when called (not at import) so it sees backend/.env, and kept other members' modules unchanged. Unit tests added in money.spec.ts and env.validation.spec.ts; npm run build, npm test (311 passed) and npm run test:e2e passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-11
+Prompt:
+Start my next phase 1 item: the RoomLock schema (one document per room per night, unique on roomId + date, kind Held / Booked / Blocked, bookingId, expiresAt for Held) and HotelAvailabilityService.freeRooms(hotelId, checkIn, checkOut), so Rawda (HTL-02, HTL-05, HTL-06, HTL-08) and Moharm (ITN-25) can build on them. Follow conventions.md "Overlap safety" and the team plan's HTL-11 notes.
+How the output was used:
+Claude Code added src/hotel-bookings: the RoomLock schema with its unique (roomId, date) index, HotelBookingsModule (registered before HotelsModule so GET /hotels/search will come before GET /hotels/:id), and HotelAvailabilityService with freeRooms, freeRoomsByHotel (for search), lockNights (all-or-nothing ordered insert that deletes its own locks on a duplicate key and answers 409, clearing expired holds first), confirmHeld, releaseBooking and unblock, plus the stayNights and coversStay helpers. I reviewed the design, kept Rawda's Room schema unchanged (her HTL-04 range format is read as is), and added a 366-night limit per call so one request cannot create thousands of locks. 20 unit tests were added. A temporary test against a throwaway Atlas database (travel-platform-e2e-roomlocks, dropped afterwards, never committed) checked the unique index, five parallel holds with exactly one winner, multi-room rollback, expired holds, blocking and confirming. npm run build, npm test (311 passed) and npm run test:e2e passed. The search route itself (GET /hotels/search) follows in a later PR.
+================================================
