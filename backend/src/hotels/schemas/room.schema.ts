@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
-
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
 // HTL-04: one bookable date range, as whole dates "YYYY-MM-DD".
 // `from` is the first night and `to` is the day AFTER the last night, so
 // { from: '2026-12-01', to: '2027-01-01' } covers the 31 nights of December.
@@ -16,7 +15,12 @@ export class BookableRange {
 // own (conventions.md, "Hotels (HTL)").
 @Schema({ timestamps: true, collection: 'rooms' })
 export class Room {
-  @Prop({ type: Types.ObjectId, ref: 'Hotel', required: true, index: true })
+    @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Hotel',
+    required: true,
+    index: true,
+  })
   hotelId: Types.ObjectId;
 
   // Room number or name, unique within the hotel (compound index below).
