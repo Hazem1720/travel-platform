@@ -259,3 +259,14 @@ Revise everything and make sure it is up to date with GitHub, then update the tr
 How the output was used:
 Claude compared the tracker with the merged and open PRs. It set GEN-08 to Done (#153). It set the items in open PRs to In Review when the PR completes them (#154 GEN-01/GEN-07, #157 HTL-01/03/04/09/10) and to In Progress when the PR is partial or a draft (#155 GEN-11, #156 FLT-11/12/15/19/21). It also added the PR links in requirements-tracker.csv and .xlsx (Tracker sheet, owner sheets and Summary counts). ACC-11, FLT-01, FLT-09 and GEN-06 were left In Progress because their PRs say the routes follow later. I checked the PR descriptions and the Summary counts before committing.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-04
+Prompt:
+Start PAY-04 (my first phase 1 item): add PLATFORM_CURRENCY (default USD) to the config validation and .env.example, export it, and give the team helpers so every price, payment and refund is stored as integer cents in that one currency (conventions.md, "Money").
+How the output was used:
+Claude Code added backend/src/common/helpers/money.ts: platformCurrency() (USD unless PLATFORM_CURRENCY is set), isPlatformCurrency() (case-insensitive, for the Stripe webhook check in PAY-01), stripeCurrency(), isCents(), the IsCents(min) DTO decorator and platformCurrencyProp() for the currency field of price snapshots, Payment and Refund records (defaults to the platform currency and refuses any other). env.validation.ts now accepts only a supported currency for PLATFORM_CURRENCY, and .env.example sets USD with a warning never to change it once prices are stored. I reviewed the code, chose to read the setting when called (not at import) so it sees backend/.env, and kept other members' modules unchanged. Unit tests added in money.spec.ts and env.validation.spec.ts; npm run build, npm test (311 passed) and npm run test:e2e passed.
+================================================
