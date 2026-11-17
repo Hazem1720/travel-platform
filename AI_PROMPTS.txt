@@ -446,3 +446,14 @@ I am Moharm. Build all my remaining ITN requirements in the order of my chapter 
 How the output was used:
 Claude Code added PublicItinerariesService and PublicItinerariesController: GET /api/itineraries/public/search (guests too; keyword matches the title, a country name or code, or a city name; filters minDays/maxDays, country, city; minDays above maxDays gives 400), GET /api/itineraries/public/:id (read-only with author, numbered days, activities and budget) and POST /api/itineraries/:id/clone (registered users only). Only Public, not hidden (GEN-10) itineraries by authors who are not deactivated (ACC-12) are shown; anything else is 404, so setting Private (ITN-20) removes it at once. The clone is a deep copy with new ids of days, activities, budgets and transport costs, Private, with clonedFrom crediting the author, and independent of the original. The public controller is registered before the :id routes, and both public routes were added to PUBLIC_ROUTES in src/auth/route-guards.spec.ts as the team plan says. I reviewed the clone sharing image URLs; ITN-12 keeps a file while any copy uses it. 6 unit tests were added. npm run build, npm test (439 passed) and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-25
+Prompt:
+I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+How the output was used:
+Claude Code added GET /api/itineraries/:id/hotels?groupIndex&guests&rooms (ItineraryHotelsService): check-in is the city group's first day and check-out the day after its last day. Memo's hotel search route (HTL-11) is not in develop yet, so it uses the part of HTL-11 that is merged, HotelAvailabilityService.freeRoomsByHotel, over the city's active hotels, with a guests/rooms capacity check, cheapest first. I left a note to replace this with one call to Memo's search service once GET /hotels/search is merged, so the two always return the same hotels. 4 unit tests were added. npm run build, npm test (443 passed) and eslint on the new files passed.
+================================================

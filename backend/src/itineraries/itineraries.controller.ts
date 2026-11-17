@@ -36,6 +36,8 @@ import {
   ItinerariesService,
 } from './itineraries.service';
 import { PublicItinerariesService } from './public-itineraries.service';
+import { ItineraryHotelsQueryDto } from './dto/itinerary-search.dto';
+import { ItineraryHotelsService } from './itinerary-hotels.service';
 
 export const ID_PARAM = { name: 'id', example: '6735a1f4c1a2b3c4d5e6f901' };
 export const NOT_FOUND = {
@@ -66,6 +68,7 @@ export class ItinerariesController {
   constructor(
     private readonly itineraries: ItinerariesService,
     private readonly publicItineraries: PublicItinerariesService,
+    private readonly itineraryHotels: ItineraryHotelsService,
   ) {}
 
   @Post()
@@ -175,5 +178,59 @@ export class ItinerariesController {
   })
   clone(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.publicItineraries.clone(user, id);
+  }
+
+  @Get(':id/hotels')
+  @ApiParam(ID_PARAM)
+  @ApiOperation({
+    summary:
+      'Hotels available for one city group of my itinerary (ITN-25, reuses HTL-11)',
+    description:
+      "Check-in is the group's first day and check-out the day after its " +
+      'last day. Prices are USD cents per night (PAY-04).',
+  })
+  @ApiOkResponse({
+    schema: {
+      example: {
+        search: {
+          cityId: 'luxor',
+          checkIn: '2026-12-05',
+          checkOut: '2026-12-07',
+          guests: 2,
+          rooms: 1,
+          fromDay: 5,
+          toDay: 6,
+        },
+        data: [
+          {
+            _id: '6735a1f4c1a2b3c4d5e6f801',
+            name: 'TEST Nile View Hotel',
+            cityId: 'luxor',
+            starClass: 4,
+            fromPricePerNight: 12000,
+            freeRooms: [],
+          },
+        ],
+        meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+      },
+    },
+  })
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'Validation failed',
+      details: { groupIndex: ['groupIndex must be between 0 and 2'] },
+      description: 'No such group, or more rooms than guests',
+    },
+    UNAUTHENTICATED,
+    NOT_A_USER,
+    NOT_FOUND,
+  )
+  hotels(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Query() q: ItineraryHotelsQueryDto,
+  ) {
+    return this.itineraryHotels.hotelsForGroup(user, id, q);
   }
 }
