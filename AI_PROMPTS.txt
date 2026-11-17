@@ -424,3 +424,14 @@ I am Moharm. Build all my remaining ITN requirements in the order of my chapter 
 How the output was used:
 Claude Code added POST /api/activities/:id/images and DELETE /api/activities/:id/images/:imageId (ActivityImagesService) using Aabsy's shared upload utility (GEN-08: @ImageUpload, UploadsService; JPG or PNG, 5 MB, GIFs rejected). At most 5 images per activity: the limit is checked first and again inside the update's filter, and saved files are deleted if a parallel upload filled the slots. Deleting an image or an activity deletes the files, unless a clone (ITN-21) still uses them. 6 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-18
+Prompt:
+I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+How the output was used:
+Claude Code added src/exchange-rates: the ExchangeRate collection (one document per day: date, base USD, rates) and ExchangeRatesService, which fetches FXRatesAPI with FXRATES_API_KEY from backend/.env (ConfigService only) once a day (cron at 01:00 UTC) and on first need, caches the rates, uses the latest cached rates when the API is down (and waits 10 minutes before retrying), and answers 503 only if nothing was ever cached. GET /api/itineraries/:id/budget-summary now converts every amount to the user's preferred currency (ACC-09) and shows rateDate and ratesAreOld, keeping the totals in the original currencies under original. Booking prices are not converted (PAY-04). 8 unit tests were added, including the API being down with a wrong key. npm run build, npm test and eslint on the new files passed.
+================================================

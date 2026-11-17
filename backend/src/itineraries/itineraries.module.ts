@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
+import { User, UserSchema } from '../users/schemas/user.schema';
 import {
   ActivitiesController,
   DayActivitiesController,
@@ -24,7 +26,11 @@ import { TransportCostsService } from './transport-costs.service';
   imports: [
     MongooseModule.forFeature([
       { name: Itinerary.name, schema: ItinerarySchema },
+      // Read only: the preferred currency (ITN-18) and, for public
+      // itineraries, the author's name and status (ITN-21, ACC-12).
+      { name: User.name, schema: UserSchema },
     ]),
+    ExchangeRatesModule,
   ],
   controllers: [
     ItinerariesController,

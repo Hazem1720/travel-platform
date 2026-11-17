@@ -144,6 +144,21 @@ describe('Budget (ITN-14)', () => {
   describe('BudgetsService', () => {
     function setup() {
       const doc: any = trip();
+      const rates = {
+        getRates: jest.fn(async () => ({
+          date: '2026-11-17',
+          base: 'USD',
+          rates: { USD: 1, EGP: 50 },
+          stale: false,
+        })),
+        convert: (a: number, from: string, to: string, r: any) =>
+          (a / r.rates[from]) * r.rates[to],
+      };
+      const users = {
+        findById: jest.fn(() => ({
+          lean: async () => ({ preferredCurrency: 'EGP' }),
+        })),
+      };
       const itineraries = {
         findById: jest.fn(() => ({ lean: async () => doc })),
         findOne: jest.fn(() => ({ lean: async () => doc })),
@@ -166,6 +181,8 @@ describe('Budget (ITN-14)', () => {
           itineraries as any,
           itinerariesService,
           days,
+          rates as any,
+          users as any,
         ),
       };
     }
@@ -180,6 +197,22 @@ describe('Budget (ITN-14)', () => {
       });
       expect(entry).toMatchObject({ category: 'food', amount: 120, dayId });
       expect(itineraries.findOneAndUpdate).toHaveBeenCalledTimes(1);
+    });
+
+    it('converts the summary to my preferred currency with the rate date (ITN-18)', async () => {
+      const { service } = setup();
+      const s = await service.summary(OWNER, ITN_ID);
+      // 1950 EGP + 50 USD x 50 = 4450 EGP.
+      expect(s).toMatchObject({
+        currency: 'EGP',
+        rateDate: '2026-11-17',
+        ratesAreOld: false,
+        total: 4450,
+      });
+      expect(s.byCategory.accommodation).toBe(2500);
+      expect(s.byDay.map((d) => d.total)).toEqual([3200, 100, 1150]);
+      expect(s.cityGroups.map((g) => g.budgetSubtotal)).toEqual([3300, 1150]);
+      expect(s.original.total).toEqual({ EGP: 1950, USD: 50 });
     });
 
     it("answers 404 for another user's entry or summary", async () => {

@@ -58,7 +58,7 @@ const ENTRY_EXAMPLE = {
   currency: 'EGP',
   note: 'Lunch and dinner',
 };
-export const SUMMARY_EXAMPLE = {
+const ORIGINAL_EXAMPLE = {
   total: { EGP: 1600, USD: 20 },
   byCategory: {
     food: { EGP: 400 },
@@ -92,6 +92,46 @@ export const SUMMARY_EXAMPLE = {
       budgetSubtotal: { EGP: 700, USD: 20 },
     },
   ],
+};
+
+export const SUMMARY_EXAMPLE = {
+  currency: 'EGP',
+  rateDate: '2026-11-17',
+  ratesAreOld: false,
+  total: 2580,
+  byCategory: {
+    food: 400,
+    accommodation: 980,
+    in_city_transport: 0,
+    activities: 300,
+    intercity_transport: 900,
+  },
+  byDay: [
+    {
+      dayId: '6735a1f4c1a2b3c4d5e6fa01',
+      number: 1,
+      date: '2026-12-01T00:00:00.000Z',
+      cityId: 'cairo',
+      total: 1680,
+      byCategory: {
+        food: 400,
+        accommodation: 980,
+        in_city_transport: 0,
+        activities: 300,
+        intercity_transport: 0,
+      },
+    },
+  ],
+  cityGroups: [
+    {
+      cityId: 'cairo',
+      fromDay: 1,
+      toDay: 1,
+      dayCount: 1,
+      budgetSubtotal: 1680,
+    },
+  ],
+  original: ORIGINAL_EXAMPLE,
 };
 
 // ITN-14: budget entries for the days of my itinerary, and its summary.
@@ -147,10 +187,21 @@ export class BudgetsController {
   @ApiOperation({
     summary:
       'Budget totals by category and by day, with activity costs and ' +
-      'intercity transport (ITN-14)',
+      "intercity transport (ITN-14), in my preferred currency with the rate's date (ITN-18)",
+    description:
+      'Amounts are converted with exchange rates fetched once a day from ' +
+      'FXRatesAPI and cached. If the API is down, the last cached rates are ' +
+      'used (ratesAreOld: true and an older rateDate). `original` gives the ' +
+      "totals in the entries' own currencies. Booking prices are never " +
+      'converted (PAY-04).',
   })
   @ApiOkResponse({ schema: { example: SUMMARY_EXAMPLE } })
-  @ApiErrors(UNAUTHENTICATED, NOT_A_USER, NOT_FOUND)
+  @ApiErrors(UNAUTHENTICATED, NOT_A_USER, NOT_FOUND, {
+    status: 503,
+    message:
+      'Exchange rates are unavailable right now and none are cached yet, please try again later',
+    description: 'FXRatesAPI is unavailable and no rates were ever cached',
+  })
   summary(@CurrentUser() user: AuthUser, @Param('id') id: string) {
     return this.budgets.summary(user, id);
   }

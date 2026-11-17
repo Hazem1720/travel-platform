@@ -3,7 +3,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { assertOwner } from '../common/helpers/ownership';
 import { AuthUser } from '../common/types/auth-user.type';
-import { summarizeByCurrency } from './budget.summary';
+import { ExchangeRatesService } from '../exchange-rates/exchange-rates.service';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { summarizeByCurrency, summarizeConverted } from './budget.summary';
 import { DaysService } from './days.service';
 import { CreateBudgetDto, UpdateBudgetDto } from './dto/budget.dto';
 import { ItinerariesService } from './itineraries.service';
@@ -24,6 +26,8 @@ export class BudgetsService {
     private readonly itineraries: Model<ItineraryDocument>,
     private readonly itinerariesService: ItinerariesService,
     private readonly days: DaysService,
+    private readonly exchangeRates: ExchangeRatesService,
+    @InjectModel(User.name) private readonly users: Model<UserDocument>,
   ) {}
 
   async add(user: AuthUser, id: string, dayId: string, dto: CreateBudgetDto) {
@@ -88,9 +92,26 @@ export class BudgetsService {
 
   // ITN-14: totals by category and by day, including activity costs (under
   // Activities) and intercity transport (its own line).
+  // ITN-18: converted to the user's preferred currency (ACC-09) with the
+  // cached daily rates, showing the rate date. `original` keeps the totals in
+  // the entries' own currencies.
   async summary(user: AuthUser, id: string) {
     const itinerary = await this.itinerariesService.findOwned(user, id);
-    return summarizeByCurrency(itinerary);
+    const profile = await this.users
+      .findById(user.id, { preferredCurrency: 1 })
+      .lean();
+    const currency = profile?.preferredCurrency ?? 'USD';
+    const rates = await this.exchangeRates.getRates();
+    const converted = summarizeConverted(itinerary, (amount, from) =>
+      this.exchangeRates.convert(amount, from, currency, rates),
+    );
+    return {
+      currency,
+      rateDate: rates.date,
+      ratesAreOld: rates.stale,
+      ...converted,
+      original: summarizeByCurrency(itinerary),
+    };
   }
 
   private async findOwnedEntry(user: AuthUser, entryId: string) {

@@ -164,3 +164,34 @@ export function presentWithBudget<
     cityGroups: summarizeByCurrency(itinerary).cityGroups,
   };
 }
+
+// ITN-18: the same summary with every amount converted to one currency and
+// rounded to 2 decimals at the end.
+export function summarizeConverted(
+  itinerary: SummaryItinerary,
+  convert: (amount: number, currency: string) => number,
+): BudgetSummary<number> {
+  const box = () => ({ value: 0 });
+  const raw = summarize(itinerary, box, (t, line) => {
+    t.value += convert(line.amount, line.currency);
+  });
+  const v = (b: { value: number }) => round2(b.value);
+  const lines = (r: Record<SummaryLine, { value: number }>) =>
+    Object.fromEntries(Object.entries(r).map(([k, b]) => [k, v(b)])) as Record<
+      SummaryLine,
+      number
+    >;
+  return {
+    total: v(raw.total),
+    byCategory: lines(raw.byCategory),
+    byDay: raw.byDay.map((d) => ({
+      ...d,
+      total: v(d.total),
+      byCategory: lines(d.byCategory),
+    })),
+    cityGroups: raw.cityGroups.map((g) => ({
+      ...g,
+      budgetSubtotal: v(g.budgetSubtotal),
+    })),
+  };
+}
