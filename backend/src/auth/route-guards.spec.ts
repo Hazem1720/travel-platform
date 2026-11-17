@@ -26,6 +26,7 @@ const PUBLIC_ROUTES = [
   'POST /auth/logout',
   'GET /airlines/:id',
   'GET /airports',
+  'GET /uploads/:file',
   'GET /hotels/:id',
 ];
 

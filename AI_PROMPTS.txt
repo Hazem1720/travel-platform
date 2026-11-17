@@ -207,3 +207,14 @@ Distribute all of Hasan's work in the first four phases of the team plan to Memo
 How the output was used:
 Claude proposed a split that keeps each item near its module and evens the weighted load: Aabsy takes the shared services (GEN-08, GEN-01, GEN-07), Hazem the moderator accounts and suspensions (ACC-13, ACC-15, ACC-16), Memo the account list, password reset and hotel search extras (ACC-14, ACC-07a, HTL-15, HTL-12), and Hasan every phase 5 item. It moved the owners in the tracker CSV and xlsx (member sheets and Summary counts too), set FLT-02 to Done and FLT-01, FLT-09 and GEN-06 to In Progress after PRs #146-#150, and rebuilt the team plan PDF: finished requirements are no longer listed and partly done ones show only what is left. I reviewed the split before it was shared with the team.
 ================================================
+
+================================================
+Date: 2026-11-15
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: GEN-08
+Prompt:
+Explain the project and my chapter of the team plan, then build GEN-08 with me and explain each file: a shared upload utility in src/uploads that accepts only JPG and PNG (checked from the file's first bytes, not the extension or mimetype), at most 5 MB each, with a maxCount per route (5 for posts, activities and hotels, 1 for an airline logo), stores files on the server and serves them by URL, with a Swagger multipart example the team can copy.
+How the output was used:
+Claude wrote image-file.ts (5 MB limit, IMAGE_LIMITS, magic-byte check for PNG and JPG, assertValidImage and assertImageLimit), the @ImageUpload(field, maxCount) decorator (multer in memory, its 413 and "unexpected field" errors turned into 400s in the shared format, plus @ApiConsumes and @ApiBody for Swagger), a global UploadsModule with UploadsService.save(files) (random UUID names in backend/uploads, returns /api/uploads/... URLs), remove(url) and a public GET /api/uploads/:file that only serves names the service generated. POST /api/uploads/images (logged-in users, up to 5) shows the rules in Swagger. backend/uploads/ was added to .gitignore and 'GET /uploads/:file' to PUBLIC_ROUTES. Unit and HTTP tests cover a 1 MB PNG, a 6 MB JPG, a GIF, a text file renamed to .png, six files, no file and unsafe file names. I reviewed each file with Claude's explanation before committing.
+================================================
