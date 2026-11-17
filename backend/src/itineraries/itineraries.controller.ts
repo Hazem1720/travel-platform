@@ -36,7 +36,14 @@ import {
   ItinerariesService,
 } from './itineraries.service';
 import { PublicItinerariesService } from './public-itineraries.service';
-import { ItineraryHotelsQueryDto } from './dto/itinerary-search.dto';
+import {
+  ItineraryFlightsQueryDto,
+  ItineraryHotelsQueryDto,
+} from './dto/itinerary-search.dto';
+import {
+  FLIGHT_SEARCH_NOT_READY,
+  ItineraryFlightsService,
+} from './itinerary-flights.service';
 import { ItineraryHotelsService } from './itinerary-hotels.service';
 
 export const ID_PARAM = { name: 'id', example: '6735a1f4c1a2b3c4d5e6f901' };
@@ -69,6 +76,7 @@ export class ItinerariesController {
     private readonly itineraries: ItinerariesService,
     private readonly publicItineraries: PublicItinerariesService,
     private readonly itineraryHotels: ItineraryHotelsService,
+    private readonly itineraryFlights: ItineraryFlightsService,
   ) {}
 
   @Post()
@@ -232,5 +240,53 @@ export class ItinerariesController {
     @Query() q: ItineraryHotelsQueryDto,
   ) {
     return this.itineraryHotels.hotelsForGroup(user, id, q);
+  }
+
+  @Get(':id/flights')
+  @ApiParam(ID_PARAM)
+  @ApiOperation({
+    summary:
+      "Flights from an airport to the first day's city (ITN-26, reuses FLT-11 and FLT-12)",
+    description:
+      'Searches every airport in the city of the first day. The outbound ' +
+      "date is the start date; with roundTrip=true the return is the last day's date.",
+  })
+  @ApiOkResponse({
+    schema: {
+      example: {
+        search: {
+          origin: 'CAI',
+          cityId: 'dubai',
+          destinations: ['DXB'],
+          date: '2026-12-01',
+          returnDate: '2026-12-05',
+          roundTrip: true,
+        },
+        data: [],
+        meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+      },
+    },
+  })
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'Unknown airport "XXX"',
+      description: 'An unknown origin, or an itinerary without days',
+    },
+    UNAUTHENTICATED,
+    NOT_A_USER,
+    NOT_FOUND,
+    {
+      status: 501,
+      message: FLIGHT_SEARCH_NOT_READY,
+      description: "Until Aabsy's flight search is merged",
+    },
+  )
+  flights(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Query() q: ItineraryFlightsQueryDto,
+  ) {
+    return this.itineraryFlights.flightsFor(user, id, q);
   }
 }

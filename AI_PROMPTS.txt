@@ -457,3 +457,14 @@ I am Moharm. Build all my remaining ITN requirements in the order of my chapter 
 How the output was used:
 Claude Code added GET /api/itineraries/:id/hotels?groupIndex&guests&rooms (ItineraryHotelsService): check-in is the city group's first day and check-out the day after its last day. Memo's hotel search route (HTL-11) is not in develop yet, so it uses the part of HTL-11 that is merged, HotelAvailabilityService.freeRoomsByHotel, over the city's active hotels, with a guests/rooms capacity check, cheapest first. I left a note to replace this with one call to Memo's search service once GET /hotels/search is merged, so the two always return the same hotels. 4 unit tests were added. npm run build, npm test (443 passed) and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-26
+Prompt:
+I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+How the output was used:
+Claude Code added GET /api/itineraries/:id/flights?origin&roundTrip (ItineraryFlightsService): the origin must be a listed airport (Hazem's AirportsService.assertAirportExists), the destinations are every airport in the city of the first day, the outbound date is the start date and, with roundTrip=true, the return date is the last day's date. Aabsy's flight search (FLT-11, FLT-12) is not in develop yet (only its query DTO is on a branch, and there is no Flight schema), so the search goes through a FLIGHT_SEARCH contract: until Aabsy's service is provided for it, the route answers 501 with the computed search, as Memo did for Stripe. Wiring it later is one provider line in ItinerariesModule. 5 unit tests were added. npm run build, npm test (448 passed), npm run test:e2e (Swagger checks, 8 passed, database flow skipped) and eslint on the new files passed.
+================================================

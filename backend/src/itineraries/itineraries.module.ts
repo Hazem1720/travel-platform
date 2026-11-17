@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AirportsModule } from '../airports/airports.module';
 import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
 import { HotelBookingsModule } from '../hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from '../hotels/hotels.module';
@@ -16,6 +17,7 @@ import { DaysController } from './days.controller';
 import { DaysService } from './days.service';
 import { ItinerariesController } from './itineraries.controller';
 import { ItinerariesService } from './itineraries.service';
+import { ItineraryFlightsService } from './itinerary-flights.service';
 import { ItineraryHotelsService } from './itinerary-hotels.service';
 import { PublicItinerariesController } from './public-itineraries.controller';
 import { PublicItinerariesService } from './public-itineraries.service';
@@ -39,6 +41,8 @@ import { TransportCostsService } from './transport-costs.service';
     // ITN-25: hotels and room availability (Rawda, Memo).
     HotelsModule,
     HotelBookingsModule,
+    // ITN-26: airports (Hazem).
+    AirportsModule,
   ],
   // PublicItinerariesController first: GET /itineraries/public/... must be
   // matched before the :id routes.
@@ -60,6 +64,7 @@ import { TransportCostsService } from './transport-costs.service';
     BudgetsService,
     PublicItinerariesService,
     ItineraryHotelsService,
+    ItineraryFlightsService,
   ],
   exports: [ItinerariesService, PublicItinerariesService, MongooseModule],
 })
