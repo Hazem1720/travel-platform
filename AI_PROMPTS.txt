@@ -281,3 +281,14 @@ Start my next phase 1 item: the RoomLock schema (one document per room per night
 How the output was used:
 Claude Code added src/hotel-bookings: the RoomLock schema with its unique (roomId, date) index, HotelBookingsModule (registered before HotelsModule so GET /hotels/search will come before GET /hotels/:id), and HotelAvailabilityService with freeRooms, freeRoomsByHotel (for search), lockNights (all-or-nothing ordered insert that deletes its own locks on a duplicate key and answers 409, clearing expired holds first), confirmHeld, releaseBooking and unblock, plus the stayNights and coversStay helpers. I reviewed the design, kept Rawda's Room schema unchanged (her HTL-04 range format is read as is), and added a 366-night limit per call so one request cannot create thousands of locks. 20 unit tests were added. A temporary test against a throwaway Atlas database (travel-platform-e2e-roomlocks, dropped afterwards, never committed) checked the unique index, five parallel holds with exactly one winner, multi-room rollback, expired holds, blocking and confirming. npm run build, npm test (311 passed) and npm run test:e2e passed. The search route itself (GET /hotels/search) follows in a later PR.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-23
+Prompt:
+Start my next phase 1 item: the Review schema (HTL-23, schema only, with the GEN-10 hidden flag) so Rawda (HTL-02), Hafez (GEN-09, GEN-10) and Hasan (the HTL-23 and HTL-24 routes) can build on it. Follow conventions.md ("Ratings and reviews", "Reports and hidden content") and the team plan.
+How the output was used:
+Claude Code added backend/src/hotel-bookings/schemas/review.schema.ts: hotelId, bookingId (unique, one review per reservation), userId, rating (whole number 1-5), text (optional, trimmed, max 1000 characters) and hidden (default false), with timestamps and an index for a hotel's visible reviews newest first. The model is registered and exported by HotelBookingsModule. I reviewed it and left the routes and the rating recalculation to Hasan (HTL-23 owner). 9 unit tests were added. A temporary test against a throwaway Atlas database (travel-platform-e2e-reviews, dropped afterwards, never committed) checked that three parallel reviews of one reservation give exactly one success and two duplicate-key errors, and that the newest-first list of visible reviews uses the index. npm run build, npm test (340 passed) and npm run test:e2e passed.
+================================================
