@@ -27,6 +27,7 @@ const PUBLIC_ROUTES = [
   'GET /airlines/:id',
   'GET /airports',
   'GET /uploads/:file',
+  'GET /hotels/:id',
 ];
 
 interface Route {
