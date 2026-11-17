@@ -112,7 +112,9 @@ export class ItinerariesController {
   @Patch(':id')
   @ApiParam(ID_PARAM)
   @ApiOperation({
-    summary: "Edit your itinerary's title, countries or start date (ITN-01)",
+    summary:
+      "Edit your itinerary's title, countries or start date (ITN-01), " +
+      'or set it Public or Private (ITN-20)',
   })
   @ApiOkResponse({ type: ItineraryDto, description: 'The updated itinerary' })
   @ApiErrors(

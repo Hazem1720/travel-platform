@@ -50,15 +50,19 @@ export class ItinerariesService {
 
   // ITN-01: the owner edits the title, countries and start date. Day dates
   // are computed from startDate, so they follow it automatically (ITN-05).
+  // ITN-20: the owner sets the visibility. Public search and the public view
+  // only read Public itineraries, so Private takes effect at once.
   async update(user: AuthUser, id: string, dto: UpdateItineraryDto) {
     await this.findOwned(user, id);
-    const set: Partial<Pick<Itinerary, 'title' | 'countries' | 'startDate'>> =
-      {};
+    const set: Partial<
+      Pick<Itinerary, 'title' | 'countries' | 'startDate' | 'visibility'>
+    > = {};
     if (dto.title !== undefined) set.title = dto.title;
     if (dto.countries !== undefined) {
       set.countries = await this.assertCountries(dto.countries);
     }
     if (dto.startDate !== undefined) set.startDate = toUtcDate(dto.startDate);
+    if (dto.visibility !== undefined) set.visibility = dto.visibility;
 
     const updated = await this.itineraries
       .findOneAndUpdate(
