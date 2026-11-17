@@ -303,3 +303,14 @@ Start my last phase 1 item: the payments contract stub (PAY-01) so Aabsy (FLT-23
 How the output was used:
 Claude Code added backend/src/payments: payment-handler.ts (PaymentBookingType, PaymentStatus, RefundStatus, PayableBooking, the PaymentHandler interface, CreatedPayment, RefundResult), PaymentsService (handler registry; getPayableFor with the shared PAY-01 rules: 404 for a missing or another user's booking, 409 when not PendingPayment or the hold expired, 400 until policies are accepted; confirmBooking and releaseInventory call the handler; refund returns null for 0 cents) and PaymentsModule, registered in app.module.ts. The Stripe steps (createPayment, refund of a positive amount) answer 501 until PAY-01 and PAY-03. I reviewed the contract, chose to keep the payability checks in Payments so flights and hotels follow the same rules, and added userId to createPayment for the ownership check. 17 unit tests were added, including one showing that a handler registered from another module reaches the same PaymentsService. npm run build, npm test (357 passed) and npm run test:e2e passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-01
+Prompt:
+I am Moharm. Build ITN-01 (create, edit and delete an itinerary) in src/itineraries, following conventions.md, the existing hotels and users modules, and my chapter of the team plan. Show me the plan first. Only registered users (role user) may use these routes.
+How the output was used:
+Claude Code proposed a plan, which I checked against the official requirement and the project description (section 8.8), then built src/itineraries: the Itinerary schema (ownerId, title up to 100 characters, countries, startDate as UTC midnight, visibility Private by default, the GEN-10 hidden flag, embedded days capped at 60, and clonedFrom for ITN-21), CreateItineraryDto and UpdateItineraryDto (only title, countries and startDate; unknown fields give 400), ItinerariesService (countries checked against the seeded countries collection, assertOwner on every edit and delete so other users get 404, delete removes only the one document so clones survive) and ItinerariesController (POST, PATCH and DELETE /api/itineraries, @Roles(Role.USER), Swagger examples with the requirement ID). The model and service are exported for Hafez (BLG-12, GEN-09, GEN-10) and Memo (BON-02). I chose "users only" for the role. 17 unit tests were added. npm run build, npm test (374 passed) and eslint on the new files passed.
+================================================

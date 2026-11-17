@@ -1,0 +1,118 @@
+import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
+import {
+  ApiCookieAuth,
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import { MessageDto } from '../auth/dto/auth-responses.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { Role } from '../common/enums/role.enum';
+import {
+  ApiErrors,
+  MUST_CHANGE_PASSWORD,
+  UNAUTHENTICATED,
+} from '../common/swagger/api-error.decorator';
+import { AuthUser } from '../common/types/auth-user.type';
+import { CreateItineraryDto } from './dto/create-itinerary.dto';
+import { ItineraryDto } from './dto/itinerary.dto';
+import { UpdateItineraryDto } from './dto/update-itinerary.dto';
+import {
+  ITINERARY_DELETED,
+  ITINERARY_NOT_FOUND,
+  ItinerariesService,
+} from './itineraries.service';
+
+const ID_PARAM = { name: 'id', example: '6735a1f4c1a2b3c4d5e6f901' };
+const NOT_FOUND = {
+  status: 404,
+  message: ITINERARY_NOT_FOUND,
+  description: "No such itinerary, or it is another user's (ACC-11)",
+};
+const NOT_A_USER = {
+  status: 403,
+  message: 'You do not have permission for this action',
+  description:
+    'Not a registered user (admins and moderators cannot plan trips), ' +
+    `a suspended account, or "${MUST_CHANGE_PASSWORD.message}"`,
+};
+const BAD_ID = {
+  status: 400,
+  message: 'Invalid value for "_id"',
+  details: { _id: ['"abc" is not valid'] },
+};
+
+// Itineraries are planned by registered users only (project description,
+// section 4), so every route here is @Roles(Role.USER).
+@ApiTags('Itineraries')
+@ApiCookieAuth('access_token')
+@Roles(Role.USER)
+@Controller('itineraries')
+export class ItinerariesController {
+  constructor(private readonly itineraries: ItinerariesService) {}
+
+  @Post()
+  @ApiOperation({ summary: 'Create an itinerary, Private by default (ITN-01)' })
+  @ApiCreatedResponse({ type: ItineraryDto, description: 'The new itinerary' })
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'Validation failed',
+      details: { countries: ['Unknown country: XX'] },
+      description:
+        'Missing or too long title (over 100 characters), no countries, ' +
+        'an unknown country code, or an invalid start date',
+    },
+    UNAUTHENTICATED,
+    NOT_A_USER,
+  )
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateItineraryDto) {
+    return this.itineraries.create(user, dto);
+  }
+
+  @Patch(':id')
+  @ApiParam(ID_PARAM)
+  @ApiOperation({
+    summary: "Edit your itinerary's title, countries or start date (ITN-01)",
+  })
+  @ApiOkResponse({ type: ItineraryDto, description: 'The updated itinerary' })
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'Validation failed',
+      details: {
+        title: ['title must be shorter than or equal to 100 characters'],
+      },
+      description:
+        'Invalid fields, an unknown country, or a malformed itinerary id',
+    },
+    UNAUTHENTICATED,
+    NOT_A_USER,
+    NOT_FOUND,
+  )
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateItineraryDto,
+  ) {
+    return this.itineraries.update(user, id, dto);
+  }
+
+  // The frontend asks for confirmation first (Milestone 2).
+  @Delete(':id')
+  @ApiParam(ID_PARAM)
+  @ApiOperation({
+    summary: 'Delete your itinerary; clones made by others are kept (ITN-01)',
+  })
+  @ApiOkResponse({
+    type: MessageDto,
+    schema: { example: { message: ITINERARY_DELETED } },
+  })
+  @ApiErrors(BAD_ID, UNAUTHENTICATED, NOT_A_USER, NOT_FOUND)
+  remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.itineraries.remove(user, id);
+  }
+}
