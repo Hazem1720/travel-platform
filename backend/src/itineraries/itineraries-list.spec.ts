@@ -14,7 +14,14 @@ describe('ItinerariesService list and details (ITN-03)', () => {
   const stranger: AuthUser = { ...owner, id: '6735a1f4c1a2b3c4d5e6f002' };
   const ID = '6735a1f4c1a2b3c4d5e6f901';
 
-  function setup(found: unknown = { _id: ID, ownerId: owner.id }) {
+  function setup(
+    found: unknown = {
+      _id: ID,
+      ownerId: owner.id,
+      startDate: new Date(),
+      days: [],
+    },
+  ) {
     const itineraries = {
       aggregate: jest.fn<Promise<unknown[]>, [any[]]>(async () => [
         { _id: ID },

@@ -36,20 +36,20 @@ import {
   ItinerariesService,
 } from './itineraries.service';
 
-const ID_PARAM = { name: 'id', example: '6735a1f4c1a2b3c4d5e6f901' };
-const NOT_FOUND = {
+export const ID_PARAM = { name: 'id', example: '6735a1f4c1a2b3c4d5e6f901' };
+export const NOT_FOUND = {
   status: 404,
   message: ITINERARY_NOT_FOUND,
   description: "No such itinerary, or it is another user's (ACC-11)",
 };
-const NOT_A_USER = {
+export const NOT_A_USER = {
   status: 403,
   message: 'You do not have permission for this action',
   description:
     'Not a registered user (admins and moderators cannot plan trips), ' +
     `a suspended account, or "${MUST_CHANGE_PASSWORD.message}"`,
 };
-const BAD_ID = {
+export const BAD_ID = {
   status: 400,
   message: 'Invalid value for "_id"',
   details: { _id: ['"abc" is not valid'] },

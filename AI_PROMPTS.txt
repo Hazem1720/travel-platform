@@ -336,3 +336,14 @@ I am Moharm. Build all my remaining ITN requirements in the order of my chapter 
 How the output was used:
 Claude Code added an optional visibility field (Public or Private) to PATCH /api/itineraries/:id, for the owner only (others get 404). Public search and the public view (ITN-21) read only Public itineraries, so setting Private removes it at once. 4 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-05
+Prompt:
+I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+How the output was used:
+Claude Code added POST /api/itineraries/:id/days and PATCH /api/itineraries/:id/days/:dayId (DaysService, DaysController). The city must be a seeded city; day numbers and dates are computed from the position and the start date (itinerary.view.ts), never stored, so changing the start date moves every date. The 60-day limit is in the update filter, so two requests at once cannot pass it. GET /api/itineraries/:id now shows numbered, dated days. 7 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
