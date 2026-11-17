@@ -321,7 +321,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-03
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-03: list my itineraries and view one, following conventions.md and the team plan.
 How the output was used:
 Claude Code added GET /api/itineraries (my itineraries: title, countries, start date, number of days and visibility, most recently updated first, 10 per page) and GET /api/itineraries/:id (the full itinerary, 404 for another user's). 4 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -332,7 +332,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-20
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-20: add a visibility toggle (Public / Private) to PATCH /itineraries/:id, following conventions.md and the team plan.
 How the output was used:
 Claude Code added an optional visibility field (Public or Private) to PATCH /api/itineraries/:id, for the owner only (others get 404). Public search and the public view (ITN-21) read only Public itineraries, so setting Private removes it at once. 4 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -343,7 +343,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-05
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-05: add, edit and delete days on an itinerary, with the 60-day limit, following conventions.md and the team plan.
 How the output was used:
 Claude Code added POST /api/itineraries/:id/days and PATCH /api/itineraries/:id/days/:dayId (DaysService, DaysController). The city must be a seeded city; day numbers and dates are computed from the position and the start date (itinerary.view.ts), never stored, so changing the start date moves every date. The 60-day limit is in the update filter, so two requests at once cannot pass it. GET /api/itineraries/:id now shows numbered, dated days. 7 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -354,7 +354,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-07
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-07: delete a day and all its contents, following conventions.md and the team plan.
 How the output was used:
 Claude Code added DELETE /api/itineraries/:id/days/:dayId. The day and its contents are removed in one update; the remaining days are renumbered and re-dated automatically because numbers and dates are computed from position, and budget totals are computed from the remaining days. Shared test fixtures moved to itinerary.fixtures-spec.ts. 2 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -365,7 +365,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-08
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-08: reorder days with an optimistic concurrency check, following conventions.md and the team plan.
 How the output was used:
 Claude Code added PATCH /api/itineraries/:id/days/reorder { dayId, newPosition } (declared before :dayId so "reorder" is not read as a day id). Position 0 or beyond the last day gives 400. The new order is saved only if the itinerary has not changed since it was read (updatedAt in the filter), otherwise 409, so a day added at the same moment is never lost. Numbers, dates and city groups follow the order. 5 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -376,7 +376,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-09
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-09: group consecutive days in the same city and show those groups in the itinerary response, following conventions.md and the team plan.
 How the output was used:
 Claude Code added cityGroups() in itinerary.view.ts: consecutive days in the same city become one group { cityId, fromDay, toDay, dayCount }, shown as cityGroups in GET /api/itineraries/:id and in every day route's response. Every day already requires a city (schema and DTO). The group budget subtotal is added with the budget summary (ITN-14). 3 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -387,7 +387,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-10
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-10: add, edit and delete activities on a day (name, description, time, optional cost and images), following conventions.md and the team plan.
 How the output was used:
 Claude Code added embedded activities on each day (name, description, optional HH:mm time, optional cost { amount >= 0, supported currency }, images for ITN-12), POST /api/itineraries/:id/days/:dayId/activities, PATCH /api/activities/:id and DELETE /api/activities/:id (ActivitiesService with array-filter updates). The /api/activities/:id routes find the itinerary holding the activity and answer 404 to anyone but its owner. I chose to store budget amounts in the currency's main unit with up to 2 decimals (they are planning figures in many currencies, never charged). 8 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -398,7 +398,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-16
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-16: intercity transport costs embedded in the itinerary (mode, cities, amount, currency, day), following conventions.md and the team plan.
 How the output was used:
 Claude Code added embedded transport costs (mode flight/train/bus/car/ferry, fromCityId, toCityId, amount >= 0, supported currency, dayId) with POST /api/itineraries/:id/transport-costs, PATCH and DELETE /api/transport-costs/:id (TransportCostsService). Cities must be seeded and the day must belong to this itinerary (400 otherwise); other users get 404. Deleting a day (ITN-07) now also deletes its transport costs. 6 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -409,7 +409,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-14
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-14: budget entries per day and a budget summary (by category, by day, by city group), following conventions.md and the team plan.
 How the output was used:
 Claude Code added embedded budget entries per day (food, accommodation, in_city_transport, activities; amount >= 0 in a supported currency), POST /api/itineraries/:id/days/:dayId/budgets, PATCH and DELETE /api/budgets/:id, and GET /api/itineraries/:id/budget-summary (budget.summary.ts). The summary gives totals by category and by day, counting activity costs under Activities and intercity transport (ITN-16) as its own line, plus each city group's subtotal (ITN-09), which also appears in the itinerary details. Totals are kept per currency here; ITN-18 converts them. I checked one itinerary by hand in a unit test. 6 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -420,7 +420,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-12
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-12: upload and delete images on an activity (at most 5, JPG/PNG, using Aabsy's GEN-08 upload utility), following conventions.md and the team plan.
 How the output was used:
 Claude Code added POST /api/activities/:id/images and DELETE /api/activities/:id/images/:imageId (ActivityImagesService) using Aabsy's shared upload utility (GEN-08: @ImageUpload, UploadsService; JPG or PNG, 5 MB, GIFs rejected). At most 5 images per activity: the limit is checked first and again inside the update's filter, and saved files are deleted if a parallel upload filled the slots. Deleting an image or an activity deletes the files, unless a clone (ITN-21) still uses them. 6 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -431,7 +431,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-18
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-18: exchange rates module (FXRatesAPI, cached daily) and convert the budget summary to the user's preferred currency, following conventions.md and the team plan.
 How the output was used:
 Claude Code added src/exchange-rates: the ExchangeRate collection (one document per day: date, base USD, rates) and ExchangeRatesService, which fetches FXRatesAPI with FXRATES_API_KEY from backend/.env (ConfigService only) once a day (cron at 01:00 UTC) and on first need, caches the rates, uses the latest cached rates when the API is down (and waits 10 minutes before retrying), and answers 503 only if nothing was ever cached. GET /api/itineraries/:id/budget-summary now converts every amount to the user's preferred currency (ACC-09) and shows rateDate and ratesAreOld, keeping the totals in the original currencies under original. Booking prices are not converted (PAY-04). 8 unit tests were added, including the API being down with a wrong key. npm run build, npm test and eslint on the new files passed.
 ================================================
@@ -442,7 +442,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-21
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-21: public search and view of Public itineraries, and clone (registered users only), following conventions.md and the team plan.
 How the output was used:
 Claude Code added PublicItinerariesService and PublicItinerariesController: GET /api/itineraries/public/search (guests too; keyword matches the title, a country name or code, or a city name; filters minDays/maxDays, country, city; minDays above maxDays gives 400), GET /api/itineraries/public/:id (read-only with author, numbered days, activities and budget) and POST /api/itineraries/:id/clone (registered users only). Only Public, not hidden (GEN-10) itineraries by authors who are not deactivated (ACC-12) are shown; anything else is 404, so setting Private (ITN-20) removes it at once. The clone is a deep copy with new ids of days, activities, budgets and transport costs, Private, with clonedFrom crediting the author, and independent of the original. The public controller is registered before the :id routes, and both public routes were added to PUBLIC_ROUTES in src/auth/route-guards.spec.ts as the team plan says. I reviewed the clone sharing image URLs; ITN-12 keeps a file while any copy uses it. 6 unit tests were added. npm run build, npm test (439 passed) and eslint on the new files passed.
 ================================================
@@ -453,7 +453,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-25
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-25: hotel availability for an itinerary city group (check-in/out from the group's days, using Memo's HotelAvailabilityService), following conventions.md and the team plan.
 How the output was used:
 Claude Code added GET /api/itineraries/:id/hotels?groupIndex&guests&rooms (ItineraryHotelsService): check-in is the city group's first day and check-out the day after its last day. Memo's hotel search route (HTL-11) is not in develop yet, so it uses the part of HTL-11 that is merged, HotelAvailabilityService.freeRoomsByHotel, over the city's active hotels, with a guests/rooms capacity check, cheapest first. I left a note to replace this with one call to Memo's search service once GET /hotels/search is merged, so the two always return the same hotels. 4 unit tests were added. npm run build, npm test (443 passed) and eslint on the new files passed.
 ================================================
@@ -464,7 +464,7 @@ Student: Ziad Moharam
 Tool: Claude Code
 Related Requirement: ITN-26
 Prompt:
-I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+Build ITN-26: flight search for an itinerary (origin airport, destinations from the first day's city, Aabsy's FLT-11 behind a contract with 501 until it ships), following conventions.md and the team plan.
 How the output was used:
 Claude Code added GET /api/itineraries/:id/flights?origin&roundTrip (ItineraryFlightsService): the origin must be a listed airport (Hazem's AirportsService.assertAirportExists), the destinations are every airport in the city of the first day, the outbound date is the start date and, with roundTrip=true, the return date is the last day's date. Aabsy's flight search (FLT-11, FLT-12) is not in develop yet (only its query DTO is on a branch, and there is no Flight schema), so the search goes through a FLIGHT_SEARCH contract: until Aabsy's service is provided for it, the route answers 501 with the computed search, as Memo did for Stripe. Wiring it later is one provider line in ItinerariesModule. 5 unit tests were added. npm run build, npm test (448 passed), npm run test:e2e (Swagger checks, 8 passed, database flow skipped) and eslint on the new files passed.
 ================================================
