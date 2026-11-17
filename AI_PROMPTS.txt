@@ -218,3 +218,14 @@ Explain the project and my chapter of the team plan, then build GEN-08 with me a
 How the output was used:
 Claude wrote image-file.ts (5 MB limit, IMAGE_LIMITS, magic-byte check for PNG and JPG, assertValidImage and assertImageLimit), the @ImageUpload(field, maxCount) decorator (multer in memory, its 413 and "unexpected field" errors turned into 400s in the shared format, plus @ApiConsumes and @ApiBody for Swagger), a global UploadsModule with UploadsService.save(files) (random UUID names in backend/uploads, returns /api/uploads/... URLs), remove(url) and a public GET /api/uploads/:file that only serves names the service generated. POST /api/uploads/images (logged-in users, up to 5) shows the rules in Swagger. backend/uploads/ was added to .gitignore and 'GET /uploads/:file' to PUBLIC_ROUTES. Unit and HTTP tests cover a 1 MB PNG, a 6 MB JPG, a GIF, a text file renamed to .png, six files, no file and unsafe file names. I reviewed each file with Claude's explanation before committing.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-08, GEN-01, GEN-07, GEN-11, FLT-11, FLT-12, FLT-15, FLT-19, FLT-21, HTL-01, HTL-03, HTL-04, HTL-09, HTL-10
+Prompt:
+Revise everything and make sure it is up to date with GitHub, then update the tracker statuses for merged work.
+How the output was used:
+Claude compared the tracker with the merged and open PRs. It set GEN-08 to Done (#153). It set the items in open PRs to In Review when the PR completes them (#154 GEN-01/GEN-07, #157 HTL-01/03/04/09/10) and to In Progress when the PR is partial or a draft (#155 GEN-11, #156 FLT-11/12/15/19/21). It also added the PR links in requirements-tracker.csv and .xlsx (Tracker sheet, owner sheets and Summary counts). ACC-11, FLT-01, FLT-09 and GEN-06 were left In Progress because their PRs say the routes follow later. I checked the PR descriptions and the Summary counts before committing.
+================================================
