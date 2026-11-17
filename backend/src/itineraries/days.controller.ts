@@ -16,7 +16,7 @@ import {
 } from '../common/swagger/api-error.decorator';
 import { AuthUser } from '../common/types/auth-user.type';
 import { DAY_NOT_FOUND, DaysService, TOO_MANY_DAYS } from './days.service';
-import { CreateDayDto, UpdateDayDto } from './dto/day.dto';
+import { CreateDayDto, ReorderDayDto, UpdateDayDto } from './dto/day.dto';
 import { ItineraryDto } from './dto/itinerary.dto';
 import { ID_PARAM, NOT_A_USER, NOT_FOUND } from './itineraries.controller';
 
@@ -61,6 +61,37 @@ export class DaysController {
     @Body() dto: CreateDayDto,
   ) {
     return this.days.addDay(user, id, dto);
+  }
+
+  // Declared before :dayId, or Nest would read "reorder" as a day id.
+  @Patch('reorder')
+  @ApiParam(ID_PARAM)
+  @ApiOperation({
+    summary:
+      'Move a day to a new position; days are renumbered and re-dated (ITN-08)',
+  })
+  @ApiOkResponse({ type: ItineraryDto })
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'Validation failed',
+      details: { newPosition: ['newPosition must be between 1 and 3'] },
+      description: 'Position 0 or beyond the last day',
+    },
+    UNAUTHENTICATED,
+    NOT_A_USER,
+    DAY_NOT_FOUND_ERROR,
+    {
+      status: 409,
+      message: 'The itinerary changed at the same time, please try again',
+    },
+  )
+  reorder(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: ReorderDayDto,
+  ) {
+    return this.days.reorderDay(user, id, dto);
   }
 
   @Patch(':dayId')

@@ -29,6 +29,7 @@ export function memoryItineraries(doc: any) {
       lean: async () => {
         const d = state.doc;
         if (!d || String(filter.ownerId) !== String(d.ownerId)) return null;
+        if (filter.updatedAt && filter.updatedAt !== d.updatedAt) return null;
         for (const key of Object.keys(filter)) {
           if (/^days\.\d+$/.test(key)) {
             const i = Number(key.split('.')[1]);
@@ -38,13 +39,17 @@ export function memoryItineraries(doc: any) {
         if (update.$push?.days) d.days = [...d.days, update.$push.days];
         if (update.$set) {
           for (const [k, v] of Object.entries(update.$set)) {
-            if (k.startsWith('days.$.')) {
+            if (k === 'days') {
+              d.days = v;
+            } else if (k.startsWith('days.$.')) {
               const target = d.days.find(
                 (x: any) => String(x._id) === String(filter['days._id']),
               );
               if (!target) return null;
               target[k.slice(7)] = v;
-            } else d[k] = v;
+            } else {
+              d[k] = v;
+            }
           }
         }
         if (update.$pull?.days) {

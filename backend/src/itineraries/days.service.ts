@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -7,7 +8,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { AuthUser } from '../common/types/auth-user.type';
 import { City, CityDocument } from '../reference/schemas/reference.schemas';
-import { CreateDayDto, UpdateDayDto } from './dto/day.dto';
+import { CreateDayDto, ReorderDayDto, UpdateDayDto } from './dto/day.dto';
 import { ItinerariesService } from './itineraries.service';
 import { presentItinerary } from './itinerary.view';
 import {
@@ -101,6 +102,43 @@ export class DaysService {
       )
       .lean();
     if (!updated) throw new NotFoundException(DAY_NOT_FOUND);
+    return presentItinerary(updated);
+  }
+
+  // ITN-08: moves a day to a new position (1 = first). Numbers, dates and
+  // city groups are computed from the order, so they follow. The update only
+  // applies if the itinerary has not changed since it was read, so a day
+  // added or deleted at the same moment is never lost (409, try again).
+  async reorderDay(user: AuthUser, id: string, dto: ReorderDayDto) {
+    const itinerary = await this.itinerariesService.findOwned(user, id);
+    const from = this.assertHasDay(itinerary, dto.dayId);
+    if (dto.newPosition > itinerary.days.length) {
+      throw new BadRequestException({
+        error: 'Bad Request',
+        message: 'Validation failed',
+        details: {
+          newPosition: [
+            `newPosition must be between 1 and ${itinerary.days.length}`,
+          ],
+        },
+      });
+    }
+    const days = [...itinerary.days];
+    const [moved] = days.splice(from, 1);
+    days.splice(dto.newPosition - 1, 0, moved);
+
+    const updated = await this.itineraries
+      .findOneAndUpdate(
+        { _id: id, ownerId: user.id, updatedAt: itinerary.updatedAt },
+        { $set: { days } },
+        { new: true },
+      )
+      .lean();
+    if (!updated) {
+      throw new ConflictException(
+        'The itinerary changed at the same time, please try again',
+      );
+    }
     return presentItinerary(updated);
   }
 

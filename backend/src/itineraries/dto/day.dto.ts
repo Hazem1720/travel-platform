@@ -1,6 +1,14 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsInt,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
@@ -34,3 +42,15 @@ export class CreateDayDto {
 
 // ITN-05: change a day's city or notes.
 export class UpdateDayDto extends PartialType(CreateDayDto) {}
+
+// ITN-08: move a day to a new position, 1 being the first day.
+export class ReorderDayDto {
+  @ApiProperty({ example: '6735a1f4c1a2b3c4d5e6fa03' })
+  @IsMongoId()
+  dayId: string;
+
+  @ApiProperty({ example: 1, minimum: 1, description: '1 = first day' })
+  @IsInt()
+  @Min(1)
+  newPosition: number;
+}
