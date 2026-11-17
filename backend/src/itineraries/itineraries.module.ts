@@ -10,6 +10,8 @@ import { DaysService } from './days.service';
 import { ItinerariesController } from './itineraries.controller';
 import { ItinerariesService } from './itineraries.service';
 import { Itinerary, ItinerarySchema } from './schemas/itinerary.schema';
+import { TransportCostsController } from './transport-costs.controller';
+import { TransportCostsService } from './transport-costs.service';
 
 // ITN requirements (Moharm). Exports the service and the Itinerary model
 // (MongooseModule), so Hafez (BLG-12, GEN-09, GEN-10) and Memo (BON-02) can
@@ -26,8 +28,14 @@ import { Itinerary, ItinerarySchema } from './schemas/itinerary.schema';
     DaysController,
     DayActivitiesController,
     ActivitiesController,
+    TransportCostsController,
   ],
-  providers: [ItinerariesService, DaysService, ActivitiesService],
+  providers: [
+    ItinerariesService,
+    DaysService,
+    ActivitiesService,
+    TransportCostsService,
+  ],
   exports: [ItinerariesService, MongooseModule],
 })
 export class ItinerariesModule {}

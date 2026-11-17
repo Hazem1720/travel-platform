@@ -88,8 +88,8 @@ export class DaysService {
     return presentItinerary(updated);
   }
 
-  // ITN-07: deletes a day (the frontend confirms first). Its activities and
-  // budget entries go with it. Numbers, dates and budget totals are always
+  // ITN-07: deletes a day (the frontend confirms first). Its activities,
+  // budget entries and transport costs (ITN-16) go with it. Numbers, dates and budget totals are always
   // computed from the remaining days, so they are recalculated at once.
   async removeDay(user: AuthUser, id: string, dayId: string) {
     const itinerary = await this.itinerariesService.findOwned(user, id);
@@ -97,7 +97,12 @@ export class DaysService {
     const updated = await this.itineraries
       .findOneAndUpdate(
         { _id: id, ownerId: user.id, 'days._id': dayId },
-        { $pull: { days: { _id: new Types.ObjectId(dayId) } } },
+        {
+          $pull: {
+            days: { _id: new Types.ObjectId(dayId) },
+            transportCosts: { dayId: new Types.ObjectId(dayId) },
+          },
+        },
         { new: true },
       )
       .lean();
@@ -150,12 +155,12 @@ export class DaysService {
 
   // GEN-12: the city must be in the seeded city list (shared with hotels
   // and airports).
-  async assertCity(cityId: string) {
+  async assertCity(cityId: string, field = 'cityId') {
     if (!(await this.cities.exists({ _id: cityId }))) {
       throw new BadRequestException({
         error: 'Bad Request',
         message: 'Validation failed',
-        details: { cityId: [`Unknown city: ${cityId}`] },
+        details: { [field]: [`Unknown city: ${cityId}`] },
       });
     }
   }

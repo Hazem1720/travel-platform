@@ -68,6 +68,40 @@ export class ItineraryDay {
 }
 export const ItineraryDaySchema = SchemaFactory.createForClass(ItineraryDay);
 
+// ITN-16: intercity transport, counted as its own line in the budget.
+export enum TransportMode {
+  FLIGHT = 'flight',
+  TRAIN = 'train',
+  BUS = 'bus',
+  CAR = 'car',
+  FERRY = 'ferry',
+}
+
+@Schema({ _id: true })
+export class TransportCost {
+  _id: Types.ObjectId;
+
+  @Prop({ type: String, enum: Object.values(TransportMode), required: true })
+  mode: TransportMode;
+
+  @Prop({ type: String, required: true })
+  fromCityId: string;
+
+  @Prop({ type: String, required: true })
+  toCityId: string;
+
+  @Prop({ type: Number, required: true, min: 0 })
+  amount: number;
+
+  @Prop({ type: String, enum: SUPPORTED_CURRENCIES, required: true })
+  currency: string;
+
+  // The day of this itinerary it belongs to; deleting the day deletes it.
+  @Prop({ type: Types.ObjectId, required: true })
+  dayId: Types.ObjectId;
+}
+export const TransportCostSchema = SchemaFactory.createForClass(TransportCost);
+
 // ITN-21: a clone credits the itinerary and author it was copied from. It is
 // a separate document, so deleting or changing the original never affects it.
 @Schema({ _id: false })
@@ -135,6 +169,9 @@ export class Itinerary {
     },
   })
   days: ItineraryDay[];
+
+  @Prop({ type: [TransportCostSchema], default: [] })
+  transportCosts: TransportCost[];
 
   @Prop({ type: ClonedFromSchema, default: null })
   clonedFrom: ClonedFrom | null;

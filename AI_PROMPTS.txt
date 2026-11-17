@@ -391,3 +391,14 @@ I am Moharm. Build all my remaining ITN requirements in the order of my chapter 
 How the output was used:
 Claude Code added embedded activities on each day (name, description, optional HH:mm time, optional cost { amount >= 0, supported currency }, images for ITN-12), POST /api/itineraries/:id/days/:dayId/activities, PATCH /api/activities/:id and DELETE /api/activities/:id (ActivitiesService with array-filter updates). The /api/activities/:id routes find the itinerary holding the activity and answer 404 to anyone but its owner. I chose to store budget amounts in the currency's main unit with up to 2 decimals (they are planning figures in many currencies, never charged). 8 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-16
+Prompt:
+I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+How the output was used:
+Claude Code added embedded transport costs (mode flight/train/bus/car/ferry, fromCityId, toCityId, amount >= 0, supported currency, dayId) with POST /api/itineraries/:id/transport-costs, PATCH and DELETE /api/transport-costs/:id (TransportCostsService). Cities must be seeded and the day must belong to this itinerary (400 otherwise); other users get 404. Deleting a day (ITN-07) now also deletes its transport costs. 6 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
