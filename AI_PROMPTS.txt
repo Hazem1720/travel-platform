@@ -264,6 +264,17 @@ Claude compared the tracker with the merged and open PRs. It set GEN-08 to Done 
 Date: 2026-11-17
 Student: Mohamad Amr Khallaf
 Tool: Claude Code
+Related Requirement: PAY-04
+Prompt:
+Start PAY-04 (my first phase 1 item): add PLATFORM_CURRENCY (default USD) to the config validation and .env.example, export it, and give the team helpers so every price, payment and refund is stored as integer cents in that one currency (conventions.md, "Money").
+How the output was used:
+Claude Code added backend/src/common/helpers/money.ts: platformCurrency() (USD unless PLATFORM_CURRENCY is set), isPlatformCurrency() (case-insensitive, for the Stripe webhook check in PAY-01), stripeCurrency(), isCents(), the IsCents(min) DTO decorator and platformCurrencyProp() for the currency field of price snapshots, Payment and Refund records (defaults to the platform currency and refuses any other). env.validation.ts now accepts only a supported currency for PLATFORM_CURRENCY, and .env.example sets USD with a warning never to change it once prices are stored. I reviewed the code, chose to read the setting when called (not at import) so it sees backend/.env, and kept other members' modules unchanged. Unit tests added in money.spec.ts and env.validation.spec.ts; npm run build, npm test (311 passed) and npm run test:e2e passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
 Related Requirement: HTL-11
 Prompt:
 Start my next phase 1 item: the RoomLock schema (one document per room per night, unique on roomId + date, kind Held / Booked / Blocked, bookingId, expiresAt for Held) and HotelAvailabilityService.freeRooms(hotelId, checkIn, checkOut), so Rawda (HTL-02, HTL-05, HTL-06, HTL-08) and Moharm (ITN-25) can build on them. Follow conventions.md "Overlap safety" and the team plan's HTL-11 notes.
