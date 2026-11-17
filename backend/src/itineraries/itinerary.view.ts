@@ -35,14 +35,47 @@ export function numberDays<D extends DayLike>(
   }));
 }
 
+// ITN-09: consecutive days in the same city shown as one group.
+export interface CityGroup {
+  cityId: string;
+  fromDay: number;
+  toDay: number;
+  dayCount: number;
+}
+
+// Cairo, Cairo, Luxor, Cairo gives 3 groups of 2, 1 and 1 days.
+export function cityGroups(days: DayLike[]): CityGroup[] {
+  const groups: CityGroup[] = [];
+  days.forEach((day, i) => {
+    const last = groups[groups.length - 1];
+    if (last && last.cityId === day.cityId) {
+      last.toDay = i + 1;
+      last.dayCount += 1;
+    } else {
+      groups.push({
+        cityId: day.cityId,
+        fromDay: i + 1,
+        toDay: i + 1,
+        dayCount: 1,
+      });
+    }
+  });
+  return groups;
+}
+
 export type PresentedItinerary<T extends ItineraryLike<DayLike>> = Omit<
   T,
   'days'
-> & { days: NumberedDay<T['days'][number]>[] };
+> & { days: NumberedDay<T['days'][number]>[]; cityGroups: CityGroup[] };
 
-// What the owner sees: the itinerary with numbered, dated days.
+// What the owner sees: the itinerary with numbered, dated days and its city
+// groups.
 export function presentItinerary<T extends ItineraryLike<DayLike>>(
   itinerary: T,
 ): PresentedItinerary<T> {
-  return { ...itinerary, days: numberDays(itinerary) };
+  return {
+    ...itinerary,
+    days: numberDays(itinerary),
+    cityGroups: cityGroups(itinerary.days),
+  };
 }

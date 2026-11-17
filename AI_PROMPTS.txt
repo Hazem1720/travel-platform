@@ -369,3 +369,14 @@ I am Moharm. Build all my remaining ITN requirements in the order of my chapter 
 How the output was used:
 Claude Code added PATCH /api/itineraries/:id/days/reorder { dayId, newPosition } (declared before :dayId so "reorder" is not read as a day id). Position 0 or beyond the last day gives 400. The new order is saved only if the itinerary has not changed since it was read (updatedAt in the filter), otherwise 409, so a day added at the same moment is never lost. Numbers, dates and city groups follow the order. 5 unit tests were added. npm run build, npm test and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-09
+Prompt:
+I am Moharm. Build all my remaining ITN requirements in the order of my chapter of the team plan, one commit per requirement, following conventions.md and the existing modules.
+How the output was used:
+Claude Code added cityGroups() in itinerary.view.ts: consecutive days in the same city become one group { cityId, fromDay, toDay, dayCount }, shown as cityGroups in GET /api/itineraries/:id and in every day route's response. Every day already requires a city (schema and DTO). The group budget subtotal is added with the budget summary (ITN-14). 3 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================

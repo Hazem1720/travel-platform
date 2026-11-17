@@ -27,8 +27,27 @@ export class ItineraryDto {
   @ApiProperty({ example: false })
   hidden: boolean;
 
-  @ApiProperty({ type: [Object], example: [] })
+  @ApiProperty({
+    type: [Object],
+    example: [
+      {
+        _id: '6735a1f4c1a2b3c4d5e6fa01',
+        number: 1,
+        date: '2026-12-01T00:00:00.000Z',
+        cityId: 'cairo',
+        notes: 'Pyramids in the morning',
+      },
+    ],
+    description: 'Numbered days; date = start date + (number - 1) days',
+  })
   days: object[];
+
+  @ApiProperty({
+    type: [Object],
+    example: [{ cityId: 'cairo', fromDay: 1, toDay: 2, dayCount: 2 }],
+    description: 'Consecutive days in the same city (ITN-09)',
+  })
+  cityGroups: object[];
 
   @ApiProperty({ nullable: true, example: null })
   clonedFrom: object | null;
