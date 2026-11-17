@@ -218,3 +218,14 @@ Explain the project and my chapter of the team plan, then build GEN-08 with me a
 How the output was used:
 Claude wrote image-file.ts (5 MB limit, IMAGE_LIMITS, magic-byte check for PNG and JPG, assertValidImage and assertImageLimit), the @ImageUpload(field, maxCount) decorator (multer in memory, its 413 and "unexpected field" errors turned into 400s in the shared format, plus @ApiConsumes and @ApiBody for Swagger), a global UploadsModule with UploadsService.save(files) (random UUID names in backend/uploads, returns /api/uploads/... URLs), remove(url) and a public GET /api/uploads/:file that only serves names the service generated. POST /api/uploads/images (logged-in users, up to 5) shows the rules in Swagger. backend/uploads/ was added to .gitignore and 'GET /uploads/:file' to PUBLIC_ROUTES. Unit and HTTP tests cover a 1 MB PNG, a 6 MB JPG, a GIF, a text file renamed to .png, six files, no file and unsafe file names. I reviewed each file with Claude's explanation before committing.
 ================================================
+
+================================================
+Date: 2026-11-16
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: GEN-11
+Prompt:
+Finish the parts of my chapter that depend on no one, starting with GEN-11's first small PR: common/enums/booking-status.enum.ts with PendingPayment, Confirmed, Completed, Expired and Cancelled, assertTransition(from, to) allowing only PendingPayment to Confirmed or Expired and Confirmed to Completed or Cancelled, and generateBookingReference('FL' | 'HT'). Explain each part.
+How the output was used:
+Claude wrote the BookingStatus enum (values as in conventions.md), the BOOKING_TRANSITIONS table, canTransition() and assertTransition() (409 Conflict for any other change, with a comment showing how to put the old status in the update filter so two requests cannot both change it), and generateBookingReference() using crypto.randomInt for 8 uppercase letters or digits after FL- or HT-. Unit tests check the 4 allowed transitions, all 21 forbidden ones, the message, the reference format and 10,000 references without a repeat. The expiry and Completed jobs come later with FLT-22.
+================================================
