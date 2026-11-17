@@ -5,6 +5,7 @@ import {
   DayActivitiesController,
 } from './activities.controller';
 import { ActivitiesService } from './activities.service';
+import { ActivityImagesService } from './activity-images.service';
 import { BudgetsController } from './budgets.controller';
 import { BudgetsService } from './budgets.service';
 import { DaysController } from './days.controller';
@@ -37,6 +38,7 @@ import { TransportCostsService } from './transport-costs.service';
     ItinerariesService,
     DaysService,
     ActivitiesService,
+    ActivityImagesService,
     TransportCostsService,
     BudgetsService,
   ],

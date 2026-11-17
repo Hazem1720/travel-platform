@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Param,
+  Patch,
+  Post,
+  UploadedFiles,
+} from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -16,11 +24,17 @@ import {
   UNAUTHENTICATED,
 } from '../common/swagger/api-error.decorator';
 import { AuthUser } from '../common/types/auth-user.type';
+import { IMAGE_LIMITS, UploadedImage } from '../uploads/image-file';
+import { ImageUpload } from '../uploads/image-upload.decorator';
 import {
   ACTIVITY_DELETED,
   ACTIVITY_NOT_FOUND,
   ActivitiesService,
 } from './activities.service';
+import {
+  ActivityImagesService,
+  IMAGE_NOT_FOUND,
+} from './activity-images.service';
 import { DAY_NOT_FOUND_ERROR, DAY_PARAM } from './days.controller';
 import { CreateActivityDto, UpdateActivityDto } from './dto/activity.dto';
 import { ActivityViewDto } from './dto/activity-view.dto';
@@ -78,7 +92,10 @@ export class DayActivitiesController {
 @Roles(Role.USER)
 @Controller('activities')
 export class ActivitiesController {
-  constructor(private readonly activities: ActivitiesService) {}
+  constructor(
+    private readonly activities: ActivitiesService,
+    private readonly images: ActivityImagesService,
+  ) {}
 
   @Patch(':id')
   @ApiParam(ACTIVITY_PARAM)
@@ -107,6 +124,59 @@ export class ActivitiesController {
   })
   @ApiErrors(UNAUTHENTICATED, NOT_A_USER, ACTIVITY_NOT_FOUND_ERROR)
   remove(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.activities.remove(user, id);
+    return this.images.removeActivity(user, id);
+  }
+
+  @Post(':id/images')
+  @ApiParam(ACTIVITY_PARAM)
+  @ImageUpload('images', IMAGE_LIMITS.ACTIVITY)
+  @ApiOperation({
+    summary: 'Add images to an activity (ITN-12, GEN-08)',
+    description:
+      'Up to 5 images per activity in total, JPG or PNG, at most 5 MB each. ' +
+      'Returns the activity with the new image URLs at the end of `images`.',
+  })
+  @ApiCreatedResponse({ type: ActivityViewDto })
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'At most 5 images allowed (4 already uploaded)',
+      description:
+        'More than 5 images in total, not a JPG or PNG (a GIF), larger than ' +
+        '5 MB, or no file',
+    },
+    UNAUTHENTICATED,
+    NOT_A_USER,
+    ACTIVITY_NOT_FOUND_ERROR,
+  )
+  addImages(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @UploadedFiles() files: UploadedImage[],
+  ) {
+    return this.images.addImages(user, id, files);
+  }
+
+  @Delete(':id/images/:imageId')
+  @ApiParam(ACTIVITY_PARAM)
+  @ApiParam({
+    name: 'imageId',
+    example: '3f2b8c1e-4a5d-4e6f-9a7b-1c2d3e4f5a6b.png',
+    description: 'The file name at the end of the image URL',
+  })
+  @ApiOperation({ summary: 'Remove an image from an activity (ITN-12)' })
+  @ApiOkResponse({ type: ActivityViewDto })
+  @ApiErrors(UNAUTHENTICATED, NOT_A_USER, {
+    status: 404,
+    message: IMAGE_NOT_FOUND,
+    description:
+      "The activity does not have this image, or it is another user's",
+  })
+  removeImage(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('imageId') imageId: string,
+  ) {
+    return this.images.removeImage(user, id, imageId);
   }
 }
