@@ -48,6 +48,33 @@ export class Activity {
 }
 export const ActivitySchema = SchemaFactory.createForClass(Activity);
 
+// ITN-14: the four daily budget categories (conventions.md, "Itineraries").
+// Activity costs count under Activities; intercity transport is separate.
+export enum BudgetCategory {
+  FOOD = 'food',
+  ACCOMMODATION = 'accommodation',
+  IN_CITY_TRANSPORT = 'in_city_transport',
+  ACTIVITIES = 'activities',
+}
+
+@Schema({ _id: true })
+export class BudgetEntry {
+  _id: Types.ObjectId;
+
+  @Prop({ type: String, enum: Object.values(BudgetCategory), required: true })
+  category: BudgetCategory;
+
+  @Prop({ type: Number, required: true, min: 0 })
+  amount: number;
+
+  @Prop({ type: String, enum: SUPPORTED_CURRENCIES, required: true })
+  currency: string;
+
+  @Prop({ type: String, trim: true, maxlength: 200, default: '' })
+  note: string;
+}
+export const BudgetEntrySchema = SchemaFactory.createForClass(BudgetEntry);
+
 // ITN-05: one day of the itinerary. Its number and date are not stored: they
 // are computed from its position in `days` and the itinerary's startDate
 // (conventions.md, "Itineraries"). Activities and budget entries are added
@@ -65,6 +92,9 @@ export class ItineraryDay {
 
   @Prop({ type: [ActivitySchema], default: [] })
   activities: Activity[];
+
+  @Prop({ type: [BudgetEntrySchema], default: [] })
+  budgets: BudgetEntry[];
 }
 export const ItineraryDaySchema = SchemaFactory.createForClass(ItineraryDay);
 

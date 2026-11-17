@@ -5,6 +5,8 @@ import {
   DayActivitiesController,
 } from './activities.controller';
 import { ActivitiesService } from './activities.service';
+import { BudgetsController } from './budgets.controller';
+import { BudgetsService } from './budgets.service';
 import { DaysController } from './days.controller';
 import { DaysService } from './days.service';
 import { ItinerariesController } from './itineraries.controller';
@@ -29,12 +31,14 @@ import { TransportCostsService } from './transport-costs.service';
     DayActivitiesController,
     ActivitiesController,
     TransportCostsController,
+    BudgetsController,
   ],
   providers: [
     ItinerariesService,
     DaysService,
     ActivitiesService,
     TransportCostsService,
+    BudgetsService,
   ],
   exports: [ItinerariesService, MongooseModule],
 })

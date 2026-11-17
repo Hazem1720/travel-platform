@@ -15,7 +15,7 @@ import {
 } from '../reference/schemas/reference.schemas';
 import { CreateItineraryDto } from './dto/create-itinerary.dto';
 import { UpdateItineraryDto } from './dto/update-itinerary.dto';
-import { presentItinerary } from './itinerary.view';
+import { presentWithBudget } from './budget.summary';
 import { Itinerary, ItineraryDocument } from './schemas/itinerary.schema';
 
 export const ITINERARY_NOT_FOUND = 'Itinerary not found';
@@ -131,7 +131,7 @@ export class ItinerariesService {
   // ITN-03: the full itinerary, for its owner only, with numbered and dated
   // days (ITN-05).
   async getMine(user: AuthUser, id: string) {
-    return presentItinerary(await this.findOwned(user, id));
+    return presentWithBudget(await this.findOwned(user, id));
   }
 
   // ACC-11: another user's itinerary answers 404, as if it did not exist.

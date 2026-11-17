@@ -10,7 +10,7 @@ import { AuthUser } from '../common/types/auth-user.type';
 import { City, CityDocument } from '../reference/schemas/reference.schemas';
 import { CreateDayDto, ReorderDayDto, UpdateDayDto } from './dto/day.dto';
 import { ItinerariesService } from './itineraries.service';
-import { presentItinerary } from './itinerary.view';
+import { presentWithBudget } from './budget.summary';
 import {
   Itinerary,
   ItineraryDocument,
@@ -59,7 +59,7 @@ export class DaysService {
       )
       .lean();
     if (!updated) throw new BadRequestException(TOO_MANY_DAYS);
-    return presentItinerary(updated);
+    return presentWithBudget(updated);
   }
 
   // ITN-05: changes one day's city or notes.
@@ -85,7 +85,7 @@ export class DaysService {
       )
       .lean();
     if (!updated) throw new NotFoundException(DAY_NOT_FOUND);
-    return presentItinerary(updated);
+    return presentWithBudget(updated);
   }
 
   // ITN-07: deletes a day (the frontend confirms first). Its activities,
@@ -107,7 +107,7 @@ export class DaysService {
       )
       .lean();
     if (!updated) throw new NotFoundException(DAY_NOT_FOUND);
-    return presentItinerary(updated);
+    return presentWithBudget(updated);
   }
 
   // ITN-08: moves a day to a new position (1 = first). Numbers, dates and
@@ -144,7 +144,7 @@ export class DaysService {
         'The itinerary changed at the same time, please try again',
       );
     }
-    return presentItinerary(updated);
+    return presentWithBudget(updated);
   }
 
   assertHasDay(itinerary: { days: { _id: unknown }[] }, dayId: string) {
