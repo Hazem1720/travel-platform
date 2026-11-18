@@ -5,11 +5,13 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AdminAccountsModule } from './admin/admin-accounts.module';
+import { AdminModule } from './admin/admin.module';
 import { AirlinesModule } from './airlines/airlines.module';
 import { AirportsModule } from './airports/airports.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.validation';
+import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { ItinerariesModule } from './itineraries/itineraries.module';
@@ -32,6 +34,7 @@ import { UploadsModule } from './uploads/uploads.module';
     ReferenceModule,
     AirlinesModule,
     AirportsModule,
+    FlightsModule,
     UploadsModule,
     NotificationsModule,
     AuditModule,
@@ -42,6 +45,7 @@ import { UploadsModule } from './uploads/uploads.module';
     PaymentsModule,
     ItinerariesModule,
     AdminAccountsModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],

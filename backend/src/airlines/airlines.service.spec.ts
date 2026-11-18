@@ -17,7 +17,7 @@ describe('AirlinesService', () => {
         lean: async () => found,
       })),
     };
-    return { service: new AirlinesService(model as any), model };
+    return { service: new AirlinesService(model as any, {} as any), model };
   }
 
   it('creates an airline and returns a plain object', async () => {
