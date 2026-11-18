@@ -1,9 +1,12 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { localDate } from '../common/helpers/time-zone';
 import { paginated } from '../common/pagination/pagination.helper';
 import { Hotel, HotelDocument } from '../hotels/schemas/hotel.schema';
 import {
+  Airport,
+  AirportDocument,
   City,
   CityDocument,
   Country,
@@ -75,13 +78,27 @@ export class HotelSearchService {
     @InjectModel(City.name) private readonly cities: Model<CityDocument>,
     @InjectModel(Country.name)
     private readonly countries: Model<CountryDocument>,
+    @InjectModel(Airport.name)
+    private readonly airports: Model<AirportDocument>,
     private readonly availability: HotelAvailabilityService,
   ) {}
 
-  // Today as YYYY-MM-DD in UTC. The hotels in the reference data are all east
-  // of UTC, so a guest's local "today" is never refused.
-  today(): string {
-    return new Date().toISOString().slice(0, 10);
+  // "Today" where the hotels are, for "check-in cannot be in the past". Each
+  // city in the reference data has an airport with an IANA time zone (New
+  // York is behind UTC, Tokyo ahead). For a country with several zones the
+  // earliest local date is used, so nobody's own today is refused. UTC if no
+  // airport is found.
+  async today(
+    c: Pick<HotelSearchCriteria, 'cityId' | 'countryCode'>,
+    now = new Date(),
+  ): Promise<string> {
+    const airports = await this.airports
+      .find(c.cityId ? { cityId: c.cityId } : { countryCode: c.countryCode }, {
+        timeZone: 1,
+      })
+      .lean();
+    const dates = airports.map((a) => localDate(now, a.timeZone)).sort();
+    return dates[0] ?? now.toISOString().slice(0, 10);
   }
 
   // Every active hotel in the city or country with at least `rooms` rooms
@@ -89,9 +106,6 @@ export class HotelSearchService {
   // Cheapest first (by the cheapest free room), then by name.
   async search(c: HotelSearchCriteria): Promise<HotelSearchResult[]> {
     stayNights(c.checkIn, c.checkOut);
-    if (c.checkIn < this.today()) {
-      throw badRequest('checkIn', 'checkIn cannot be in the past');
-    }
     if (!c.cityId && !c.countryCode) {
       throw badRequest('city', 'Give a city or a country');
     }
@@ -103,6 +117,9 @@ export class HotelSearchService {
       !(await this.countries.exists({ _id: c.countryCode }))
     ) {
       throw badRequest('country', `Unknown country "${c.countryCode}"`);
+    }
+    if (c.checkIn < (await this.today(c))) {
+      throw badRequest('checkIn', 'checkIn cannot be in the past');
     }
 
     const hotels = await this.hotels

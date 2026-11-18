@@ -50,11 +50,58 @@ describe('HotelSearchService (HTL-11)', () => {
       hotels as any,
       cities as any,
       countries as any,
+      {} as any,
       availability as any,
     );
-    jest.spyOn(service, 'today').mockReturnValue(TODAY);
+    jest.spyOn(service, 'today').mockResolvedValue(TODAY);
     return { service, hotels, availability };
   }
+
+  describe("today (the hotels' local date)", () => {
+    // 02:00 UTC on 19 Nov: still 18 Nov in New York, already 19 Nov in Cairo.
+    const now = new Date('2026-11-19T02:00:00Z');
+    const withAirports = (zones: string[]) => {
+      const airports = {
+        find: jest.fn(() => ({
+          lean: async () => zones.map((timeZone) => ({ timeZone })),
+        })),
+      };
+      const service = new HotelSearchService(
+        {} as any,
+        {} as any,
+        {} as any,
+        airports as any,
+        {} as any,
+      );
+      return { service, airports };
+    };
+
+    it("uses the city airport's time zone", async () => {
+      const ny = withAirports(['America/New_York']);
+      expect(await ny.service.today({ cityId: 'new_york' }, now)).toBe(
+        '2026-11-18',
+      );
+      expect(ny.airports.find).toHaveBeenCalledWith(
+        { cityId: 'new_york' },
+        { timeZone: 1 },
+      );
+      const cairo = withAirports(['Africa/Cairo']);
+      expect(await cairo.service.today({ cityId: 'cairo' }, now)).toBe(
+        '2026-11-19',
+      );
+    });
+
+    it('takes the earliest date in a country, and UTC without airports', async () => {
+      const two = withAirports(['Africa/Cairo', 'America/New_York']);
+      expect(await two.service.today({ countryCode: 'XX' }, now)).toBe(
+        '2026-11-18',
+      );
+      const none = withAirports([]);
+      expect(await none.service.today({ cityId: 'cairo' }, now)).toBe(
+        '2026-11-19',
+      );
+    });
+  });
 
   const criteria = (over: Partial<HotelSearchCriteria> = {}) => ({
     cityId: 'cairo',
