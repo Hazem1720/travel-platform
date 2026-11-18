@@ -468,3 +468,14 @@ Build ITN-26: flight search for an itinerary (origin airport, destinations from 
 How the output was used:
 Claude Code added GET /api/itineraries/:id/flights?origin&roundTrip (ItineraryFlightsService): the origin must be a listed airport (Hazem's AirportsService.assertAirportExists), the destinations are every airport in the city of the first day, the outbound date is the start date and, with roundTrip=true, the return date is the last day's date. Aabsy's flight search (FLT-11, FLT-12) is not in develop yet (only its query DTO is on a branch, and there is no Flight schema), so the search goes through a FLIGHT_SEARCH contract: until Aabsy's service is provided for it, the route answers 501 with the computed search, as Memo did for Stripe. Wiring it later is one provider line in ItinerariesModule. 5 unit tests were added. npm run build, npm test (448 passed), npm run test:e2e (Swagger checks, 8 passed, database flow skipped) and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-11, ITN-25
+Prompt:
+Do what is still open from Ziad's PR except Aabsy's work: build my HTL-11 hotel search route and switch Ziad's ITN-25 to it, as the team plan says.
+How the output was used:
+Claude wrote GET /api/hotels/search (public, paginated): city or country, checkIn, checkOut, guests and rooms (default 1); 400 for checkOut not after checkIn, checkIn in the past, no or an unknown city or country. It lists active hotels with at least `rooms` free rooms (from HotelAvailabilityService.freeRoomsByHotel) whose largest occupancies cover the guests, cheapest first, with fromPricePerNight and freeRoomCount. The logic is in HotelSearchService.search(), exported from HotelBookingsModule, and ITN-25 now calls it instead of its own copy (Ziad's module; he was told in the PR). Unit tests cover the plan's cases (rooms of 2 and 3: 5 guests in 2 rooms listed, 6 guests or 3 rooms not; yesterday and checkOut = checkIn give 400). npm run build, npm test (457 passed), npm run test:e2e and the read-only eslint check on the changed files passed. Not yet tried in Swagger against Atlas (this computer's IP is not on the Atlas access list).
+================================================
