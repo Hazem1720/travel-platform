@@ -10,6 +10,8 @@ import { AirlinesModule } from './airlines/airlines.module';
 import { AirportsModule } from './airports/airports.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { CommentsModule } from './comments/comments.module';
+import { ReportsModule } from './reports/reports.module';
 import { validateEnv } from './config/env.validation';
 import { FlightBookingsModule } from './flight-bookings/flight-bookings.module';
 import { FlightsModule } from './flights/flights.module';
@@ -50,6 +52,8 @@ import { UploadsModule } from './uploads/uploads.module';
     ItinerariesModule,
     AdminAccountsModule,
     AdminModule,
+    CommentsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
