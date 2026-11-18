@@ -41,7 +41,7 @@ const body = (over: Partial<CreateFlightDto> = {}): CreateFlightDto => ({
   ...over,
 });
 
-function setup(stored: any = null) {
+function setup(stored: any = null, reader?: any) {
   const flights = {
     // Like Mongoose, fill the schema defaults (status Scheduled, no cabins).
     create: jest.fn(async (doc: any) => ({
@@ -84,13 +84,16 @@ function setup(stored: any = null) {
     }),
   };
   const airlines = { get: jest.fn(async () => ({ _id: AIRLINE })) };
+  const notifications = { create: jest.fn(async () => ({})) };
   const service = new FlightsService(
     flights as any,
     airportModel as any,
     airports as any,
     airlines as any,
+    notifications as any,
+    reader,
   );
-  return { service, flights };
+  return { service, flights, notifications };
 }
 
 describe('FlightsService.create (FLT-03, GEN-06)', () => {
