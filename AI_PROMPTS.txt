@@ -545,3 +545,14 @@ Start my phase 2 (inventory) from the team plan, my part only: the flight invent
 How the output was used:
 Claude added src/flights: the Flight schema with embedded cabins (the contract in Part B3), POST /api/flights, GET /api/airlines/:id/flights (own airline), POST /api/flights/:id/cabins with one conditional update so a category cannot be added twice, a per-minute job that sets Departed, isBookable()/bookableFilter()/availableSeats() for Aabsy and Memo, and FlightsService.toViews() that returns each time in UTC and in its airport's zone. A unique index on (airline, number, local departure date) gives 409. Unit tests cover the plan's "Test when done" cases (CAI to DXB times, same airports, arrival before departure across zones, past departure, duplicate, cabin 409/400/403). I tested the routes in Swagger.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-08, FLT-09, FLT-01
+Prompt:
+Phase 2, my airline routes: FLT-08 PUT /airlines/:id/baggage-policy, the FLT-09 route PUT /airlines/:id/cancellation-policy using the merged tier helper, and the FLT-01 logo upload now that Aabsy's GEN-08 is merged (one image, replaces and deletes the old file). Only the airline's own moderator.
+How the output was used:
+Claude added BaggagePolicyDto (extraBagPrice integer cents > 0, maxExtraBags whole number >= 0), the two PUT routes (the tiers validated by the shared CancellationPolicyDto) and POST /airlines/:id/logo with the shared @ImageUpload('logo', IMAGE_LIMITS.AIRLINE_LOGO) and UploadsService (the old logo file is deleted; the new file is deleted again if saving fails). Unit tests cover the plan's cases (0, -1, 1.5 rejected, 403 for another airline's moderator, logo replaced). I tested the routes in Swagger.
+================================================
