@@ -567,3 +567,14 @@ Phase 2, FLT-05 on top of the flight inventory PR: the airline moderator edits d
 How the output was used:
 Claude added PATCH /api/flights/:id and PATCH /api/flights/:id/cabins/:cabinId. The seat rule is a single findOneAndUpdate whose $expr checks the cabin's bookedSeats + heldSeats against the new total, so a hold at the same moment cannot slip in. Bookings are read through a small FLIGHT_BOOKINGS_READER contract (hasBookings, confirmedUserIds) that Aabsy's module will provide; until then booked or held seats lock the airports and nobody is notified. Unit tests cover 409 below booked + held, airports locked by a booking, edits of Cancelled or Departed flights (400), and one notification per Confirmed passenger on a time change. I reviewed the contract before sharing it with Aabsy.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-13, ACC-15, ACC-16
+Prompt:
+Phase 2, my admin routes in src/admin: ACC-13 POST /admin/moderators (name, email, role, providerId, temporaryPassword; the provider must exist for that role; mustChangePassword), ACC-15 suspend and reactivate moderators plus deactivate and reactivate airlines and hotels, ACC-16 the same suspend routes for users. Audit log and notifications for every action. Keep it out of Memo's admin module.
+How the output was used:
+Claude added AdminAccountsModule with its own controller and service: POST /admin/moderators (bcrypt hash, assignedProviderId, mustChangePassword true, no password fields in the response, 404 if the airline or hotel for that role does not exist, 409 on a duplicate email), PATCH /admin/accounts/:id/suspend|reactivate (status and sessionVersion in one conditional update so sessions end at once, admins cannot be suspended, 409 if already in that state), and PATCH /admin/airlines|hotels/:id/deactivate|reactivate (isActive, moderators notified with PROVIDER_SUSPENDED). Each action writes an AuditService row. Unit tests cover the plan's cases; I tested the routes in Swagger with TEST accounts.
+================================================

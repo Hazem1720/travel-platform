@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AdminAccountsModule } from './admin/admin-accounts.module';
 import { AdminModule } from './admin/admin.module';
 import { AirlinesModule } from './airlines/airlines.module';
 import { AirportsModule } from './airports/airports.module';
@@ -43,6 +44,7 @@ import { UploadsModule } from './uploads/uploads.module';
     HotelsModule,
     PaymentsModule,
     ItinerariesModule,
+    AdminAccountsModule,
     AdminModule,
   ],
   controllers: [AppController],
