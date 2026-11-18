@@ -4,7 +4,17 @@ import { Airline, AirlineSchema } from '../src/airlines/schemas/airline.schema';
 import { BookingStatus } from '../src/common/enums/booking-status.enum';
 import { FlightQuoteDto } from '../src/flight-bookings/dto/flight-quote.dto';
 import { PassengerType } from '../src/flight-bookings/flight-booking.rules';
+import { renderETicket } from '../src/flight-bookings/e-ticket.pdf';
 import { FlightBookingJobs } from '../src/flight-bookings/flight-booking.jobs';
+import { FlightConfirmationService } from '../src/flight-bookings/flight-confirmation.service';
+import { FlightPaymentHandler } from '../src/flight-bookings/flight-payment.handler';
+import { NotificationsService } from '../src/notifications/notifications.service';
+import {
+  Notification,
+  NotificationSchema,
+} from '../src/notifications/schemas/notification.schema';
+import { PaymentBookingType } from '../src/payments/payment-handler';
+import { PaymentsService } from '../src/payments/payments.service';
 import { FlightBookingsReaderService } from '../src/flight-bookings/flight-bookings.reader.service';
 import { FlightHoldService } from '../src/flight-bookings/flight-hold.service';
 import { FlightQuoteService } from '../src/flight-bookings/flight-quote.service';
@@ -365,5 +375,125 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
     expect(
       await reader.hasUpcomingConfirmed(alice, new Date('2100-01-01')),
     ).toBe(false);
+  });
+
+  describe('after payment (FLT-23)', () => {
+    let payments: PaymentsService;
+    let confirmations: FlightConfirmationService;
+    let notifications: Model<any>;
+
+    beforeAll(() => {
+      notifications = conn.model(Notification.name, NotificationSchema);
+      confirmations = new FlightConfirmationService(
+        bookings as any,
+        flights as any,
+        conn.model(Airport.name) as any,
+        new NotificationsService(notifications as any),
+      );
+      // Memo's real PaymentsService with the real flight handler, as the
+      // Stripe webhook will use them.
+      payments = new PaymentsService();
+      payments.registerHandler(
+        PaymentBookingType.FLIGHT,
+        new FlightPaymentHandler(bookings as any, hold, confirmations),
+      );
+    });
+
+    it('Confirmed, FL- reference, held -> booked, notification, e-ticket', async () => {
+      const f = await newFlight(5);
+      const user = String(new Types.ObjectId());
+      const b = await hold.hold(
+        user,
+        body(f._id, { passengers: [adult, adult] }),
+      );
+      await bookings.updateOne(
+        { _id: b._id },
+        { $set: { policiesAcceptedAt: new Date() } },
+      );
+
+      // PAY-01: the user may pay it, for exactly the held total.
+      const payable = await payments.getPayableFor(
+        PaymentBookingType.FLIGHT,
+        String(b._id),
+        user,
+      );
+      expect(payable.amount).toBe(40000);
+
+      // The Stripe webhook, twice (Stripe may repeat an event).
+      await payments.confirmBooking(PaymentBookingType.FLIGHT, String(b._id));
+      await payments.confirmBooking(PaymentBookingType.FLIGHT, String(b._id));
+
+      const saved = await bookings.findById(b._id).lean<any>();
+      expect(saved.status).toBe(BookingStatus.CONFIRMED);
+      expect(saved.reference).toMatch(/^FL-[A-Z0-9]{8}$/);
+      expect(saved.expiresAt).toBeNull();
+      expect(await cabinOf(f._id)).toMatchObject({
+        heldSeats: 0,
+        bookedSeats: 2,
+      });
+
+      const notes = await notifications
+        .find({ userId: new Types.ObjectId(user) })
+        .lean<any[]>();
+      expect(notes).toHaveLength(1);
+      expect(notes[0]).toMatchObject({
+        type: 'BOOKING_CONFIRMED',
+        readAt: null,
+      });
+      expect(notes[0].message).toContain(saved.reference);
+
+      const view = await confirmations.getTicketData(user, String(b._id));
+      expect(view.segments[0].departure.local).toBe('2099-12-02T12:00');
+      const pdf = await renderETicket(view);
+      expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    });
+
+    it('an Expired booking cannot be confirmed (409) and its seats stay free', async () => {
+      const f = await newFlight(1);
+      const b = await hold.hold(USER, body(f._id));
+      await bookings.updateOne(
+        { _id: b._id },
+        { $set: { expiresAt: new Date(Date.now() - 1000) } },
+      );
+      await hold.releaseExpiredHolds();
+
+      await expect(
+        payments.confirmBooking(PaymentBookingType.FLIGHT, String(b._id)),
+      ).rejects.toBeInstanceOf(ConflictException);
+      expect(await cabinOf(f._id)).toMatchObject({
+        heldSeats: 0,
+        bookedSeats: 0,
+      });
+    });
+
+    it('confirm and expire at the same moment: exactly one wins', async () => {
+      const f = await newFlight(1);
+      const b = await hold.hold(USER, body(f._id));
+      const [c, e] = await Promise.allSettled([
+        payments.confirmBooking(PaymentBookingType.FLIGHT, String(b._id)),
+        payments.releaseInventory(PaymentBookingType.FLIGHT, String(b._id)),
+      ]);
+      const saved = await bookings.findById(b._id).lean<any>();
+      const cabin = await cabinOf(f._id);
+      if (saved.status === BookingStatus.CONFIRMED) {
+        expect(c.status).toBe('fulfilled');
+        expect(cabin).toMatchObject({ heldSeats: 0, bookedSeats: 1 });
+      } else {
+        expect(saved.status).toBe(BookingStatus.EXPIRED);
+        expect(cabin).toMatchObject({ heldSeats: 0, bookedSeats: 0 });
+      }
+      expect(e.status).toBe('fulfilled');
+    });
+
+    it('e-ticket of a PendingPayment booking: 400; another user: 404', async () => {
+      const f = await newFlight(2);
+      const b = await hold.hold(USER, body(f._id));
+      await expect(
+        confirmations.getTicketData(USER, String(b._id)),
+      ).rejects.toThrow('Confirmed');
+      await expect(
+        confirmations.getForOwner(String(new Types.ObjectId()), String(b._id)),
+      ).rejects.toThrow('Booking not found');
+    });
   });
 });
