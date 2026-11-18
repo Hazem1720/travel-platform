@@ -523,3 +523,14 @@ Phase 1 is finished: test everything that is merged, make sure it works and is r
 How the output was used:
 Claude listed every route in develop (56 Swagger operations), ran the build, unit, e2e and lint checks, and wrote live test scripts that run against the backend on the shared Atlas database with TEST accounts it created directly in the database (admin, two hotel moderators, two airline moderators, users): 182 API checks (accounts, lockout, cookies, idle expiry, change password, roles, airports, airlines, hotels, policies, photos, rooms, ranges, search, uploads, notifications, audit log, unique indexes), 19 service checks of the room-night locks (10 parallel holds on one room: exactly 1 wins; all-or-nothing multi-room holds; expiry, confirm, release, blocking), plus the itinerary (42) and hotel search (17) checks. It found one bug: a file sent in the wrong form field gave 500 on every upload route, because multer 2 renamed its error message and Nest 10 matches the old one; it fixed it by matching multer's error code, with an HTTP test. It also applied prettier to the 4 lint errors in common/helpers and added the only missing Swagger success example (GET /itineraries/public/:id) from a real response. All 260 live checks pass on the fixes, and every TEST record and uploaded file was deleted afterwards. I reviewed the findings and the three PRs.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-14
+Prompt:
+Hazem needs ACC-14 for his phase 2 work (ACC-13, ACC-15, ACC-16 go in the same admin module). Build it.
+How the output was used:
+Claude created src/admin (AdminModule, registered in app.module.ts) with a comment telling Hazem and Hasan to add their own controllers there, and GET /api/admin/accounts in admin-accounts.controller.ts: admin only, 10 per page, newest first, ?search on name or email (escaped regex, case-insensitive), ?role and ?status validated as enums, ?sort by name, email or createdAt. The service selects only name, email, role, status, assignedProviderId and createdAt, so no password, token, lockout or session fields leave the server. Unit tests cover the plan's cases (role=pilot and limit=11 give 400, search matches name and email, both filters together, literal search text, sort whitelist). npm run build, npm test (469 passed), npm run test:e2e and the read-only eslint check pass, and a live test on Atlas with TEST accounts passed 17 of 17 checks (11 matching users give pages of 10 and 1; a normal user gets 403, no login 401); the TEST accounts were deleted.
+================================================
