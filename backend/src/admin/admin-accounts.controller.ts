@@ -23,10 +23,7 @@ import {
   HOTEL_NOT_FOUND,
   ProviderKind,
 } from './admin-accounts.service';
-import {
-  ManagedAccountDto,
-  ProviderStateDto,
-} from './dto/admin-responses.dto';
+import { ManagedAccountDto, ProviderStateDto } from './dto/admin-responses.dto';
 import { CreateModeratorDto } from './dto/create-moderator.dto';
 import { ReasonDto } from './dto/suspend-account.dto';
 

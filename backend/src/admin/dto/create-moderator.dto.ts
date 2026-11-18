@@ -9,10 +9,7 @@ import {
   Matches,
   MaxLength,
 } from 'class-validator';
-import {
-  PASSWORD_MESSAGE,
-  PASSWORD_REGEX,
-} from '../../auth/dto/register.dto';
+import { PASSWORD_MESSAGE, PASSWORD_REGEX } from '../../auth/dto/register.dto';
 import { Role } from '../../common/enums/role.enum';
 
 export const MODERATOR_ROLES = [
