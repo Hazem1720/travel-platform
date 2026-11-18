@@ -680,3 +680,14 @@ now i want u to do my phase 3 requirments one by one give each one of them their
 How the output was used:
 Claude planned phase 3 as four PRs (HTL-15, HTL-12, HTL-16 with HTL-18, PAY-02) and built HTL-15 first: GET /api/hotels/:id/rooms/available, a public route in its own controller that calls my HotelAvailabilityService.freeRooms() from HTL-11 and returns each free room's type, beds, maxOccupancy, pricePerNight, nights and totalPrice in USD cents, with the same date rules as the hotel search and 404 for an unknown or inactive hotel. Unit tests use the real availability service with an in-memory lock store and cover the plan's cases (a Booked and a Blocked night leave only the third room, expired holds count as free, past check-in and bad dates are 400). A live check on a local server against the shared database with a TEST hotel, rooms and locks passed 11 checks; the test data was deleted. It also marks ACC-07a Done in the tracker after #177.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-12
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way (second item: HTL-12)
+How the output was used:
+Claude extended my HTL-11 HotelSearchService.search() with optional minPrice, maxPrice, minRating and sort criteria, so GET /api/hotels/search filters by the price per night of the cheapest free room (inclusive), by minimum average rating (unrated hotels excluded when it is set) and sorts by price or rating with :asc or :desc. Moharm's ITN-25 call is unchanged because the new criteria are optional. Unit tests cover the plan's cases (50/80/120 USD with 80-120 giving 2, minRating=4 hiding an unrated hotel, both sort orders, min above max and minRating=6 giving 400). A live check on a local server against the shared database with four TEST hotels passed 10 checks; the test data was deleted.
+================================================

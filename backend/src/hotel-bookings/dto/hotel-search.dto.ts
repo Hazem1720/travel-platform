@@ -2,9 +2,11 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
   IsInt,
+  IsNumber,
   IsOptional,
   IsString,
   Length,
+  Matches,
   Max,
   MaxLength,
   Min,
@@ -73,6 +75,55 @@ export class HotelSearchQueryDto extends PaginationQueryDto {
   @Min(1)
   @Max(MAX_SEARCH_ROOMS)
   rooms: number = 1;
+
+  @ApiPropertyOptional({
+    example: 8000,
+    minimum: 0,
+    description:
+      'HTL-12: inclusive minimum price per night of the cheapest free room, USD cents',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  minPrice?: number;
+
+  @ApiPropertyOptional({
+    example: 12000,
+    minimum: 0,
+    description:
+      'HTL-12: inclusive maximum price per night of the cheapest free room, USD cents',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  maxPrice?: number;
+
+  @ApiPropertyOptional({
+    example: 4,
+    minimum: 1,
+    maximum: 5,
+    description:
+      'HTL-12: minimum average rating, 1 to 5. Hotels without ratings are left out.',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ allowNaN: false, allowInfinity: false })
+  @Min(1)
+  @Max(5)
+  minRating?: number;
+
+  @ApiPropertyOptional({
+    example: 'rating:desc',
+    description:
+      'HTL-12: price or rating, with :asc or :desc. Default price:asc.',
+  })
+  @IsOptional()
+  @Matches(/^(price|rating)(:(asc|desc))?$/, {
+    message: 'sort must be price or rating, optionally with :asc or :desc',
+  })
+  declare sort?: string;
 }
 
 // Response shapes, used only for Swagger documentation.
