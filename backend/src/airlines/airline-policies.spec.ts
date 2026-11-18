@@ -33,7 +33,8 @@ function setup(current: any = { _id: ID, logo: OLD_LOGO }) {
 describe('airline policies (FLT-08, FLT-09)', () => {
   it('replaces the baggage policy', async () => {
     const { service, model } = setup();
-    await service.setBaggagePolicy(ID, { extraBagPrice: 3000, maxExtraBags: 2 });
+    const policy = { extraBagPrice: 3000, maxExtraBags: 2 };
+    await service.setBaggagePolicy(ID, policy);
     expect(model.findByIdAndUpdate).toHaveBeenCalledWith(
       ID,
       { $set: { extraBagPrice: 3000, maxExtraBags: 2 } },
