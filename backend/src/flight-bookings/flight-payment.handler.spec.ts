@@ -21,10 +21,16 @@ describe('FlightPaymentHandler (PAY-01, FLT-22)', () => {
   function setup(found: object | null = booking) {
     const bookings = { findById: jest.fn(() => ({ lean: async () => found })) };
     const holds = { expire: jest.fn(async () => undefined) };
+    const confirmations = { confirm: jest.fn(async () => undefined) };
     return {
-      handler: new FlightPaymentHandler(bookings as any, holds as any),
+      handler: new FlightPaymentHandler(
+        bookings as any,
+        holds as any,
+        confirmations as any,
+      ),
       bookings,
       holds,
+      confirmations,
     };
   }
 
@@ -55,5 +61,11 @@ describe('FlightPaymentHandler (PAY-01, FLT-22)', () => {
     const { handler, holds } = setup();
     await handler.expire('abc');
     expect(holds.expire).toHaveBeenCalledWith('abc');
+  });
+
+  it('confirm() hands over to the confirmation (FLT-23)', async () => {
+    const { handler, confirmations } = setup();
+    await handler.confirm('abc');
+    expect(confirmations.confirm).toHaveBeenCalledWith('abc');
   });
 });

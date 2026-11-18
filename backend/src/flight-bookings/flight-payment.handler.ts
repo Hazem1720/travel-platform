@@ -1,7 +1,8 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model } from 'mongoose';
 import { PayableBooking, PaymentHandler } from '../payments/payment-handler';
+import { FlightConfirmationService } from './flight-confirmation.service';
 import { FlightHoldService, LeanFlightBooking } from './flight-hold.service';
 import {
   FlightBooking,
@@ -16,6 +17,7 @@ export class FlightPaymentHandler implements PaymentHandler {
     @InjectModel(FlightBooking.name)
     private readonly bookings: Model<FlightBookingDocument>,
     private readonly holds: FlightHoldService,
+    private readonly confirmations: FlightConfirmationService,
   ) {}
 
   // Payments does the checks (owner, PendingPayment, hold, policies).
@@ -37,9 +39,10 @@ export class FlightPaymentHandler implements PaymentHandler {
     };
   }
 
-  // FLT-23: added with the confirmation.
-  async confirm(): Promise<void> {
-    throw new NotImplementedException('Flight confirmation comes with FLT-23');
+  // FLT-23: after Stripe's webhook verified the payment. Safe to call twice;
+  // 409 if the booking is no longer PendingPayment (Payments refunds it).
+  confirm(bookingId: string): Promise<void> {
+    return this.confirmations.confirm(bookingId);
   }
 
   // The hold ran out: Expired and the seats released (FLT-22).

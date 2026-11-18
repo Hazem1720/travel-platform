@@ -10,6 +10,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { FlightBookingJobs } from './flight-booking.jobs';
 import { FlightBookingsController } from './flight-bookings.controller';
 import { FlightBookingsReaderService } from './flight-bookings.reader.service';
+import { FlightConfirmationService } from './flight-confirmation.service';
 import { FlightDetailsService } from './flight-details.service';
 import { FlightHoldService } from './flight-hold.service';
 import { FlightPaymentHandler } from './flight-payment.handler';
@@ -46,6 +47,7 @@ import {
     FlightDetailsService,
     FlightQuoteService,
     FlightHoldService,
+    FlightConfirmationService,
     FlightBookingJobs,
     FlightBookingsReaderService,
     {
