@@ -8,6 +8,7 @@ import {
 import { BookingStatus } from '../common/enums/booking-status.enum';
 import { isCents, isPlatformCurrency } from '../common/helpers/money';
 import {
+  BookingPolicies,
   CreatedPayment,
   PayableBooking,
   PaymentBookingType,
@@ -87,6 +88,91 @@ export class PaymentsService {
       throw new Error(`Booking ${bookingId} is not in the platform currency`);
     }
     return booking;
+  }
+
+  // PAY-02: the policies of the user's own booking (404 for anyone else).
+  // Readable in any status, e.g. on a confirmation page.
+  async getPolicies(
+    type: PaymentBookingType,
+    bookingId: string,
+    userId: string,
+  ) {
+    const policies = await this.ownPolicies(type, bookingId, userId);
+    return {
+      type,
+      bookingId: policies.bookingId,
+      status: policies.status,
+      provider: policies.provider,
+      cancellationTiers: policies.cancellationTiers,
+      ...(policies.checkInTime !== undefined
+        ? { checkInTime: policies.checkInTime }
+        : {}),
+      ...(policies.checkOutTime !== undefined
+        ? { checkOutTime: policies.checkOutTime }
+        : {}),
+      ...(policies.baggage ? { baggage: policies.baggage } : {}),
+      accepted: policies.policiesAcceptedAt !== null,
+      policiesAcceptedAt: policies.policiesAcceptedAt,
+      expiresAt: policies.expiresAt,
+    };
+  }
+
+  // PAY-02: the acceptance checkbox. Stores policiesAcceptedAt (now) on the
+  // user's own PendingPayment booking whose hold has not run out; payment
+  // (getPayableFor) answers 400 until then. Accepting again keeps the first
+  // timestamp.
+  async acceptPolicies(
+    type: PaymentBookingType,
+    bookingId: string,
+    userId: string,
+  ): Promise<{
+    type: PaymentBookingType;
+    bookingId: string;
+    accepted: true;
+    policiesAcceptedAt: Date;
+  }> {
+    const policies = await this.ownPolicies(type, bookingId, userId);
+    const done = (policiesAcceptedAt: Date) => ({
+      type,
+      bookingId: policies.bookingId,
+      accepted: true as const,
+      policiesAcceptedAt,
+    });
+    if (policies.status !== BookingStatus.PENDING_PAYMENT) {
+      throw new ConflictException(NOT_PENDING_PAYMENT);
+    }
+    if (!policies.expiresAt || policies.expiresAt.getTime() <= Date.now()) {
+      throw new ConflictException(HOLD_EXPIRED);
+    }
+    if (policies.policiesAcceptedAt) return done(policies.policiesAcceptedAt);
+
+    const at = new Date();
+    const saved = await this.handler(type).acceptPolicies!(
+      policies.bookingId,
+      at,
+    );
+    if (!saved) throw new ConflictException(HOLD_EXPIRED);
+    return done(at);
+  }
+
+  private async ownPolicies(
+    type: PaymentBookingType,
+    bookingId: string,
+    userId: string,
+  ): Promise<BookingPolicies> {
+    // `type` comes from the URL, so a booking module that is not there yet
+    // (or has no policies yet) is a 501, not a 500.
+    const handler = this.handlers.get(type);
+    if (!handler?.getPolicies || !handler.acceptPolicies) {
+      throw new NotImplementedException(
+        `Policies for ${type} bookings are not available yet (PAY-02)`,
+      );
+    }
+    const policies = await handler.getPolicies(bookingId);
+    if (!policies || String(policies.userId) !== String(userId)) {
+      throw new NotFoundException(BOOKING_NOT_FOUND);
+    }
+    return policies;
   }
 
   // PAY-01 (stub): creates a Stripe PaymentIntent for the booking total and
