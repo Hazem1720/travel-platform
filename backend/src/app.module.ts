@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.validation';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from './hotels/hotels.module';
+import { ItinerariesModule } from './itineraries/itineraries.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReferenceModule } from './reference/reference.module';
@@ -38,6 +39,7 @@ import { UploadsModule } from './uploads/uploads.module';
     HotelBookingsModule,
     HotelsModule,
     PaymentsModule,
+    ItinerariesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
