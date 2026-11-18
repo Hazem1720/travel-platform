@@ -43,8 +43,14 @@ const body = (over: Partial<CreateFlightDto> = {}): CreateFlightDto => ({
 
 function setup(stored: any = null) {
   const flights = {
+    // Like Mongoose, fill the schema defaults (status Scheduled, no cabins).
     create: jest.fn(async (doc: any) => ({
-      toObject: () => ({ _id: new Types.ObjectId(), cabins: [], ...doc }),
+      toObject: () => ({
+        _id: new Types.ObjectId(),
+        status: FlightStatus.SCHEDULED,
+        cabins: [],
+        ...doc,
+      }),
     })),
     findById: jest.fn(() => ({ lean: async () => stored })),
     findOneAndUpdate: jest.fn<any, [any, any, any]>(() => ({
