@@ -691,3 +691,14 @@ now i want u to do my phase 3 requirments one by one give each one of them their
 How the output was used:
 Claude extended my HTL-11 HotelSearchService.search() with optional minPrice, maxPrice, minRating and sort criteria, so GET /api/hotels/search filters by the price per night of the cheapest free room (inclusive), by minimum average rating (unrated hotels excluded when it is set) and sorts by price or rating with :asc or :desc. Moharm's ITN-25 call is unchanged because the new criteria are optional. Unit tests cover the plan's cases (50/80/120 USD with 80-120 giving 2, minRating=4 hiding an unrated hotel, both sort orders, min above max and minRating=6 giving 400). A live check on a local server against the shared database with four TEST hotels passed 10 checks; the test data was deleted.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-16, HTL-18
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way (third item: HTL-16 with HTL-18, one PR because the plan says the booking request performs the hold and there is no draft status)
+How the output was used:
+Claude built POST /api/hotel-bookings and the HotelBooking schema following the same shape as Aabsy's FlightBooking (#175): HotelHoldService validates the request (one adult per reservation, child ages 0-17, maxOccupancy per room, same hotel, dates), takes a price snapshot (sum of nights x price per room), locks every room night together with my HotelAvailabilityService.lockNights() (all or nothing on the unique index) and creates the reservation as PendingPayment for 10 minutes. HotelBookingJobs expires overdue holds every minute through PaymentsService.releaseInventory(), and HotelPaymentHandler is registered as the 'hotel' handler (confirm is left for HTL-17). Unit tests cover the rules, the hold and the expiry. A live check on a local server against the shared database passed 21 checks, including two users holding the same room at the same moment (one 201, one 409, one set of locks), a Blocked night making the whole request 409 with nothing held, a later price change not altering the total, and the minute job expiring a hold and freeing the room. All test data was deleted.
+================================================
