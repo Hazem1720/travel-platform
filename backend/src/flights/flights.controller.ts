@@ -1,7 +1,8 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiParam,
   ApiTags,
@@ -18,7 +19,11 @@ import { AuthUser } from '../common/types/auth-user.type';
 import { AddCabinDto } from './dto/add-cabin.dto';
 import { CreateFlightDto } from './dto/create-flight.dto';
 import { FlightDto } from './dto/flight.dto';
+import { UpdateCabinDto } from './dto/update-cabin.dto';
+import { UpdateFlightDto } from './dto/update-flight.dto';
 import {
+  AIRPORTS_LOCKED,
+  CABIN_NOT_FOUND,
   FLIGHT_NOT_FOUND,
   FlightsService,
   NOT_SCHEDULED,
@@ -105,5 +110,75 @@ export class FlightsController {
     @Body() dto: AddCabinDto,
   ) {
     return this.flights.addCabin(user, id, dto);
+  }
+
+  @Patch(':id')
+  @Roles(Role.AIRLINE_MODERATOR)
+  @ApiParam({ name: 'id', example: '6736d4f4c1a2b3c4d5e6fa01' })
+  @ApiOperation({
+    summary: 'Edit the airports or times of your Scheduled flight (FLT-05)',
+    description:
+      'Local times at each airport, as in FLT-03. Airports cannot change ' +
+      'once the flight has a booking. A time change sends an in-app ' +
+      'notification to passengers with a Confirmed booking.',
+  })
+  @ApiOkResponse({ type: FlightDto, description: 'The updated flight' })
+  @ApiErrors(
+    {
+      status: 400,
+      message: AIRPORTS_LOCKED,
+      description:
+        `"${NOT_SCHEDULED}", the FLT-03 time and airport rules, ` +
+        'or no field sent',
+    },
+    UNAUTHENTICATED,
+    NOT_YOUR_AIRLINE,
+    { status: 404, message: FLIGHT_NOT_FOUND },
+    {
+      status: 409,
+      message: 'Your airline already has flight NP101 on 2026-12-02',
+      description: 'The new date clashes with the same flight number',
+    },
+  )
+  update(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: UpdateFlightDto,
+  ) {
+    return this.flights.update(user, id, dto);
+  }
+
+  @Patch(':id/cabins/:cabinId')
+  @Roles(Role.AIRLINE_MODERATOR)
+  @ApiParam({ name: 'id', example: '6736d4f4c1a2b3c4d5e6fa01' })
+  @ApiParam({ name: 'cabinId', example: '6736d4f4c1a2b3c4d5e6fb01' })
+  @ApiOperation({
+    summary: 'Edit the price or seat count of a cabin (FLT-04, FLT-05)',
+    description:
+      'Seats cannot go below the seats already booked or held. A new price ' +
+      'does not change existing bookings (they keep their price snapshot).',
+  })
+  @ApiOkResponse({ type: FlightDto, description: 'The updated flight' })
+  @ApiErrors(
+    {
+      status: 400,
+      message: NOT_SCHEDULED,
+      description: 'Or invalid fields, or no field sent',
+    },
+    UNAUTHENTICATED,
+    NOT_YOUR_AIRLINE,
+    { status: 404, message: CABIN_NOT_FOUND },
+    {
+      status: 409,
+      message: 'Seats cannot go below the 12 already booked or held',
+    },
+  )
+  updateCabin(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Param('cabinId') cabinId: string,
+    @Body() dto: UpdateCabinDto,
+  ) {
+    return this.flights.updateCabin(user, id, cabinId, dto);
   }
 }
