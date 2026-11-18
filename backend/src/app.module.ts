@@ -5,6 +5,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AdminModule } from './admin/admin.module';
+import { AdminAccountsModule } from './admin/admin-accounts.module';
 import { AirlinesModule } from './airlines/airlines.module';
 import { AirportsModule } from './airports/airports.module';
 import { AuditModule } from './audit/audit.module';
@@ -44,6 +45,7 @@ import { UploadsModule } from './uploads/uploads.module';
     PaymentsModule,
     ItinerariesModule,
     AdminModule,
+    AdminAccountsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
