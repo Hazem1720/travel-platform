@@ -119,8 +119,8 @@ describe('flight DTOs (FLT-03, FLT-04)', () => {
     ['freeBags', -1],
     ['maxKgPerBag', 0],
   ])('rejects %s = %p', async (field, value) => {
-    expect(await errorsOf(AddCabinDto, { ...cabin, [field]: value })).toEqual(
-      [field],
-    );
+    expect(await errorsOf(AddCabinDto, { ...cabin, [field]: value })).toEqual([
+      field,
+    ]);
   });
 });
