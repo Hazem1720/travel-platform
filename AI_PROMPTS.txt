@@ -639,6 +639,94 @@ Claude wrote FlightDetailsService: Hazem's toViews() for local times, duration a
 
 ================================================
 Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-11, FLT-12, FLT-15, FLT-17
+Prompt:
+Review PR #156. Then: fix them myself (the review findings on Aabsy's flight search PR).
+How the output was used:
+Claude reviewed PR #156 merged with develop (build, 610 tests and lint passed) and found four problems, which it fixed on the PR branch in separate commits: round-trip returnFlights used the outbound ?page, so a new ?returnPage pages them on their own; a same-day round trip listed flights back that leave before the outbound lands, now left out; minPrice/maxPrice only checked the cheapest cabin, now each cabin's price per seat is checked and cabins outside the range are left out; the public search and details showed bookedSeats and heldSeats, now only availableSeats (publicCabin(), PublicCabinDto). It also made one airline query per flight list instead of two, and marked FLT-11/12/15/17 In Review in the tracker. A review point about reusing Hazem's fieldError() was dropped: Aabsy's version is the one that matches the shared error format. I checked each change and the new tests before pushing; Aabsy's original code is otherwise unchanged.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-11, FLT-12, FLT-15, FLT-17, FLT-19, FLT-21, FLT-22, FLT-23, ACC-13, ACC-15, ACC-16, FLT-01, FLT-03, FLT-04, FLT-05, FLT-08, FLT-09, FLT-30, GEN-06
+Prompt:
+Yes, fix the tracker (after merging #156: bring the rows from #156 and from Hazem's #169 to #172 up to date).
+How the output was used:
+Claude checked on GitHub which issues #156 and #169 to #172 closed and which spec files each PR added, then updated 19 rows in the CSV and the xlsx (Tracker sheet, Hazem's and Aabsy's sheets, Summary counts recounted from the Tracker sheet): 14 to Done with their PR link and test file, FLT-12 and FLT-19/21/22/23 to In Review with #175. A script checked that the official columns, owners, milestones and notes did not change and that the CSV and the Tracker sheet match row for row; the Summary counts for the other members came out unchanged, which confirmed the recount.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-07a
+Prompt:
+ok now i need to do whats left of my phase 2 work i think one requirment. (Then, after checking that the code and the team plan use admin/accounts for every other account route:) Yes, build it.
+How the output was used:
+Claude found that ACC-07a was the only phase 2 item left in my chapter of the team plan and built it at POST /api/admin/accounts/:id/reset-password instead of the plan's admin/users path, because every other account route in the code and in the plan uses admin/accounts. ResetPasswordDto reuses PASSWORD_REGEX; AccountPasswordService stores the bcrypt hash, sets mustChangePassword, clears refreshTokenHash and bumps sessionVersion in one update (conventions.md, "Temporary passwords"), refuses admin accounts with 403, and writes a PASSWORD_RESET audit row without the password. It reuses Hazem's toManagedAccount() and ACCOUNT_NOT_FOUND. Unit tests cover the plan's cases. Claude also ran a live check on a local server against the shared database with a TEST admin and a TEST user (19 checks: weak password 400, malformed id 400, unknown id 404, admin target 403, normal user 403, no login 401, reset 200, old session 401, temporary login then 403 on /users/me, change-password then 200) and deleted both accounts and the audit row afterwards.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-15
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way
+How the output was used:
+Claude planned phase 3 as four PRs (HTL-15, HTL-12, HTL-16 with HTL-18, PAY-02) and built HTL-15 first: GET /api/hotels/:id/rooms/available, a public route in its own controller that calls my HotelAvailabilityService.freeRooms() from HTL-11 and returns each free room's type, beds, maxOccupancy, pricePerNight, nights and totalPrice in USD cents, with the same date rules as the hotel search and 404 for an unknown or inactive hotel. Unit tests use the real availability service with an in-memory lock store and cover the plan's cases (a Booked and a Blocked night leave only the third room, expired holds count as free, past check-in and bad dates are 400). A live check on a local server against the shared database with a TEST hotel, rooms and locks passed 11 checks; the test data was deleted. It also marks ACC-07a Done in the tracker after #177.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-12
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way (second item: HTL-12)
+How the output was used:
+Claude extended my HTL-11 HotelSearchService.search() with optional minPrice, maxPrice, minRating and sort criteria, so GET /api/hotels/search filters by the price per night of the cheapest free room (inclusive), by minimum average rating (unrated hotels excluded when it is set) and sorts by price or rating with :asc or :desc. Moharm's ITN-25 call is unchanged because the new criteria are optional. Unit tests cover the plan's cases (50/80/120 USD with 80-120 giving 2, minRating=4 hiding an unrated hotel, both sort orders, min above max and minRating=6 giving 400). A live check on a local server against the shared database with four TEST hotels passed 10 checks; the test data was deleted.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-16, HTL-18
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way (third item: HTL-16 with HTL-18, one PR because the plan says the booking request performs the hold and there is no draft status)
+How the output was used:
+Claude built POST /api/hotel-bookings and the HotelBooking schema following the same shape as Aabsy's FlightBooking (#175): HotelHoldService validates the request (one adult per reservation, child ages 0-17, maxOccupancy per room, same hotel, dates), takes a price snapshot (sum of nights x price per room), locks every room night together with my HotelAvailabilityService.lockNights() (all or nothing on the unique index) and creates the reservation as PendingPayment for 10 minutes. HotelBookingJobs expires overdue holds every minute through PaymentsService.releaseInventory(), and HotelPaymentHandler is registered as the 'hotel' handler (confirm is left for HTL-17). Unit tests cover the rules, the hold and the expiry. A live check on a local server against the shared database passed 21 checks, including two users holding the same room at the same moment (one 201, one 409, one set of locks), a Blocked night making the whole request 409 with nothing held, a later price change not altering the total, and the minute job expiring a hold and freeing the room. All test data was deleted.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-02
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way (fourth item: PAY-02)
+How the output was used:
+Claude built PAY-02 in my payments module: GET /api/bookings/:type/:id/policies and POST /api/bookings/:type/:id/accept-policies (the acceptance checkbox, accepted must be true). PaymentsService checks the owner (404), the status and the hold (409) once for both booking types, and the PaymentHandler contract gains optional getPolicies() and acceptPolicies(), so Aabsy's open flight PR (#175) still compiles; a type without them answers 501. The hotel handler returns the hotel's cancellation tiers and check-in/check-out times and stores policiesAcceptedAt once while the reservation is PendingPayment and held. Payment already answers 400 until it is set (getPayableFor). Unit tests cover the plan's cases; a live check on a local server against the shared database with a TEST hotel and reservation passed 18 checks, and the test data was deleted. The flight side (airline cancellation tiers and baggage policy) is left for FlightPaymentHandler once #175 is merged.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: BLG-05, BLG-06, BLG-07, GEN-09, GEN-10
+Prompt:
+ok now i want to change something in the plan and the team i want u to add a new teammate called emad and give him my work from phase 4 and any two requirements from hasans work ... (then) no i have a better idea take from hafez what do u think ... (then) i think thats not enough he will get a deduction or what if yes give him more from hafez
+How the output was used:
+Claude advised against giving Emad my phase 4 (PAY-01 is High complexity and blocks Aabsy's FLT-23 and all of Hasan's cancellations two days before the deadline) and against Hasan's items (all but ACC-12, which Hasan started, wait on FLT-23 or HTL-17). It checked the project description: it sets no per-member quota, but Git history must show meaningful contributions, so two items looked thin. I chose to move five of Hafez's items (13, none started) to Emad: comments and likes (BLG-05, BLG-06, BLG-07) and reports and moderation (GEN-09, GEN-10). Claude updated the tracker CSV and xlsx (Owner column, an Emad sheet, Emad in the Owner list, the Summary) with a script that checked nothing else changed, updated comments in hotel-bookings and itineraries that named Hafez for GEN-09/GEN-10, and set PAY-02 to In Progress (hotel side merged in #181).
+================================================
+
+================================================
+Date: 2026-11-18
 Student: Mostafa Abuelabbas
 Tool: Claude (claude.ai)
 Related Requirement: FLT-19, FLT-21
@@ -668,4 +756,15 @@ Prompt:
 Last item, FLT-23: after a successful payment set the flight booking to Confirmed, turn the held seats into booked seats, generate a unique booking reference, show a confirmation page, send an in-app notification and offer a downloadable e-ticket PDF. Tracker after each commit, then open the pull requests.
 How the output was used:
 Claude added pdfkit (the plan's suggestion; npm audit unchanged) and FlightConfirmationService: confirm() returns at once for an already Confirmed booking (Stripe may repeat events), throws 409 for Expired or Cancelled ones so Payments can refund, changes PendingPayment to Confirmed with an FL- reference in one conditional update (retrying on the rare duplicate reference), moves heldSeats to bookedSeats only after winning that update, and sends BOOKING_CONFIRMED without letting a failed notification undo the booking. The flight payment handler's confirm() now calls it. GET /api/flight-bookings/:id shows the owner's booking with local times (404 for anyone else) and GET /api/flight-bookings/:id/e-ticket returns a PDF with the reference, flights, local times, passenger names and total (400 unless Confirmed; passport numbers left out). The Swagger e2e check found that @ApiProduces hid the 401 example, so the PDF type was moved to the 200 response. Unit tests cover each case and read the text inside the PDF; against MongoDB, the full flow through Memo's real PaymentsService (webhook sent twice, one notification, 2 held -> 2 booked), an Expired booking refused, and payment and expiry at the same moment with exactly one winning.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-22
+Prompt:
+can we fix it for him (the AI_PROMPTS.txt merge conflict on Aabsy's PR #175)
+How the output was used:
+Claude merged develop into feature/FLT-19-flight-quote. Git's line merge had interleaved the two sides' entries in AI_PROMPTS.txt, so it rebuilt the end of the file instead: develop's version first, then Aabsy's three entries (FLT-19/FLT-21, FLT-22/GEN-11, FLT-23) whole, and checked that every block keeps its header and closing line. No code changed in the merge. Build, unit tests and the read-only eslint check passed on the merged branch before it was pushed.
 ================================================

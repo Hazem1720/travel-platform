@@ -1,7 +1,10 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { CancellationTierDto } from '../../common/helpers/cancellation-tiers';
 import { FlightDto } from '../../flights/dto/flight.dto';
-import { FlightAirlineSummaryDto } from './flight-search-result.dto';
+import {
+  FlightAirlineSummaryDto,
+  PublicCabinDto,
+} from './flight-search-result.dto';
 
 // Response shape of GET /api/flights/:id, used only for Swagger (FLT-17).
 
@@ -20,7 +23,10 @@ export class FlightDetailsAirlineDto extends FlightAirlineSummaryDto {
 
 // Hazem's flight shape: local times (GEN-06), duration, and every cabin with
 // price, availableSeats (total - booked - held), freeBags and maxKgPerBag.
-export class FlightDetailsDto extends FlightDto {
+export class FlightDetailsDto extends OmitType(FlightDto, ['cabins'] as const) {
+  @ApiProperty({ type: [PublicCabinDto] })
+  cabins: PublicCabinDto[];
+
   @ApiProperty({ type: FlightDetailsAirlineDto })
   airline: FlightDetailsAirlineDto;
 

@@ -31,6 +31,7 @@ const PUBLIC_ROUTES = [
   'GET /uploads/:file',
   'GET /hotels/search',
   'GET /hotels/:id',
+  'GET /hotels/:id/rooms/available',
   'GET /itineraries/public/search',
   'GET /itineraries/public/:id',
 ];

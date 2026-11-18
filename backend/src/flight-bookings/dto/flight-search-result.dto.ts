@@ -20,7 +20,13 @@ export class FlightAirlineSummaryDto {
   logo: string | null;
 }
 
-export class CabinOptionDto extends CabinDto {
+// A cabin in the public search and details: no bookedSeats or heldSeats.
+export class PublicCabinDto extends OmitType(CabinDto, [
+  'bookedSeats',
+  'heldSeats',
+] as const) {}
+
+export class CabinOptionDto extends PublicCabinDto {
   @ApiProperty({
     example: 42000,
     description:
@@ -43,8 +49,9 @@ export class FlightOptionDto extends OmitType(FlightDto, ['cabins'] as const) {
   @ApiProperty({
     example: 20000,
     description:
-      'Cheapest listed cabin per seat, USD cents: used by minPrice, ' +
-      'maxPrice and sort=price (FLT-15)',
+      'Cheapest listed cabin per seat, USD cents, used by sort=price. ' +
+      'minPrice and maxPrice leave out the cabins outside the range ' +
+      '(FLT-15).',
   })
   lowestPrice: number;
 }

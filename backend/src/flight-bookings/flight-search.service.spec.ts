@@ -47,12 +47,12 @@ describe('FlightSearchService (FLT-11)', () => {
       lean: jest.fn(async () => found),
     };
     const flights = { find: jest.fn(() => flightQuery) };
+    // Only the active airlines come back (the INACTIVE one does not).
     const airlines = {
-      find: jest.fn((filter: { isActive?: boolean }) => ({
-        lean: async () =>
-          filter.isActive === false
-            ? [{ _id: INACTIVE }]
-            : [{ _id: AIRLINE, name: 'Nile Air', code: 'NP', logo: null }],
+      find: jest.fn(() => ({
+        lean: async () => [
+          { _id: AIRLINE, name: 'Nile Air', code: 'NP', logo: null },
+        ],
       })),
     };
     const airports = {
@@ -70,6 +70,7 @@ describe('FlightSearchService (FLT-11)', () => {
           _id: String(f._id),
           airlineId: String(f.airlineId),
           departure: { utc: f.departureAt.toISOString() },
+          arrival: { utc: f.arrivalAt.toISOString() },
           durationMinutes: (f.arrivalAt - f.departureAt) / 60_000,
           cabins: f.cabins,
         })),
@@ -81,7 +82,7 @@ describe('FlightSearchService (FLT-11)', () => {
       airports as any,
       views as any,
     );
-    return { service, flights, flightQuery };
+    return { service, flights, flightQuery, airlines };
   }
 
   const query = (q: Partial<FlightSearchQueryDto> = {}) =>
@@ -115,15 +116,20 @@ describe('FlightSearchService (FLT-11)', () => {
   });
 
   it('lists only Scheduled, not yet departed flights of active airlines', async () => {
-    const { service, flights, flightQuery } = setup();
+    const { service, flights, flightQuery, airlines } = setup();
     await service.search(query());
+    expect(airlines.find).toHaveBeenCalledTimes(1);
+    expect((airlines.find.mock.calls as any[])[0][0]).toEqual({
+      isActive: { $ne: false },
+    });
     const filter = (flights.find.mock.calls as any[])[0][0];
     expect(filter).toMatchObject({
       status: FlightStatus.SCHEDULED,
       from: 'CAI',
       to: 'DXB',
-      airlineId: { $nin: [INACTIVE] },
+      airlineId: { $in: [AIRLINE] },
     });
+    expect(filter.airlineId.$in).not.toContain(INACTIVE);
     expect(filter.departureAt.$gt).toBeInstanceOf(Date);
     expect(flightQuery.sort).toHaveBeenCalledWith({ departureAt: 1 });
   });
@@ -156,6 +162,13 @@ describe('FlightSearchService (FLT-11)', () => {
       price: 20000,
       totalFare: 42000,
     });
+  });
+
+  it('does not show guests the booked and held seat counts', async () => {
+    const { service } = setup([flight(5)]);
+    const res = await service.search(query());
+    expect(res.data[0].cabins[0]).not.toHaveProperty('bookedSeats');
+    expect(res.data[0].cabins[0]).not.toHaveProperty('heldSeats');
   });
 
   it('filters by cabin (FLT-12)', async () => {
@@ -191,8 +204,20 @@ describe('FlightSearchService (FLT-11)', () => {
     });
   });
 
+  // A DXB -> CAI flight back, leaving at the given UTC time.
+  const back = (departs: string) =>
+    flight(5, {
+      from: 'DXB',
+      to: 'CAI',
+      departureAt: new Date(departs),
+      arrivalAt: new Date(new Date(departs).getTime() + 4 * 3_600_000),
+    });
+
   it('round trip: searches the reversed route on returnDate too', async () => {
-    const { service, flights } = setup([flight(5)]);
+    const { service, flights, flightQuery } = setup();
+    flightQuery.lean
+      .mockResolvedValueOnce([flight(5)])
+      .mockResolvedValueOnce([back('2026-12-09T08:00:00Z')]);
     const res = await service.search(query({ returnDate: '2026-12-09' }));
     const filters = (flights.find.mock.calls as any[]).map((c) => c[0]);
     expect(filters).toHaveLength(2);
@@ -213,6 +238,38 @@ describe('FlightSearchService (FLT-11)', () => {
     const res = await service.search(query({ returnDate: '2026-12-09' }));
     expect(res.message).toBeNull();
     expect(res.returnFlights?.message).toBe(NO_FLIGHTS_FOUND);
+  });
+
+  it('round trip: ?returnPage pages the flights back on their own', async () => {
+    const { service, flightQuery } = setup();
+    const outbound = Array.from({ length: 15 }, () => flight(5));
+    const returns = Array.from({ length: 3 }, () =>
+      back('2026-12-09T08:00:00Z'),
+    );
+    flightQuery.lean
+      .mockResolvedValueOnce(outbound)
+      .mockResolvedValueOnce(returns);
+    const res = await service.search(
+      query({ returnDate: '2026-12-09', page: 2, returnPage: 1 }),
+    );
+    expect(res.data).toHaveLength(5);
+    expect(res.meta).toMatchObject({ page: 2, total: 15 });
+    expect(res.returnFlights?.data).toHaveLength(3);
+    expect(res.returnFlights?.meta).toMatchObject({ page: 1, total: 3 });
+  });
+
+  it('round trip on one day: no flight back before the outbound lands', async () => {
+    // The outbound lands at 02:30 UTC on 2 Dec.
+    const { service, flightQuery } = setup();
+    const early = back('2026-12-02T01:00:00Z');
+    const late = back('2026-12-02T10:00:00Z');
+    flightQuery.lean
+      .mockResolvedValueOnce([flight(5)])
+      .mockResolvedValueOnce([early, late]);
+    const res = await service.search(query({ returnDate: '2026-12-02' }));
+    expect(res.returnFlights?.data.map((o) => o._id)).toEqual([
+      String(late._id),
+    ]);
   });
 
   it('round trip: a return date before the date is 400', async () => {
@@ -282,6 +339,29 @@ describe('FlightSearchService (FLT-11)', () => {
         query({ minPrice: 20000, maxPrice: 30000 }),
       );
       expect(numbers(res).sort()).toEqual([200, 300]);
+    });
+
+    it('leaves out the cabins outside the range, not just the flight', async () => {
+      const f = flight(5);
+      f.cabins.push({
+        _id: new Types.ObjectId(),
+        category: CabinCategory.BUSINESS,
+        totalSeats: 8,
+        bookedSeats: 0,
+        heldSeats: 0,
+        price: 90000,
+        freeBags: 2,
+        maxKgPerBag: 32,
+      });
+      const { service } = setup([f]);
+
+      const cheap = await service.search(query({ maxPrice: 30000 }));
+      expect(cheap.data[0].cabins.map((c) => c.price)).toEqual([20000]);
+
+      // Only Business is in range, so lowestPrice is its price.
+      const dear = await service.search(query({ minPrice: 50000 }));
+      expect(dear.data[0].cabins.map((c) => c.price)).toEqual([90000]);
+      expect(dear.data[0].lowestPrice).toBe(90000);
     });
 
     it('minPrice above maxPrice is 400', async () => {

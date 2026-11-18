@@ -43,6 +43,37 @@ export interface PayableBooking {
   description?: string;
 }
 
+// PAY-02: the provider's policies the user accepts before paying. The owner
+// and status come with them, so Payments does the 404/409 checks once for
+// both booking types.
+export interface BookingPolicies {
+  bookingId: string;
+  userId: string;
+  status: BookingStatus;
+  expiresAt: Date | null;
+  policiesAcceptedAt: Date | null;
+  // The airline or the hotel.
+  provider: { id: string; name: string };
+  // The provider's cancellation tiers, most daysBefore first (FLT-09,
+  // HTL-10).
+  cancellationTiers: { daysBefore: number; refundPercent: number }[];
+  // Hotels (HTL-09).
+  checkInTime?: string;
+  checkOutTime?: string;
+  // Flights (FLT-04, FLT-08): the free bags of each booked cabin and the
+  // airline's extra-bag policy.
+  baggage?: {
+    extraBagPrice: number | null;
+    maxExtraBags: number;
+    cabins: {
+      flightNumber: string;
+      cabin: string;
+      freeBags: number;
+      maxKgPerBag: number;
+    }[];
+  };
+}
+
 export interface PaymentHandler {
   // The booking, or null if it does not exist. Payments does the checks
   // (owner, PendingPayment, hold not expired, policies accepted), so they are
@@ -60,6 +91,15 @@ export interface PaymentHandler {
   // The hold ran out (FLT-22, HTL-18): PendingPayment to Expired and the
   // seats or rooms released. Also safe to call twice.
   expire(bookingId: string): Promise<void>;
+
+  // PAY-02. Optional so a booking module can add them after its first
+  // release; until then the policy routes answer 501 for that type.
+  // getPolicies: the booking's policies, or null if it does not exist.
+  getPolicies?(bookingId: string): Promise<BookingPolicies | null>;
+  // Store `at` as policiesAcceptedAt, only while the booking is
+  // PendingPayment, its hold has not run out and nothing is stored yet.
+  // Returns false if it did not change (Payments answers 409).
+  acceptPolicies?(bookingId: string, at: Date): Promise<boolean>;
 }
 
 // Returned by PaymentsService.createPayment: the frontend passes clientSecret

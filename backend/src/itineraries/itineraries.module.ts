@@ -25,7 +25,7 @@ import { TransportCostsController } from './transport-costs.controller';
 import { TransportCostsService } from './transport-costs.service';
 
 // ITN requirements (Moharm). Exports the service and the Itinerary model
-// (MongooseModule), so Hafez (BLG-12, GEN-09, GEN-10) and Memo (BON-02) can
+// (MongooseModule), so Hafez (BLG-12), Emad (GEN-09, GEN-10) and Memo (BON-02) can
 // use them by importing ItinerariesModule. Country and City come from the
 // global ReferenceModule.
 @Module({

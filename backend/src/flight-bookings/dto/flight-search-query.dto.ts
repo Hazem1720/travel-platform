@@ -50,6 +50,19 @@ export class FlightSearchQueryDto extends PaginationQueryDto {
   returnDate?: string;
 
   @ApiPropertyOptional({
+    default: 1,
+    minimum: 1,
+    description:
+      'Round trip (FLT-12): page of returnFlights. ?page pages the ' +
+      'outbound flights only.',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  returnPage: number = 1;
+
+  @ApiPropertyOptional({
     minimum: 1,
     example: 2,
     description:

@@ -36,9 +36,11 @@ export class FlightSearchController {
       'Use ?passengers=N, or ?adults&children&infants. Optional ?cabin. ' +
       'Each cabin shows totalFare for the passengers (infants pay 10%). ' +
       'Round trip: add ?returnDate; returnFlights then lists the flights ' +
-      'back (to -> from), otherwise it is null. FLT-15: ?minPrice and ' +
-      '?maxPrice (inclusive, USD cents) on lowestPrice, the chosen or ' +
-      'cheapest cabin; ?sort=price|duration|departure with :asc or :desc ' +
+      'back (to -> from), otherwise it is null. ?page pages the outbound ' +
+      'list and ?returnPage the flights back; flights back that leave ' +
+      'before the earliest outbound arrival are left out. FLT-15: ?minPrice and ' +
+      '?maxPrice (inclusive, USD cents per seat) keep only the cabins in ' +
+      'the range; lowestPrice is the cheapest listed cabin; ?sort=price|duration|departure with :asc or :desc ' +
       '(default departure:asc). No match: 200 with an empty list and ' +
       '"No flights found".',
   })

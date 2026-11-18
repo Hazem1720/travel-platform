@@ -147,7 +147,7 @@ export class ClonedFrom {
 }
 export const ClonedFromSchema = SchemaFactory.createForClass(ClonedFrom);
 
-// ITN-01. Other modules read it: Hafez (BLG-12, GEN-09, GEN-10) and Memo
+// ITN-01. Other modules read it: Hafez (BLG-12), Emad (GEN-09, GEN-10) and Memo
 // (BON-02). Reference data uses text ids: countries are country codes ("EG").
 @Schema({ timestamps: true, collection: 'itineraries' })
 export class Itinerary {

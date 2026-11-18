@@ -29,13 +29,33 @@ import {
 
 export const NO_FLIGHTS_FOUND = 'No flights found';
 
-// One cabin in the results: Hazem's cabin view plus totalFare, what these
+// A cabin as guests see it (FLT-11, FLT-17): Hazem's cabin view without
+// bookedSeats and heldSeats, which are the airline's sales figures. Guests
+// get availableSeats (total - booked - held) instead.
+export type PublicCabin = Omit<
+  FlightView['cabins'][number],
+  'bookedSeats' | 'heldSeats'
+>;
+
+export function publicCabin(c: FlightView['cabins'][number]): PublicCabin {
+  return {
+    _id: c._id,
+    category: c.category,
+    totalSeats: c.totalSeats,
+    availableSeats: c.availableSeats,
+    price: c.price,
+    freeBags: c.freeBags,
+    maxKgPerBag: c.maxKgPerBag,
+  };
+}
+
+// One cabin in the results: the public cabin plus totalFare, what these
 // passengers pay in it before extra bags (FLT-12: infants pay 10%).
-export type CabinOption = FlightView['cabins'][number] & { totalFare: number };
+export type CabinOption = PublicCabin & { totalFare: number };
 
 // One flight in the results: Hazem's flight view (local times, GEN-06) plus
-// the airline, with only the cabins that have enough free seats (and match
-// ?cabin when it is given).
+// the airline, with only the cabins that have enough free seats and match
+// ?cabin and ?minPrice/?maxPrice when they are given.
 export interface FlightOption extends Omit<FlightView, 'cabins'> {
   airline: { _id: string; name: string; code: string; logo: string | null };
   cabins: CabinOption[];
@@ -73,6 +93,9 @@ export interface FlightSearchResult extends FlightOptionList {
 }
 
 type LeanFlight = Flight & { _id: Types.ObjectId };
+type LeanAirline = Pick<Airline, 'name' | 'code' | 'logo'> & {
+  _id: Types.ObjectId;
+};
 
 // FLT-11 flight search. Moharm's itineraries (ITN-26) call findOptions()
 // directly, so the rules live here and not in the controller.
@@ -112,9 +135,13 @@ export class FlightSearchService {
         : null,
     ]);
 
+    // Each list has its own page: ?page for the outbound flights and
+    // ?returnPage for the flights back, so neither hides the other.
     return {
       ...toPage(outbound, q.page, q.limit),
-      returnFlights: inbound ? toPage(inbound, q.page, q.limit) : null,
+      returnFlights: inbound
+        ? toPage(returnsAfter(outbound, inbound), q.returnPage ?? 1, q.limit)
+        : null,
     };
   }
 
@@ -145,9 +172,11 @@ export class FlightSearchService {
     // 2 Dec is 22:30 UTC on 1 Dec, so search that day's UTC window.
     const { start, end } = localDayRangeUtc(date, departure.timeZone);
     const bookable = bookableFilter();
-    const inactive = await this.airlines
-      .find({ isActive: false }, { _id: 1 })
-      .lean<{ _id: Types.ObjectId }[]>();
+    // One airline query: the active airlines (ACC-15) both filter the
+    // flights and give each result its airline name, code and logo.
+    const active = await this.airlines
+      .find({ isActive: { $ne: false } }, { name: 1, code: 1, logo: 1 })
+      .lean<LeanAirline[]>();
 
     const flights = await this.flights
       .find({
@@ -155,18 +184,22 @@ export class FlightSearchService {
         from,
         to,
         departureAt: { ...bookable.departureAt, $gte: start, $lt: end },
-        airlineId: { $nin: inactive.map((a) => a._id) },
+        airlineId: { $in: active.map((a) => a._id) },
       })
       .sort({ departureAt: 1 })
       .lean<LeanFlight[]>();
 
-    // Keep only cabins with enough free seats (and of the chosen category),
-    // and only flights that still have one.
+    // Keep only cabins with enough free seats, of the chosen category and,
+    // FLT-15, priced per seat inside the inclusive range; and only flights
+    // that still have one. The other criteria stay applied.
     const withSeats = flights
       .map((f) => ({
         ...f,
         cabins: (f.cabins ?? []).filter(
-          (c) => availableSeats(c) >= seats && (!cabin || c.category === cabin),
+          (c) =>
+            availableSeats(c) >= seats &&
+            (!cabin || c.category === cabin) &&
+            priceInRange(c.price, minPrice, maxPrice),
         ),
       }))
       .filter((f) => f.cabins.length > 0);
@@ -176,32 +209,21 @@ export class FlightSearchService {
       .map((v) => ({
         ...v,
         cabins: v.cabins.map((c) => ({
-          ...c,
+          ...publicCabin(c),
           totalFare: faresTotal(passengers, c.price),
         })),
-        // The chosen cabin's price, or the cheapest one with enough seats.
+        // The cheapest listed cabin (all of them match every filter).
         lowestPrice: Math.min(...v.cabins.map((c) => c.price)),
       }))
-      // FLT-15: the other criteria stay applied; the range is inclusive.
-      .filter((o) => priceInRange(o.lowestPrice, minPrice, maxPrice))
       .sort(byFlightSort(sort));
-    return this.withAirlines(options);
-  }
 
-  private async withAirlines(
-    views: Omit<FlightOption, 'airline'>[],
-  ): Promise<FlightOption[]> {
-    const ids = [...new Set(views.map((v) => v.airlineId))];
-    const airlines = await this.airlines
-      .find({ _id: { $in: ids } }, { name: 1, code: 1, logo: 1 })
-      .lean<(Airline & { _id: Types.ObjectId })[]>();
-    const byId = new Map(airlines.map((a) => [String(a._id), a]));
-    return views.map((v) => {
-      const a = byId.get(v.airlineId);
+    const byId = new Map(active.map((a) => [String(a._id), a]));
+    return options.map((o) => {
+      const a = byId.get(o.airlineId);
       return {
-        ...v,
+        ...o,
         airline: {
-          _id: v.airlineId,
+          _id: o.airlineId,
           name: a?.name ?? '',
           code: a?.code ?? '',
           logo: a?.logo ?? null,
@@ -211,7 +233,23 @@ export class FlightSearchService {
   }
 }
 
-// The same page and limit apply to both lists of a round trip.
+// FLT-12 round trip: a flight back must leave after the user has landed.
+// On a same-day round trip, drop the returns that depart before the
+// earliest outbound arrival (no outbound flight can connect to them).
+export function returnsAfter(
+  outbound: FlightOption[],
+  inbound: FlightOption[],
+): FlightOption[] {
+  if (outbound.length === 0) return inbound;
+  const earliestArrival = Math.min(
+    ...outbound.map((o) => new Date(o.arrival.utc).getTime()),
+  );
+  return inbound.filter(
+    (r) => new Date(r.departure.utc).getTime() > earliestArrival,
+  );
+}
+
+// One page of one list (the outbound flights or the flights back).
 function toPage(
   options: FlightOption[],
   page: number,
