@@ -12,7 +12,8 @@ import { BadRequestException } from '@nestjs/common';
 
 // Local date-time without an offset, minutes precision: 2026-12-01T14:30
 // (seconds ":00" are also accepted).
-const LOCAL_DATE_TIME = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/;
+const LOCAL_DATE_TIME =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/;
 const LOCAL_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
 const MINUTE = 60_000;
