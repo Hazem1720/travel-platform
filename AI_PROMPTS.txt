@@ -501,3 +501,14 @@ Test Ziad's (Moharm's) PR #163 and merge it, then do what is still open except A
 How the output was used:
 Claude checked out the PR merged with the latest develop and ran npm run build, npm test (448 passed), npm run test:e2e and the read-only eslint check (the PR's files are clean; 4 prettier errors in common/helpers already exist on develop). It reviewed the routes for @Roles, DTO validation, owner checks (404 for other users), public-search filters and the FXRatesAPI key, found no blocker, and I merged the PR. It then marked ITN-01 to ITN-21 Done and ITN-25 and ITN-26 In Progress in the tracker CSV and xlsx (Moharm sheet and Summary counts too), with the PR link, test evidence and the remaining blockers. The live test against Atlas could not run because this computer's IP is not on the Atlas access list.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-11, ITN-25, ITN-01
+Prompt:
+I have access to MongoDB Atlas now: test Ziad's itinerary routes and my HTL-11 search against the shared database, then merge #164 and #165.
+How the output was used:
+Claude ran the backend against Atlas and walked through Ziad's ITN routes with two TEST users (42 of 42 checks passed; ITN-18 answers 503 because FXRATES_API_KEY is empty, as designed). For HTL-11 it inserted TEST hotels, rooms and room locks directly (there are no hotels in Atlas yet), and 17 of 17 checks passed, including ITN-25 returning the same hotels as GET /hotels/search. The live test showed the reference cities include New York and London, so it changed the past check-in rule from the UTC date to the local date of the city's airport time zone, with tests. All TEST users, itineraries, hotels, rooms and locks were deleted afterwards. I merged #164; this branch marks HTL-11 and ITN-25 Done.
+================================================
