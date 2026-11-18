@@ -11,6 +11,7 @@ import { AirportsModule } from './airports/airports.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.validation';
+import { FlightBookingsModule } from './flight-bookings/flight-bookings.module';
 import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from './hotels/hotels.module';
@@ -34,6 +35,9 @@ import { UploadsModule } from './uploads/uploads.module';
     ReferenceModule,
     AirlinesModule,
     AirportsModule,
+    // Before FlightsModule: GET /flights/search (FLT-11) must be registered
+    // before any GET /flights/:id.
+    FlightBookingsModule,
     FlightsModule,
     UploadsModule,
     NotificationsModule,
