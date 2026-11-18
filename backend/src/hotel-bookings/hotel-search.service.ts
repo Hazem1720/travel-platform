@@ -45,7 +45,7 @@ export interface HotelSearchResult {
   freeRoomCount: number;
 }
 
-function badRequest(field: string, message: string) {
+export function badRequest(field: string, message: string) {
   return new BadRequestException({
     error: 'Bad Request',
     message: 'Validation failed',
