@@ -625,3 +625,14 @@ Next item, FLT-15: filter the flight search by an inclusive minimum and maximum 
 How the output was used:
 Claude added lowestPrice to each result (the chosen cabin's price per seat, or the cheapest cabin with enough seats), filtered on it with the existing priceInRange rule, and sorted the whole result before paging with parseFlightSort (price, duration as arrival minus departure in UTC, or departure; :asc or :desc; ties by earliest departure; unknown sort is 400). minPrice, maxPrice and sort are also part of the findOptions() criteria for Moharm. Swagger documents the new parameters and field. Tests cover 100/200/300 with 200-300 giving 2, min above max (400), every sort order both ways, an unknown sort and the chosen cabin's price.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-17
+Prompt:
+Next item, FLT-17: a public flight details page with the airline, flight number, airports, local departure and arrival times, duration, every cabin with price, seats remaining and baggage allowance, and the airline's cancellation policy. Tracker after each commit.
+How the output was used:
+Claude wrote FlightDetailsService: Hazem's toViews() for local times, duration and every cabin (availableSeats = total - booked - held, freeBags, maxKgPerBag), plus the airline (name, code, logo, extraBagPrice, maxExtraBags) and its cancellation tiers sorted by daysBefore. Unknown or invalid ids, Cancelled flights (the plan's suggestion) and flights of inactive airlines answer 404; a departed flight is shown as Departed and not bookable. GET /api/flights/:id is public, declared after GET /flights/search in the same controller, and listed in PUBLIC_ROUTES. Tests use Hazem's real toViews() with Cairo and Dubai time zones, and an HTTP test checks that /flights/search is never read as an id.
+================================================
