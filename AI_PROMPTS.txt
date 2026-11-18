@@ -669,3 +669,14 @@ ok now i need to do whats left of my phase 2 work i think one requirment. (Then,
 How the output was used:
 Claude found that ACC-07a was the only phase 2 item left in my chapter of the team plan and built it at POST /api/admin/accounts/:id/reset-password instead of the plan's admin/users path, because every other account route in the code and in the plan uses admin/accounts. ResetPasswordDto reuses PASSWORD_REGEX; AccountPasswordService stores the bcrypt hash, sets mustChangePassword, clears refreshTokenHash and bumps sessionVersion in one update (conventions.md, "Temporary passwords"), refuses admin accounts with 403, and writes a PASSWORD_RESET audit row without the password. It reuses Hazem's toManagedAccount() and ACCOUNT_NOT_FOUND. Unit tests cover the plan's cases. Claude also ran a live check on a local server against the shared database with a TEST admin and a TEST user (19 checks: weak password 400, malformed id 400, unknown id 404, admin target 403, normal user 403, no login 401, reset 200, old session 401, temporary login then 403 on /users/me, change-password then 200) and deleted both accounts and the audit row afterwards.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-15
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way
+How the output was used:
+Claude planned phase 3 as four PRs (HTL-15, HTL-12, HTL-16 with HTL-18, PAY-02) and built HTL-15 first: GET /api/hotels/:id/rooms/available, a public route in its own controller that calls my HotelAvailabilityService.freeRooms() from HTL-11 and returns each free room's type, beds, maxOccupancy, pricePerNight, nights and totalPrice in USD cents, with the same date rules as the hotel search and 404 for an unknown or inactive hotel. Unit tests use the real availability service with an in-memory lock store and cover the plan's cases (a Booked and a Blocked night leave only the third room, expired holds count as free, past check-in and bad dates are 400). A live check on a local server against the shared database with a TEST hotel, rooms and locks passed 11 checks; the test data was deleted. It also marks ACC-07a Done in the tracker after #177.
+================================================
