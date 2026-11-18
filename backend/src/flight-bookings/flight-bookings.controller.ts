@@ -14,7 +14,6 @@ import {
   ApiOkResponse,
   ApiOperation,
   ApiParam,
-  ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -185,10 +184,12 @@ export class FlightBookingsController {
     description:
       'Reference, flights with local times, passenger names and the total.',
   })
-  @ApiProduces('application/pdf')
+  // The PDF type on the 200 response only, so the error examples stay JSON.
   @ApiOkResponse({
     description: 'The e-ticket as a PDF file',
-    schema: { type: 'string', format: 'binary' },
+    content: {
+      'application/pdf': { schema: { type: 'string', format: 'binary' } },
+    },
   })
   @ApiErrors(
     {
