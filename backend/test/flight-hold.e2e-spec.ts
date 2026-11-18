@@ -400,7 +400,13 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
       );
       payments.registerHandler(
         PaymentBookingType.FLIGHT,
-        new FlightPaymentHandler(bookings as any, hold, confirmations),
+        new FlightPaymentHandler(
+          bookings as any,
+          hold,
+          confirmations,
+          flights as any,
+          conn.model(Airline.name) as any,
+        ),
       );
     });
 
