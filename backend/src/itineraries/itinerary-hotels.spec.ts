@@ -35,59 +35,46 @@ describe('ItineraryHotelsService (ITN-25)', () => {
     const itineraries = {
       findById: jest.fn(() => ({ lean: async () => doc })),
     };
-    const small = new Types.ObjectId();
-    const big = new Types.ObjectId();
-    const hotels = {
-      find: jest.fn(() => ({
-        lean: async () => [
-          { _id: small, name: 'TEST Small', cityId: 'luxor' },
-          { _id: big, name: 'TEST Big', cityId: 'luxor' },
-        ],
-      })),
-    };
-    const availability = {
-      freeRoomsByHotel: jest.fn(
-        async () =>
-          new Map([
-            [String(small), [{ maxOccupancy: 1, pricePerNight: 5000 }]],
-            [
-              String(big),
-              [
-                { maxOccupancy: 2, pricePerNight: 9000 },
-                { maxOccupancy: 3, pricePerNight: 15000 },
-              ],
-            ],
-          ]),
-      ),
-    };
+    const hotels = Array.from({ length: 12 }, (_, i) => ({
+      id: new Types.ObjectId().toString(),
+      name: `TEST Hotel ${i + 1}`,
+      cityId: 'luxor',
+      fromPricePerNight: 5000 + i * 1000,
+    }));
+    const hotelSearch = { search: jest.fn(async () => hotels) };
     const service = new ItineraryHotelsService(
       new ItinerariesService(itineraries as any, {} as any),
-      availability as any,
-      hotels as any,
+      hotelSearch as any,
     );
-    return { service, hotels, availability };
+    return { service, hotelSearch };
   }
 
-  it('asks HTL-11 availability for the group dates and keeps hotels that fit the guests', async () => {
-    const { service, hotels, availability } = setup();
+  it("calls Memo's hotel search (HTL-11) with the group's city and dates", async () => {
+    const { service, hotelSearch } = setup();
     const result = await service.hotelsForGroup(OWNER, ITN_ID, {
       groupIndex: 1,
       guests: 2,
       rooms: 1,
-      page: 1,
+      page: 2,
       limit: 10,
     });
-    expect(hotels.find).toHaveBeenCalledWith({
+    expect(hotelSearch.search).toHaveBeenCalledWith({
       cityId: 'luxor',
-      isActive: true,
+      checkIn: '2026-12-05',
+      checkOut: '2026-12-07',
+      guests: 2,
+      rooms: 1,
     });
-    expect(availability.freeRoomsByHotel.mock.calls[0]).toEqual([
-      expect.any(Array),
-      '2026-12-05',
-      '2026-12-07',
+    expect(result.data.map((h: any) => h.name)).toEqual([
+      'TEST Hotel 11',
+      'TEST Hotel 12',
     ]);
-    expect(result.data.map((h: any) => h.name)).toEqual(['TEST Big']);
-    expect(result.data[0]).toMatchObject({ fromPricePerNight: 9000 });
+    expect(result.meta).toEqual({
+      page: 2,
+      limit: 10,
+      total: 12,
+      totalPages: 2,
+    });
     expect(result.search).toMatchObject({ checkIn: '2026-12-05', guests: 2 });
   });
 

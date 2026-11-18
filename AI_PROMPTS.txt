@@ -473,6 +473,17 @@ Claude Code added GET /api/itineraries/:id/flights?origin&roundTrip (ItineraryFl
 Date: 2026-11-18
 Student: Mohamad Amr Khallaf
 Tool: Claude Code
+Related Requirement: HTL-11, ITN-25
+Prompt:
+Do what is still open from Ziad's PR except Aabsy's work: build my HTL-11 hotel search route and switch Ziad's ITN-25 to it, as the team plan says.
+How the output was used:
+Claude wrote GET /api/hotels/search (public, paginated): city or country, checkIn, checkOut, guests and rooms (default 1); 400 for checkOut not after checkIn, checkIn in the past, no or an unknown city or country. It lists active hotels with at least `rooms` free rooms (from HotelAvailabilityService.freeRoomsByHotel) whose largest occupancies cover the guests, cheapest first, with fromPricePerNight and freeRoomCount. The logic is in HotelSearchService.search(), exported from HotelBookingsModule, and ITN-25 now calls it instead of its own copy (Ziad's module; he was told in the PR). Unit tests cover the plan's cases (rooms of 2 and 3: 5 guests in 2 rooms listed, 6 guests or 3 rooms not; yesterday and checkOut = checkIn give 400). npm run build, npm test (457 passed), npm run test:e2e and the read-only eslint check on the changed files passed. Not yet tried in Swagger against Atlas (this computer's IP is not on the Atlas access list).
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
 Related Requirement: ACC-01, ACC-04, ACC-05, ACC-06, ACC-08, ACC-09, ACC-18, ACC-19, FLT-02, GEN-12, ACC-11, FLT-01, FLT-09, GEN-06
 Prompt:
 Look at the team plan PDF. Earlier I asked Claude to remove the work already done from the PDF, but that was wrong: if any feature is missing from the plan PDF, put it back in the PDF under the one responsible for it.
