@@ -132,6 +132,10 @@ export class FlightBooking {
   @Prop({ type: Date, default: null })
   cancelledAt: Date | null;
 
+  // GEN-11: set when the last segment has landed.
+  @Prop({ type: Date, default: null })
+  completedAt: Date | null;
+
   createdAt?: Date;
   updatedAt?: Date;
 }

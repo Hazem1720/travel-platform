@@ -4,6 +4,7 @@ import { Airline, AirlineSchema } from '../src/airlines/schemas/airline.schema';
 import { BookingStatus } from '../src/common/enums/booking-status.enum';
 import { FlightQuoteDto } from '../src/flight-bookings/dto/flight-quote.dto';
 import { PassengerType } from '../src/flight-bookings/flight-booking.rules';
+import { FlightBookingJobs } from '../src/flight-bookings/flight-booking.jobs';
 import { FlightHoldService } from '../src/flight-bookings/flight-hold.service';
 import { FlightQuoteService } from '../src/flight-bookings/flight-quote.service';
 import {
@@ -283,5 +284,49 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
     expect(
       await hold.reserve(String(f._id), String((f as any).cabins[0]._id), 1),
     ).toBe(false);
+  });
+
+  it('Completed job: only bookings whose last segment has landed (GEN-11)', async () => {
+    const jobs = new FlightBookingJobs(bookings as any, hold);
+    const seg = (arrivalAt: Date) => ({
+      flightId: new Types.ObjectId(),
+      airlineId,
+      flightNumber: 'NP999',
+      from: 'CAI',
+      to: 'DXB',
+      departureAt: new Date(arrivalAt.getTime() - 4 * 3600_000),
+      arrivalAt,
+      cabinId: new Types.ObjectId(),
+      cabin: CabinCategory.ECONOMY,
+      seats: 1,
+      cabinFare: 20000,
+      fares: 20000,
+      baggageFees: 0,
+      subtotal: 20000,
+    });
+    const past = new Date(Date.now() - 3600_000);
+    const future = new Date(Date.now() + 3600_000);
+    const base = {
+      userId: new Types.ObjectId(),
+      passengers: [adult],
+      totalAmount: 20000,
+    };
+    const [landed, roundTripHalfway, pending] = await bookings.create([
+      { ...base, status: BookingStatus.CONFIRMED, segments: [seg(past)] },
+      {
+        ...base,
+        status: BookingStatus.CONFIRMED,
+        segments: [seg(past), seg(future)],
+      },
+      { ...base, status: BookingStatus.PENDING_PAYMENT, segments: [seg(past)] },
+    ]);
+
+    await jobs.completeLanded();
+
+    const status = async (b: any) =>
+      (await bookings.findById(b._id).lean<any>()).status;
+    expect(await status(landed)).toBe(BookingStatus.COMPLETED);
+    expect(await status(roundTripHalfway)).toBe(BookingStatus.CONFIRMED);
+    expect(await status(pending)).toBe(BookingStatus.PENDING_PAYMENT);
   });
 });
