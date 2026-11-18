@@ -19,6 +19,16 @@ import {
   stayNights,
 } from './hotel-availability.service';
 
+// HTL-12: sort by the hotel's price (its cheapest qualifying room) or by its
+// average rating.
+export type HotelSortField = 'price' | 'rating';
+export interface HotelSort {
+  field: HotelSortField;
+  direction: 1 | -1;
+}
+export const HOTEL_SORT_FIELDS: HotelSortField[] = ['price', 'rating'];
+export const DEFAULT_HOTEL_SORT: HotelSort = { field: 'price', direction: 1 };
+
 export interface HotelSearchCriteria {
   cityId?: string;
   countryCode?: string;
@@ -26,6 +36,13 @@ export interface HotelSearchCriteria {
   checkOut: string;
   guests: number;
   rooms: number;
+  // HTL-12, all optional: inclusive range on fromPricePerNight (USD cents),
+  // minimum average rating (1-5; unrated hotels are then left out) and the
+  // order. Without them the HTL-11 results are unchanged.
+  minPrice?: number;
+  maxPrice?: number;
+  minRating?: number;
+  sort?: HotelSort;
 }
 
 export interface HotelSearchResult {
@@ -69,6 +86,65 @@ export function fitsGuests(
   return capacity >= guests;
 }
 
+// HTL-12: ?sort=price|rating with :asc or :desc (default price:asc). 400 for
+// anything else.
+export function parseHotelSort(sort?: string): HotelSort {
+  if (!sort) return DEFAULT_HOTEL_SORT;
+  const [field, dir = 'asc', ...rest] = sort.split(':');
+  if (
+    !HOTEL_SORT_FIELDS.includes(field as HotelSortField) ||
+    (dir !== 'asc' && dir !== 'desc') ||
+    rest.length
+  ) {
+    throw badRequest(
+      'sort',
+      'sort must be price or rating, optionally with :asc or :desc',
+    );
+  }
+  return { field: field as HotelSortField, direction: dir === 'asc' ? 1 : -1 };
+}
+
+// HTL-12: min and max both given and min above max is a 400.
+export function assertPriceRange(minPrice?: number, maxPrice?: number): void {
+  if (minPrice !== undefined && maxPrice !== undefined && minPrice > maxPrice) {
+    throw badRequest('minPrice', 'minPrice cannot be greater than maxPrice');
+  }
+}
+
+// HTL-12: the price is the hotel's cheapest qualifying room per night
+// (fromPricePerNight), inclusive on both ends. With minRating, a hotel
+// without any rating is left out even if its stored average is 0.
+export function matchesHotelFilters(
+  h: Pick<
+    HotelSearchResult,
+    'fromPricePerNight' | 'ratingAverage' | 'ratingCount'
+  >,
+  c: Pick<HotelSearchCriteria, 'minPrice' | 'maxPrice' | 'minRating'>,
+): boolean {
+  if (c.minPrice !== undefined && h.fromPricePerNight < c.minPrice) {
+    return false;
+  }
+  if (c.maxPrice !== undefined && h.fromPricePerNight > c.maxPrice) {
+    return false;
+  }
+  if (c.minRating !== undefined) {
+    return h.ratingCount > 0 && h.ratingAverage >= c.minRating;
+  }
+  return true;
+}
+
+// HTL-12 order. Ties: the other key (cheaper first for a rating sort, better
+// rated first for a price sort), then the name, so pages stay stable.
+export function byHotelSort({ field, direction }: HotelSort) {
+  return (a: HotelSearchResult, b: HotelSearchResult): number => {
+    const price = a.fromPricePerNight - b.fromPricePerNight;
+    const rating = a.ratingAverage - b.ratingAverage;
+    const primary = field === 'price' ? price : rating;
+    const secondary = field === 'price' ? -rating : price;
+    return primary * direction || secondary || a.name.localeCompare(b.name);
+  };
+}
+
 // HTL-11: hotel search. search() is the shared part: ITN-25 (Moharm) calls it
 // for an itinerary's city group, and HTL-12 and HTL-15 build on it.
 @Injectable()
@@ -103,9 +179,12 @@ export class HotelSearchService {
 
   // Every active hotel in the city or country with at least `rooms` rooms
   // free for the whole stay whose largest occupancies cover the guests.
-  // Cheapest first (by the cheapest free room), then by name.
+  // Cheapest first (by the cheapest free room), then by name, unless HTL-12's
+  // sort says otherwise; HTL-12's price and rating filters keep every other
+  // criterion.
   async search(c: HotelSearchCriteria): Promise<HotelSearchResult[]> {
     stayNights(c.checkIn, c.checkOut);
+    assertPriceRange(c.minPrice, c.maxPrice);
     if (!c.cityId && !c.countryCode) {
       throw badRequest('city', 'Give a city or a country');
     }
@@ -140,7 +219,7 @@ export class HotelSearchService {
     for (const h of hotels) {
       const rooms = free.get(String(h._id)) ?? [];
       if (!fitsGuests(rooms, c.guests, c.rooms)) continue;
-      results.push({
+      const result: HotelSearchResult = {
         id: String(h._id),
         name: h.name,
         address: h.address,
@@ -155,13 +234,10 @@ export class HotelSearchService {
         checkOutTime: h.checkOutTime,
         fromPricePerNight: Math.min(...rooms.map((r) => r.pricePerNight)),
         freeRoomCount: rooms.length,
-      });
+      };
+      if (matchesHotelFilters(result, c)) results.push(result);
     }
-    return results.sort(
-      (a, b) =>
-        a.fromPricePerNight - b.fromPricePerNight ||
-        a.name.localeCompare(b.name),
-    );
+    return results.sort(byHotelSort(c.sort ?? DEFAULT_HOTEL_SORT));
   }
 
   // GET /hotels/search: one page of search().
@@ -173,6 +249,10 @@ export class HotelSearchService {
       checkOut: q.checkOut,
       guests: q.guests,
       rooms: q.rooms,
+      minPrice: q.minPrice,
+      maxPrice: q.maxPrice,
+      minRating: q.minRating,
+      sort: parseHotelSort(q.sort),
     });
     const page = all.slice((q.page - 1) * q.limit, q.page * q.limit);
     return paginated(page, all.length, q.page, q.limit);
