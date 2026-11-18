@@ -658,3 +658,14 @@ Yes, fix the tracker (after merging #156: bring the rows from #156 and from Haze
 How the output was used:
 Claude checked on GitHub which issues #156 and #169 to #172 closed and which spec files each PR added, then updated 19 rows in the CSV and the xlsx (Tracker sheet, Hazem's and Aabsy's sheets, Summary counts recounted from the Tracker sheet): 14 to Done with their PR link and test file, FLT-12 and FLT-19/21/22/23 to In Review with #175. A script checked that the official columns, owners, milestones and notes did not change and that the CSV and the Tracker sheet match row for row; the Summary counts for the other members came out unchanged, which confirmed the recount.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-07a
+Prompt:
+ok now i need to do whats left of my phase 2 work i think one requirment. (Then, after checking that the code and the team plan use admin/accounts for every other account route:) Yes, build it.
+How the output was used:
+Claude found that ACC-07a was the only phase 2 item left in my chapter of the team plan and built it at POST /api/admin/accounts/:id/reset-password instead of the plan's admin/users path, because every other account route in the code and in the plan uses admin/accounts. ResetPasswordDto reuses PASSWORD_REGEX; AccountPasswordService stores the bcrypt hash, sets mustChangePassword, clears refreshTokenHash and bumps sessionVersion in one update (conventions.md, "Temporary passwords"), refuses admin accounts with 403, and writes a PASSWORD_RESET audit row without the password. It reuses Hazem's toManagedAccount() and ACCOUNT_NOT_FOUND. Unit tests cover the plan's cases. Claude also ran a live check on a local server against the shared database with a TEST admin and a TEST user (19 checks: weak password 400, malformed id 400, unknown id 404, admin target 403, normal user 403, no login 401, reset 200, old session 401, temporary login then 403 on /users/me, change-password then 200) and deleted both accounts and the audit row afterwards.
+================================================
