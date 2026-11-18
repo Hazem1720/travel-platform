@@ -199,6 +199,16 @@ export function fareFor(type: PassengerType, cabinFare: number): number {
   return type === PassengerType.INFANT ? Math.round(cabinFare / 10) : cabinFare;
 }
 
+// FLT-12: what the passengers pay for one cabin on one flight, before extra
+// bags: adults and children the full fare, infants 10%. 2 adults and 1 infant
+// in a 200 USD cabin: 200 + 200 + 20 = 420 USD.
+export function faresTotal(c: PassengerCounts, cabinFare: number): number {
+  return (
+    (c.adults + c.children) * cabinFare +
+    c.infants * fareFor(PassengerType.INFANT, cabinFare)
+  );
+}
+
 // What one segment (one flight) needs for pricing: the chosen cabin's fare
 // and maxKgPerBag, and the airline's extra-bag policy (FLT-08).
 export interface SegmentPricing {

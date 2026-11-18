@@ -6,6 +6,7 @@ import {
   assertPassengers,
   assertSearchCriteria,
   fareFor,
+  faresTotal,
   parseFlightSort,
   PassengerType,
   passengerTypeForAge,
@@ -211,6 +212,18 @@ describe('price (FLT-12, FLT-19, FLT-21)', () => {
     expect(price.segments[0].fares).toBe(42000);
     expect(price.total).toBe(42000);
     expect(price.currency).toBe('USD');
+  });
+
+  it('faresTotal agrees with priceBooking for the same passengers', () => {
+    expect(faresTotal({ adults: 2, children: 0, infants: 1 }, 20000)).toBe(
+      42000,
+    );
+    expect(faresTotal({ adults: 1, children: 2, infants: 1 }, 12345)).toBe(
+      priceBooking(
+        [{ ...economy, cabinFare: 12345 }],
+        [{ type: ADULT }, { type: CHILD }, { type: CHILD }, { type: INFANT }],
+      ).total,
+    );
   });
 
   it('a round trip prices both segments', () => {
