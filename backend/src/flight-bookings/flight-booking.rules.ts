@@ -1,17 +1,14 @@
 import { BadRequestException } from '@nestjs/common';
+import { CabinCategory } from '../flights/schemas/flight.schema';
 
 // Business rules for flight search and booking (FLT-11, FLT-12, FLT-15,
 // FLT-19, FLT-21). Pure functions: no database, so they are unit tested on
 // their own and the search, the quote and the hold all use the same code.
 // Money is in integer USD cents (PAY-04).
 
-// The fixed cabin set from conventions.md ("Flights (FLT)").
-export enum CabinCategory {
-  ECONOMY = 'Economy',
-  PREMIUM_ECONOMY = 'Premium Economy',
-  BUSINESS = 'Business',
-  FIRST = 'First',
-}
+// The cabin set is Hazem's (FLT-04), re-exported so this module's DTOs and
+// callers import everything flight-booking related from one place.
+export { CabinCategory };
 
 // FLT-12: adult 12 and over, child 2 to 11, infant under 2.
 export enum PassengerType {
