@@ -5,6 +5,7 @@ import { BookingStatus } from '../src/common/enums/booking-status.enum';
 import { FlightQuoteDto } from '../src/flight-bookings/dto/flight-quote.dto';
 import { PassengerType } from '../src/flight-bookings/flight-booking.rules';
 import { FlightBookingJobs } from '../src/flight-bookings/flight-booking.jobs';
+import { FlightBookingsReaderService } from '../src/flight-bookings/flight-bookings.reader.service';
 import { FlightHoldService } from '../src/flight-bookings/flight-hold.service';
 import { FlightQuoteService } from '../src/flight-bookings/flight-quote.service';
 import {
@@ -328,5 +329,41 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
     expect(await status(landed)).toBe(BookingStatus.COMPLETED);
     expect(await status(roundTripHalfway)).toBe(BookingStatus.CONFIRMED);
     expect(await status(pending)).toBe(BookingStatus.PENDING_PAYMENT);
+  });
+
+  it("reader: answers Hazem's and Hasan's questions (FLT-05, ACC-12)", async () => {
+    const reader = new FlightBookingsReaderService(bookings as any);
+    const f = await newFlight(5);
+    const other = await newFlight(5);
+    const alice = String(new Types.ObjectId());
+    const bob = String(new Types.ObjectId());
+
+    expect(await reader.hasBookings(f._id)).toBe(false);
+    const a = await hold.hold(alice, body(f._id));
+    expect(await reader.hasBookings(f._id)).toBe(true);
+    expect(await reader.hasBookings(other._id)).toBe(false);
+
+    // Only Confirmed bookings count for notifications and account deletion.
+    expect(await reader.confirmedUserIds(f._id)).toEqual([]);
+    expect(await reader.hasUpcomingConfirmed(alice)).toBe(false);
+    await bookings.updateOne(
+      { _id: a._id },
+      { $set: { status: BookingStatus.CONFIRMED } },
+    );
+    const b = await hold.hold(bob, body(f._id));
+    await bookings.updateOne(
+      { _id: b._id },
+      { $set: { status: BookingStatus.CONFIRMED } },
+    );
+    await hold.hold(alice, body(f._id)); // a second booking: alice listed once
+
+    expect((await reader.confirmedUserIds(f._id)).map(String).sort()).toEqual(
+      [alice, bob].sort(),
+    );
+    expect(await reader.hasUpcomingConfirmed(alice)).toBe(true);
+    // After the flight has left, nothing is upcoming.
+    expect(
+      await reader.hasUpcomingConfirmed(alice, new Date('2100-01-01')),
+    ).toBe(false);
   });
 });
