@@ -82,6 +82,17 @@ describe('UploadsController (GEN-08)', () => {
     );
   });
 
+  // multer 2 reports this as "Unexpected file field", which Nest 10 does not
+  // turn into a 400 on its own; it used to reach the client as a 500.
+  it('rejects a file sent in another field with 400, not 500', async () => {
+    const res = await upload().attach('photo', PNG, 'p.png').expect(400);
+    expect(res.body).toMatchObject({
+      statusCode: 400,
+      error: 'Bad Request',
+      message: 'Upload at most 5 images in the "images" field',
+    });
+  });
+
   it('rejects a request without a file', async () => {
     const res = await upload().field('note', 'no file').expect(400);
     expect(res.body.message).toBe(

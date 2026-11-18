@@ -58,16 +58,31 @@ export function ImageUploadInterceptor(
 }
 
 function toBadRequest(err: unknown, field: string, max: number): unknown {
+  const tooMany = () =>
+    new BadRequestException(
+      `Upload at most ${max} image${max === 1 ? '' : 's'} ` +
+        `in the "${field}" field`,
+    );
+  // multer 2 errors Nest 10 does not translate: it matches them by message,
+  // and multer 2 renamed "Unexpected field" to "Unexpected file field", so a
+  // file in the wrong field reached the client as a 500. Match on the code.
+  const code = (err as { name?: string; code?: unknown })?.code;
+  if ((err as Error)?.name === 'MulterError' && typeof code === 'string') {
+    if (code === 'LIMIT_FILE_SIZE') {
+      return new BadRequestException('Each image must be at most 5 MB');
+    }
+    if (code === 'LIMIT_UNEXPECTED_FILE' || code === 'LIMIT_FILE_COUNT') {
+      return tooMany();
+    }
+    return new BadRequestException((err as Error).message);
+  }
   if (!(err instanceof HttpException)) return err;
   if (err.getStatus() === HttpStatus.PAYLOAD_TOO_LARGE) {
     return new BadRequestException('Each image must be at most 5 MB');
   }
   // multer reports both a wrong field name and too many files this way.
-  if (/unexpected field|too many files/i.test(err.message)) {
-    return new BadRequestException(
-      `Upload at most ${max} image${max === 1 ? '' : 's'} ` +
-        `in the "${field}" field`,
-    );
+  if (/unexpected (file )?field|too many files/i.test(err.message)) {
+    return tooMany();
   }
   return err;
 }
