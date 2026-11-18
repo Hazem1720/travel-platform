@@ -16,7 +16,8 @@ export class FlightSearchController {
   @Get('search')
   @Public()
   @ApiOperation({
-    summary: 'Search flights, one way or round trip (FLT-11, FLT-12)',
+    summary:
+      'Search flights, one way or round trip, filter and sort (FLT-11, FLT-12, FLT-15)',
     description:
       'Scheduled flights of active airlines from one airport to another on ' +
       'a local date at the departure airport, with enough free seats for ' +
@@ -24,16 +25,20 @@ export class FlightSearchController {
       'Use ?passengers=N, or ?adults&children&infants. Optional ?cabin. ' +
       'Each cabin shows totalFare for the passengers (infants pay 10%). ' +
       'Round trip: add ?returnDate; returnFlights then lists the flights ' +
-      'back (to -> from), otherwise it is null. No match: 200 with an ' +
-      'empty list and "No flights found".',
+      'back (to -> from), otherwise it is null. FLT-15: ?minPrice and ' +
+      '?maxPrice (inclusive, USD cents) on lowestPrice, the chosen or ' +
+      'cheapest cabin; ?sort=price|duration|departure with :asc or :desc ' +
+      '(default departure:asc). No match: 200 with an empty list and ' +
+      '"No flights found".',
   })
   @ApiOkResponse({ type: FlightSearchResultDto })
   @ApiErrors({
     status: 400,
     message: 'Validation failed',
-    details: { to: ['Departure and arrival airports must differ'] },
+    details: { minPrice: ['minPrice cannot be greater than maxPrice'] },
     description:
-      'Unknown airport, same airport twice, invalid date or passenger ' +
+      'Unknown airport, same airport twice, invalid date, returnDate ' +
+      'before date, minPrice above maxPrice, unknown sort, or passenger ' +
       'numbers (at least one adult, no more infants than adults)',
   })
   find(@Query() q: FlightSearchQueryDto) {

@@ -69,6 +69,8 @@ describe('FlightSearchService (FLT-11)', () => {
         fs.map((f) => ({
           _id: String(f._id),
           airlineId: String(f.airlineId),
+          departure: { utc: f.departureAt.toISOString() },
+          durationMinutes: (f.arrivalAt - f.departureAt) / 60_000,
           cabins: f.cabins,
         })),
       ),
@@ -252,5 +254,93 @@ describe('FlightSearchService (FLT-11)', () => {
     const res = await service.search(query({ page: 2 }));
     expect(res.data).toHaveLength(2);
     expect(res.meta).toEqual({ page: 2, limit: 10, total: 12, totalPages: 2 });
+  });
+
+  // FLT-15. Three flights: 100 USD leaving 08:00 for 4h, 200 USD leaving
+  // 06:00 for 2h, 300 USD leaving 07:00 for 3h (all UTC, 2 Dec).
+  function priced() {
+    const at = (h: number, hours: number, price: number) => {
+      const f = flight(5, {
+        flightNumber: `NP${price}`,
+        departureAt: new Date(`2026-12-02T0${h}:00:00Z`),
+        arrivalAt: new Date(
+          `2026-12-02T${String(h + hours).padStart(2, '0')}:00:00Z`,
+        ),
+      });
+      f.cabins[0].price = price * 100;
+      return f;
+    };
+    return [at(8, 4, 100), at(6, 2, 200), at(7, 3, 300)];
+  }
+  const numbers = (res: { data: { flightNumber?: string; _id: string }[] }) =>
+    res.data.map((o: any) => o.lowestPrice / 100);
+
+  describe('price filter and sort (FLT-15)', () => {
+    it('minPrice=200&maxPrice=300 keeps 2 of 100, 200, 300 (inclusive)', async () => {
+      const { service } = setup(priced());
+      const res = await service.search(
+        query({ minPrice: 20000, maxPrice: 30000 }),
+      );
+      expect(numbers(res).sort()).toEqual([200, 300]);
+    });
+
+    it('minPrice above maxPrice is 400', async () => {
+      const { service } = setup(priced());
+      await expect(
+        service.search(query({ minPrice: 30000, maxPrice: 10000 })),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('sorts by price, both ways', async () => {
+      const { service } = setup(priced());
+      expect(numbers(await service.search(query({ sort: 'price' })))).toEqual([
+        100, 200, 300,
+      ]);
+      expect(
+        numbers(await service.search(query({ sort: 'price:desc' }))),
+      ).toEqual([300, 200, 100]);
+    });
+
+    it('sorts by duration (arrival minus departure)', async () => {
+      const { service } = setup(priced());
+      const res = await service.search(query({ sort: 'duration' }));
+      expect(res.data.map((o) => o.durationMinutes)).toEqual([120, 180, 240]);
+    });
+
+    it('sorts by departure, earliest first by default', async () => {
+      const { service } = setup(priced());
+      expect(numbers(await service.search(query()))).toEqual([200, 300, 100]);
+      expect(
+        numbers(await service.search(query({ sort: 'departure:desc' }))),
+      ).toEqual([100, 300, 200]);
+    });
+
+    it('rejects an unknown sort with 400', async () => {
+      const { service } = setup(priced());
+      await expect(
+        service.search(query({ sort: 'airline' })),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('uses the chosen cabin for the price when ?cabin is given', async () => {
+      const f = flight(5);
+      f.cabins.push({
+        _id: new Types.ObjectId(),
+        category: CabinCategory.BUSINESS,
+        totalSeats: 8,
+        bookedSeats: 0,
+        heldSeats: 0,
+        price: 90000,
+        freeBags: 2,
+        maxKgPerBag: 32,
+      });
+      const { service } = setup([f]);
+      const cheapest = await service.search(query());
+      expect(cheapest.data[0].lowestPrice).toBe(20000);
+      const business = await service.search(
+        query({ cabin: CabinCategory.BUSINESS, minPrice: 50000 }),
+      );
+      expect(business.data[0].lowestPrice).toBe(90000);
+    });
   });
 });

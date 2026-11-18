@@ -19,8 +19,11 @@ import { FlightSearchQueryDto } from './dto/flight-search-query.dto';
 import {
   assertSearchCriteria,
   faresTotal,
+  FlightSort,
   PassengerCounts,
   passengerCounts,
+  parseFlightSort,
+  priceInRange,
   seatsNeeded,
 } from './flight-booking.rules';
 
@@ -36,6 +39,9 @@ export type CabinOption = FlightView['cabins'][number] & { totalFare: number };
 export interface FlightOption extends Omit<FlightView, 'cabins'> {
   airline: { _id: string; name: string; code: string; logo: string | null };
   cabins: CabinOption[];
+  // FLT-15: the cheapest listed cabin's price per seat, what the price
+  // filter and the price sort use.
+  lowestPrice: number;
 }
 
 // What findOptions() needs. Moharm's itineraries (ITN-26) call it with the
@@ -47,6 +53,11 @@ export interface FlightSearchCriteria {
   date: string;
   passengers: PassengerCounts;
   cabin?: CabinCategory;
+  // FLT-15: inclusive, USD cents per seat.
+  minPrice?: number;
+  maxPrice?: number;
+  // FLT-15: default earliest departure first.
+  sort?: FlightSort;
 }
 
 // One list of flights: a page of options, and "No flights found" when the
@@ -79,7 +90,13 @@ export class FlightSearchService {
     const counts = passengerCounts(q);
     assertSearchCriteria({ ...q, ...counts });
 
-    const common = { passengers: counts, cabin: q.cabin };
+    const common = {
+      passengers: counts,
+      cabin: q.cabin,
+      minPrice: q.minPrice,
+      maxPrice: q.maxPrice,
+      sort: parseFlightSort(q.sort),
+    };
     // FLT-12 round trip: the return is the reversed route on returnDate (the
     // local date at the arrival airport, where the return departs). Both
     // lists are listed separately; the user picks one flight from each.
@@ -114,6 +131,9 @@ export class FlightSearchService {
     date,
     passengers,
     cabin,
+    minPrice,
+    maxPrice,
+    sort = { field: 'departure', direction: 1 },
   }: FlightSearchCriteria): Promise<FlightOption[]> {
     const seats = seatsNeeded(passengers);
     const [departure] = await Promise.all([
@@ -152,15 +172,20 @@ export class FlightSearchService {
       .filter((f) => f.cabins.length > 0);
 
     const views = await this.flightViews.toViews(withSeats);
-    return this.withAirlines(
-      views.map((v) => ({
+    const options = views
+      .map((v) => ({
         ...v,
         cabins: v.cabins.map((c) => ({
           ...c,
           totalFare: faresTotal(passengers, c.price),
         })),
-      })),
-    );
+        // The chosen cabin's price, or the cheapest one with enough seats.
+        lowestPrice: Math.min(...v.cabins.map((c) => c.price)),
+      }))
+      // FLT-15: the other criteria stay applied; the range is inclusive.
+      .filter((o) => priceInRange(o.lowestPrice, minPrice, maxPrice))
+      .sort(byFlightSort(sort));
+    return this.withAirlines(options);
   }
 
   private async withAirlines(
@@ -201,4 +226,18 @@ function toPage(
     ),
     message: options.length === 0 ? NO_FLIGHTS_FOUND : null,
   };
+}
+
+// FLT-15: price (cheapest listed cabin), duration (arrival minus departure in
+// UTC) or departure time. Ties: earliest departure first.
+function byFlightSort({ field, direction }: FlightSort) {
+  const departure = (o: Omit<FlightOption, 'airline'>) =>
+    new Date(o.departure.utc).getTime();
+  const key = {
+    price: (o: Omit<FlightOption, 'airline'>) => o.lowestPrice,
+    duration: (o: Omit<FlightOption, 'airline'>) => o.durationMinutes,
+    departure,
+  }[field];
+  return (a: Omit<FlightOption, 'airline'>, b: Omit<FlightOption, 'airline'>) =>
+    (key(a) - key(b)) * direction || departure(a) - departure(b);
 }
