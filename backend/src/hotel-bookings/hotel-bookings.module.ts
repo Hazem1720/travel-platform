@@ -8,6 +8,7 @@ import { PaymentsService } from '../payments/payments.service';
 import { HotelAvailabilityService } from './hotel-availability.service';
 import { HotelBookingJobs } from './hotel-booking.jobs';
 import { HotelBookingsController } from './hotel-bookings.controller';
+import { HotelConfirmationService } from './hotel-confirmation.service';
 import { HotelHoldService } from './hotel-hold.service';
 import { HotelPaymentHandler } from './hotel-payment.handler';
 import { HotelRoomsController } from './hotel-rooms.controller';
@@ -54,6 +55,7 @@ import { RoomLock, RoomLockSchema } from './schemas/room-lock.schema';
     HotelSearchService,
     HotelRoomsService,
     HotelHoldService,
+    HotelConfirmationService,
     HotelPaymentHandler,
     HotelBookingJobs,
   ],

@@ -90,6 +90,18 @@ export class BookedRoomDto {
   subtotal: number;
 }
 
+// HTL-17: the hotel on the confirmation page.
+class ReservationHotelDto {
+  @ApiProperty({ example: '6735a1f4c1a2b3c4d5e6f801' }) _id: string;
+  @ApiProperty({ example: 'Nile View Hotel' }) name: string;
+  @ApiProperty({ example: '12 Corniche El Nil, Garden City' }) address: string;
+  @ApiProperty({ example: 'cairo' }) cityId: string;
+  @ApiProperty({ example: '14:00', description: "Hotel's local time" })
+  checkInTime: string;
+  @ApiProperty({ example: '12:00', description: "Hotel's local time" })
+  checkOutTime: string;
+}
+
 export class HotelBookingDto {
   @ApiProperty({ example: '6736f0a1c1a2b3c4d5e6fa10' }) _id: string;
   @ApiProperty({ example: 'PendingPayment' }) status: string;
@@ -114,4 +126,36 @@ export class HotelBookingDto {
   @ApiProperty({ example: null, nullable: true, type: String })
   policiesAcceptedAt: string | null;
   @ApiProperty({ example: '2026-11-18T10:00:00.000Z' }) createdAt: string;
+}
+
+// HTL-17: GET /hotel-bookings/:id, the confirmation page (any status).
+export class HotelBookingViewDto extends HotelBookingDto {
+  @ApiProperty({
+    example: 'Confirmed',
+    enum: ['PendingPayment', 'Confirmed', 'Expired', 'Cancelled', 'Completed'],
+  })
+  declare status: string;
+  @ApiProperty({
+    example: 'HT-7K2M9QXA',
+    nullable: true,
+    type: String,
+    description: 'Set when the payment is confirmed; null before',
+  })
+  declare reference: string | null;
+  @ApiProperty({ example: null, nullable: true, type: String })
+  declare expiresAt: string | null;
+  @ApiProperty({
+    example: '2026-11-18T10:03:00.000Z',
+    nullable: true,
+    type: String,
+  })
+  policiesAcceptedAt: string | null;
+  @ApiProperty({
+    example: '2026-11-18T10:04:12.000Z',
+    nullable: true,
+    type: String,
+  })
+  confirmedAt: string | null;
+  @ApiProperty({ type: ReservationHotelDto, nullable: true })
+  hotel: ReservationHotelDto | null;
 }
