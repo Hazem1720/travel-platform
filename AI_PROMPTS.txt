@@ -468,3 +468,25 @@ Build ITN-26: flight search for an itinerary (origin airport, destinations from 
 How the output was used:
 Claude Code added GET /api/itineraries/:id/flights?origin&roundTrip (ItineraryFlightsService): the origin must be a listed airport (Hazem's AirportsService.assertAirportExists), the destinations are every airport in the city of the first day, the outbound date is the start date and, with roundTrip=true, the return date is the last day's date. Aabsy's flight search (FLT-11, FLT-12) is not in develop yet (only its query DTO is on a branch, and there is no Flight schema), so the search goes through a FLIGHT_SEARCH contract: until Aabsy's service is provided for it, the route answers 501 with the computed search, as Memo did for Stripe. Wiring it later is one provider line in ItinerariesModule. 5 unit tests were added. npm run build, npm test (448 passed), npm run test:e2e (Swagger checks, 8 passed, database flow skipped) and eslint on the new files passed.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-01, ACC-04, ACC-05, ACC-06, ACC-08, ACC-09, ACC-18, ACC-19, FLT-02, GEN-12, ACC-11, FLT-01, FLT-09, GEN-06
+Prompt:
+Look at the team plan PDF. Earlier I asked Claude to remove the work already done from the PDF, but that was wrong: if any feature is missing from the plan PDF, put it back in the PDF under the one responsible for it.
+How the output was used:
+Claude compared the PDF text with the tracker and found 10 requirements missing (Hazem's finished accounts work ACC-01, ACC-04, ACC-05, ACC-06, ACC-08, ACC-09, ACC-18, ACC-19, plus FLT-02 and GEN-12) and 4 of Hazem's cards cut down to "what is left" (ACC-11, FLT-01, FLT-09, GEN-06). It rebuilt the PDF from the 15 November sources with the owner changes kept: every requirement is listed again in its owner's chapter, finished ones under "Already done or Milestone 2 only", the four partly done cards show their full scope with a status line, and Hazem's phase 1 is back in the phase table marked merged. Statuses come from the tracker after PR #162. Checked that all 115 requirement texts appear in the new PDF exactly once. The tracker was not changed.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-01, ITN-03, ITN-05, ITN-07, ITN-08, ITN-09, ITN-10, ITN-12, ITN-14, ITN-16, ITN-18, ITN-20, ITN-21, ITN-25, ITN-26
+Prompt:
+Test Ziad's (Moharm's) PR #163 and merge it, then do what is still open except Aabsy's work: update the tracker, test it against the shared database, and note that Memo and Hazem are both team leaders.
+How the output was used:
+Claude checked out the PR merged with the latest develop and ran npm run build, npm test (448 passed), npm run test:e2e and the read-only eslint check (the PR's files are clean; 4 prettier errors in common/helpers already exist on develop). It reviewed the routes for @Roles, DTO validation, owner checks (404 for other users), public-search filters and the FXRatesAPI key, found no blocker, and I merged the PR. It then marked ITN-01 to ITN-21 Done and ITN-25 and ITN-26 In Progress in the tracker CSV and xlsx (Moharm sheet and Summary counts too), with the PR link, test evidence and the remaining blockers. The live test against Atlas could not run because this computer's IP is not on the Atlas access list.
+================================================
