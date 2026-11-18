@@ -1,5 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { createValidationPipe } from '../../common/pipes/validation.pipe';
+import { passengerCounts } from '../flight-booking.rules';
 import { FlightQuoteDto } from './flight-quote.dto';
 import { FlightSearchQueryDto } from './flight-search-query.dto';
 
@@ -38,11 +39,16 @@ describe('flight search and quote input (FLT-11, FLT-12, FLT-19)', () => {
       expect(q).toMatchObject({
         from: 'CAI',
         to: 'DXB',
+        children: 1,
+        page: 1,
+        limit: 10,
+      });
+      // adults and infants stay unset; passengerCounts() fills in 1 and 0.
+      expect(q.adults).toBeUndefined();
+      expect(passengerCounts(q)).toEqual({
         adults: 1,
         children: 1,
         infants: 0,
-        page: 1,
-        limit: 10,
       });
     });
 
@@ -65,6 +71,29 @@ describe('flight search and quote input (FLT-11, FLT-12, FLT-19)', () => {
         'minPrice',
         'to',
       ]);
+    });
+
+    it('accepts ?passengers=3 as 3 adults (FLT-11)', async () => {
+      const q = await validate(
+        FlightSearchQueryDto,
+        { from: 'CAI', to: 'DXB', date: '2026-12-02', passengers: '3' },
+        'query',
+      );
+      expect(passengerCounts(q)).toEqual({
+        adults: 3,
+        children: 0,
+        infants: 0,
+      });
+    });
+
+    it('rejects passengers=0', async () => {
+      expect(
+        await fieldsRejected(
+          FlightSearchQueryDto,
+          { from: 'CAI', to: 'DXB', date: '2026-12-02', passengers: '0' },
+          'query',
+        ),
+      ).toEqual(['passengers']);
     });
 
     it('rejects unknown parameters', async () => {

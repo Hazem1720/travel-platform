@@ -18,7 +18,8 @@ const upper = ({ value }: { value: unknown }) =>
 
 // GET /api/flights/search (FLT-11, FLT-12, FLT-15). Rules that involve two
 // fields (from != to, returnDate, passenger mix, minPrice <= maxPrice) are in
-// assertSearchCriteria().
+// assertSearchCriteria(); passengerCounts() turns ?passengers or
+// ?adults&children&infants into one set of counts.
 export class FlightSearchQueryDto extends PaginationQueryDto {
   @ApiProperty({ example: 'CAI', description: 'Departure airport (IATA)' })
   @Transform(upper)
@@ -48,30 +49,42 @@ export class FlightSearchQueryDto extends PaginationQueryDto {
   @IsISO8601({ strict: true }, { message: 'returnDate must be a real date' })
   returnDate?: string;
 
-  @ApiPropertyOptional({ default: 1, minimum: 0, description: 'Age 12+' })
+  @ApiPropertyOptional({
+    minimum: 1,
+    example: 2,
+    description:
+      'FLT-11: number of passengers, all adults. Or use adults, children ' +
+      'and infants (FLT-12) instead.',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  @Min(0)
-  adults: number = 1;
+  @Min(1)
+  passengers?: number;
 
-  @ApiPropertyOptional({ default: 0, minimum: 0, description: 'Age 2-11' })
+  @ApiPropertyOptional({ minimum: 0, description: 'Age 12+ (default 1)' })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
-  children: number = 0;
+  adults?: number;
+
+  @ApiPropertyOptional({ minimum: 0, description: 'Age 2-11 (default 0)' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  children?: number;
 
   @ApiPropertyOptional({
-    default: 0,
     minimum: 0,
-    description: 'Under 2: no seat, 10% of the fare',
+    description: 'Under 2: no seat, 10% of the fare (default 0)',
   })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(0)
-  infants: number = 0;
+  infants?: number;
 
   @ApiPropertyOptional({ enum: CabinCategory, description: 'FLT-12 filter' })
   @IsOptional()

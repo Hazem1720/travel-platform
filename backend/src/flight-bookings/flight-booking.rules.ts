@@ -50,6 +50,34 @@ export function passengerTypeForAge(age: number): PassengerType {
   return PassengerType.INFANT;
 }
 
+// FLT-11 asks for "number of passengers" and FLT-12 for adults, children and
+// infants. ?passengers=3 means 3 adults; it cannot be mixed with the others.
+export function passengerCounts(q: {
+  passengers?: number;
+  adults?: number;
+  children?: number;
+  infants?: number;
+}): PassengerCounts {
+  const typed =
+    q.adults !== undefined ||
+    q.children !== undefined ||
+    q.infants !== undefined;
+  if (q.passengers !== undefined) {
+    if (typed) {
+      throw fieldError(
+        'passengers',
+        'Use either passengers or adults, children and infants',
+      );
+    }
+    return { adults: q.passengers, children: 0, infants: 0 };
+  }
+  return {
+    adults: q.adults ?? 1,
+    children: q.children ?? 0,
+    infants: q.infants ?? 0,
+  };
+}
+
 // Adults and children take a seat; infants sit on an adult's lap.
 export function seatsNeeded(c: PassengerCounts): number {
   return c.adults + c.children;
