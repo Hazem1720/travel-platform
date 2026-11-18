@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { FlightDto } from '../../flights/dto/flight.dto';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { CabinDto, FlightDto } from '../../flights/dto/flight.dto';
 
 // Response shapes for GET /api/flights/search, used only for Swagger (FLT-11).
 
@@ -20,11 +20,25 @@ export class FlightAirlineSummaryDto {
   logo: string | null;
 }
 
-// Hazem's flight shape (local times, duration, cabins) plus the airline.
-// cabins lists only the cabins with enough free seats for the passengers.
-export class FlightOptionDto extends FlightDto {
+export class CabinOptionDto extends CabinDto {
+  @ApiProperty({
+    example: 42000,
+    description:
+      'What these passengers pay in this cabin before extra bags, USD ' +
+      'cents (infants 10%)',
+  })
+  totalFare: number;
+}
+
+// Hazem's flight shape (local times, duration) plus the airline. cabins
+// lists only the cabins with enough free seats for the passengers (and of
+// the chosen ?cabin).
+export class FlightOptionDto extends OmitType(FlightDto, ['cabins'] as const) {
   @ApiProperty({ type: FlightAirlineSummaryDto })
   airline: FlightAirlineSummaryDto;
+
+  @ApiProperty({ type: [CabinOptionDto] })
+  cabins: CabinOptionDto[];
 }
 
 class PageMetaDto {
@@ -34,7 +48,7 @@ class PageMetaDto {
   @ApiProperty({ example: 1 }) totalPages: number;
 }
 
-export class FlightSearchResultDto {
+export class FlightOptionListDto {
   @ApiProperty({ type: [FlightOptionDto] })
   data: FlightOptionDto[];
 
@@ -47,4 +61,16 @@ export class FlightSearchResultDto {
     description: '"No flights found" when the list is empty',
   })
   message: string | null;
+}
+
+// data/meta/message are the outbound flights.
+export class FlightSearchResultDto extends FlightOptionListDto {
+  @ApiProperty({
+    type: FlightOptionListDto,
+    nullable: true,
+    description:
+      'Round trip (?returnDate, FLT-12): the flights back, to -> from on ' +
+      'returnDate. null for a one-way search.',
+  })
+  returnFlights: FlightOptionListDto | null;
 }

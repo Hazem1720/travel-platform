@@ -16,13 +16,16 @@ export class FlightSearchController {
   @Get('search')
   @Public()
   @ApiOperation({
-    summary: 'Search flights (FLT-11)',
+    summary: 'Search flights, one way or round trip (FLT-11, FLT-12)',
     description:
       'Scheduled flights of active airlines from one airport to another on ' +
       'a local date at the departure airport, with enough free seats for ' +
       'the passengers (infants take no seat). Earliest first, 10 per page. ' +
-      'Use ?passengers=N, or ?adults&children&infants. No match: 200 with ' +
-      'an empty list and "No flights found".',
+      'Use ?passengers=N, or ?adults&children&infants. Optional ?cabin. ' +
+      'Each cabin shows totalFare for the passengers (infants pay 10%). ' +
+      'Round trip: add ?returnDate; returnFlights then lists the flights ' +
+      'back (to -> from), otherwise it is null. No match: 200 with an ' +
+      'empty list and "No flights found".',
   })
   @ApiOkResponse({ type: FlightSearchResultDto })
   @ApiErrors({

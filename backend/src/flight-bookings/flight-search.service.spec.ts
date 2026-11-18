@@ -182,6 +182,44 @@ describe('FlightSearchService (FLT-11)', () => {
     expect(all.data[0].cabins).toHaveLength(2);
   });
 
+  it('one way: returnFlights is null', async () => {
+    const { service } = setup([flight(5)]);
+    await expect(service.search(query())).resolves.toMatchObject({
+      returnFlights: null,
+    });
+  });
+
+  it('round trip: searches the reversed route on returnDate too', async () => {
+    const { service, flights } = setup([flight(5)]);
+    const res = await service.search(query({ returnDate: '2026-12-09' }));
+    const filters = (flights.find.mock.calls as any[]).map((c) => c[0]);
+    expect(filters).toHaveLength(2);
+    expect(filters[1]).toMatchObject({ from: 'DXB', to: 'CAI' });
+    // 9 Dec at the return's departure airport, Dubai (UTC+4).
+    expect(filters[1].departureAt.$gte).toEqual(
+      new Date('2026-12-08T20:00:00Z'),
+    );
+    expect(res.data).toHaveLength(1);
+    expect(res.returnFlights).toMatchObject({ meta: { total: 1 } });
+  });
+
+  it('round trip: each list says "No flights found" on its own', async () => {
+    const { service, flightQuery } = setup();
+    flightQuery.lean
+      .mockResolvedValueOnce([flight(5)])
+      .mockResolvedValueOnce([]);
+    const res = await service.search(query({ returnDate: '2026-12-09' }));
+    expect(res.message).toBeNull();
+    expect(res.returnFlights?.message).toBe(NO_FLIGHTS_FOUND);
+  });
+
+  it('round trip: a return date before the date is 400', async () => {
+    const { service } = setup();
+    await expect(
+      service.search(query({ returnDate: '2026-12-01' })),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   it('answers 200 with "No flights found" when nothing matches', async () => {
     const { service } = setup([]);
     await expect(service.search(query())).resolves.toMatchObject({

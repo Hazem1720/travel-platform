@@ -49,9 +49,16 @@ export interface FlightSearchCriteria {
   cabin?: CabinCategory;
 }
 
-export interface FlightSearchResult extends PaginatedResult<FlightOption> {
-  // "No flights found" when nothing matches, otherwise null (FLT-11).
+// One list of flights: a page of options, and "No flights found" when the
+// list is empty (FLT-11), otherwise null.
+export interface FlightOptionList extends PaginatedResult<FlightOption> {
   message: string | null;
+}
+
+// data/meta/message: the outbound flights. returnFlights: the flights back
+// for a round trip (?returnDate, FLT-12), or null for a one-way search.
+export interface FlightSearchResult extends FlightOptionList {
+  returnFlights: FlightOptionList | null;
 }
 
 type LeanFlight = Flight & { _id: Types.ObjectId };
@@ -72,24 +79,25 @@ export class FlightSearchService {
     const counts = passengerCounts(q);
     assertSearchCriteria({ ...q, ...counts });
 
-    const options = await this.findOptions({
-      from: q.from,
-      to: q.to,
-      date: q.date,
-      passengers: counts,
-      cabin: q.cabin,
-    });
+    const common = { passengers: counts, cabin: q.cabin };
+    // FLT-12 round trip: the return is the reversed route on returnDate (the
+    // local date at the arrival airport, where the return departs). Both
+    // lists are listed separately; the user picks one flight from each.
+    const [outbound, inbound] = await Promise.all([
+      this.findOptions({ from: q.from, to: q.to, date: q.date, ...common }),
+      q.returnDate
+        ? this.findOptions({
+            from: q.to,
+            to: q.from,
+            date: q.returnDate,
+            ...common,
+          })
+        : null,
+    ]);
 
-    const { page, limit } = q;
-    const result = paginated(
-      options.slice((page - 1) * limit, page * limit),
-      options.length,
-      page,
-      limit,
-    );
     return {
-      ...result,
-      message: options.length === 0 ? NO_FLIGHTS_FOUND : null,
+      ...toPage(outbound, q.page, q.limit),
+      returnFlights: inbound ? toPage(inbound, q.page, q.limit) : null,
     };
   }
 
@@ -176,4 +184,21 @@ export class FlightSearchService {
       };
     });
   }
+}
+
+// The same page and limit apply to both lists of a round trip.
+function toPage(
+  options: FlightOption[],
+  page: number,
+  limit: number,
+): FlightOptionList {
+  return {
+    ...paginated(
+      options.slice((page - 1) * limit, page * limit),
+      options.length,
+      page,
+      limit,
+    ),
+    message: options.length === 0 ? NO_FLIGHTS_FOUND : null,
+  };
 }
