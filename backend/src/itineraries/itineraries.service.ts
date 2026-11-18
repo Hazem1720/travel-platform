@@ -26,7 +26,7 @@ export function toUtcDate(dateOnly: string): Date {
   return new Date(`${dateOnly}T00:00:00.000Z`);
 }
 
-// ITN-01 (create, edit, delete). Exported for Hafez (GEN-09, GEN-10) and for
+// ITN-01 (create, edit, delete). Exported for Emad (GEN-09, GEN-10) and for
 // the rest of the ITN requirements.
 @Injectable()
 export class ItinerariesService {
