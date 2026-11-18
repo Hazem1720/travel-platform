@@ -27,6 +27,7 @@ const PUBLIC_ROUTES = [
   'GET /airlines/:id',
   'GET /airports',
   'GET /flights/search',
+  'GET /flights/:id',
   'GET /uploads/:file',
   'GET /hotels/search',
   'GET /hotels/:id',

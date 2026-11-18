@@ -1,17 +1,28 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
 import { ApiErrors } from '../common/swagger/api-error.decorator';
 import { FlightSearchQueryDto } from './dto/flight-search-query.dto';
+import { FlightDetailsDto } from './dto/flight-details.dto';
 import { FlightSearchResultDto } from './dto/flight-search-result.dto';
+import { FlightDetailsService } from './flight-details.service';
 import { FlightSearchService } from './flight-search.service';
 
-// FLT-11. Public: guests search too. GET /flights/:id (FLT-17) will live in
-// this controller as well, declared after search so "search" is not an id.
-@ApiTags('Flights: search')
+// FLT-11, FLT-12, FLT-15 (search) and FLT-17 (details). Public: guests
+// search too. GET /flights/:id is declared after GET /flights/search, so
+// "search" is never read as an id.
+@ApiTags('Flights: search and details')
 @Controller('flights')
 export class FlightSearchController {
-  constructor(private readonly search: FlightSearchService) {}
+  constructor(
+    private readonly search: FlightSearchService,
+    private readonly flightDetails: FlightDetailsService,
+  ) {}
 
   @Get('search')
   @Public()
@@ -43,5 +54,27 @@ export class FlightSearchController {
   })
   find(@Query() q: FlightSearchQueryDto) {
     return this.search.search(q);
+  }
+
+  @Get(':id')
+  @Public()
+  @ApiParam({ name: 'id', example: '6736d4f4c1a2b3c4d5e6fa01' })
+  @ApiOperation({
+    summary: 'Flight details (FLT-17)',
+    description:
+      'Airline, flight number, airports, local departure and arrival times ' +
+      '(GEN-06), duration, every cabin with price, seats remaining (total - ' +
+      'booked - held) and baggage allowance, the extra-bag policy and the ' +
+      "airline's cancellation policy. Cancelled flights and flights of " +
+      'inactive airlines answer 404.',
+  })
+  @ApiOkResponse({ type: FlightDetailsDto })
+  @ApiErrors({
+    status: 404,
+    message: 'Flight not found',
+    description: 'Unknown id, Cancelled flight or inactive airline',
+  })
+  details(@Param('id') id: string) {
+    return this.flightDetails.details(id);
   }
 }
