@@ -9,6 +9,7 @@ import { AirportsModule } from './airports/airports.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
 import { validateEnv } from './config/env.validation';
+import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { ItinerariesModule } from './itineraries/itineraries.module';
@@ -31,6 +32,7 @@ import { UploadsModule } from './uploads/uploads.module';
     ReferenceModule,
     AirlinesModule,
     AirportsModule,
+    FlightsModule,
     UploadsModule,
     NotificationsModule,
     AuditModule,
