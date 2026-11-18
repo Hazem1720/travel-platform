@@ -20,7 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReferenceModule } from './reference/reference.module';
 import { UploadsModule } from './uploads/uploads.module';
-
+import { BlogModule } from './blog/blog.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
@@ -48,6 +48,7 @@ import { UploadsModule } from './uploads/uploads.module';
     HotelsModule,
     PaymentsModule,
     ItinerariesModule,
+    BlogModule,
     AdminAccountsModule,
     AdminModule,
   ],
