@@ -636,3 +636,14 @@ Next item, FLT-17: a public flight details page with the airline, flight number,
 How the output was used:
 Claude wrote FlightDetailsService: Hazem's toViews() for local times, duration and every cabin (availableSeats = total - booked - held, freeBags, maxKgPerBag), plus the airline (name, code, logo, extraBagPrice, maxExtraBags) and its cancellation tiers sorted by daysBefore. Unknown or invalid ids, Cancelled flights (the plan's suggestion) and flights of inactive airlines answer 404; a departed flight is shown as Departed and not bookable. GET /api/flights/:id is public, declared after GET /flights/search in the same controller, and listed in PUBLIC_ROUTES. Tests use Hazem's real toViews() with Cairo and Dubai time zones, and an HTTP test checks that /flights/search is never read as an id.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-19, FLT-21
+Prompt:
+Next items, FLT-19 and FLT-21: POST /api/flight-bookings for registered users with each passenger's full name, date of birth and passport/ID number and optional extra bags up to the airline's maximum, returning the booking summary (flights, passengers, baggage, total) before payment, using the same price function the hold will use. Tracker after each commit.
+How the output was used:
+Claude wrote FlightQuoteService.quote(): it loads the outbound flight and an optional return (404 for unknown or Cancelled, 409 once departed; the return must fly the reversed route and leave after the outbound lands, else 400), checks each passenger's type against the date of birth on the outbound local departure date, rejects inactive airlines (404), a missing cabin (400) and too few free seats (409 with the seats left), and prices everything with priceBooking() (infants 10%, extra bags x the airline's extraBagPrice per segment, limited by maxExtraBags and the cabin's maxKgPerBag). The summary has each segment (airline, airports, local times, cabin, fare, baggage allowance), the passengers, the counts, the seats needed and the price breakdown. FlightBookingsController adds POST /api/flight-bookings for Role.USER, answering 200 because nothing is created, with Swagger examples for 400/401/403/404/409. Tests cover the chapter's cases (13-year-old "child", too many and too heavy bags, the fee added, 420 USD) plus round trips, missing cabins, seats, inactive airlines and client-sent totals.
+================================================
