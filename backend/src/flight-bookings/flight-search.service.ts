@@ -10,20 +10,43 @@ import {
 } from '../common/pagination/pagination.helper';
 import { availableSeats, bookableFilter } from '../flights/flight-rules';
 import { FlightsService, FlightView } from '../flights/flights.service';
-import { Flight, FlightDocument } from '../flights/schemas/flight.schema';
+import {
+  CabinCategory,
+  Flight,
+  FlightDocument,
+} from '../flights/schemas/flight.schema';
 import { FlightSearchQueryDto } from './dto/flight-search-query.dto';
 import {
   assertSearchCriteria,
+  faresTotal,
+  PassengerCounts,
   passengerCounts,
   seatsNeeded,
 } from './flight-booking.rules';
 
 export const NO_FLIGHTS_FOUND = 'No flights found';
 
+// One cabin in the results: Hazem's cabin view plus totalFare, what these
+// passengers pay in it before extra bags (FLT-12: infants pay 10%).
+export type CabinOption = FlightView['cabins'][number] & { totalFare: number };
+
 // One flight in the results: Hazem's flight view (local times, GEN-06) plus
-// the airline, with only the cabins that have enough free seats.
-export interface FlightOption extends FlightView {
+// the airline, with only the cabins that have enough free seats (and match
+// ?cabin when it is given).
+export interface FlightOption extends Omit<FlightView, 'cabins'> {
   airline: { _id: string; name: string; code: string; logo: string | null };
+  cabins: CabinOption[];
+}
+
+// What findOptions() needs. Moharm's itineraries (ITN-26) call it with the
+// same object.
+export interface FlightSearchCriteria {
+  from: string;
+  to: string;
+  // Local date at the departure airport, YYYY-MM-DD.
+  date: string;
+  passengers: PassengerCounts;
+  cabin?: CabinCategory;
 }
 
 export interface FlightSearchResult extends PaginatedResult<FlightOption> {
@@ -49,12 +72,13 @@ export class FlightSearchService {
     const counts = passengerCounts(q);
     assertSearchCriteria({ ...q, ...counts });
 
-    const options = await this.findOptions(
-      q.from,
-      q.to,
-      q.date,
-      seatsNeeded(counts),
-    );
+    const options = await this.findOptions({
+      from: q.from,
+      to: q.to,
+      date: q.date,
+      passengers: counts,
+      cabin: q.cabin,
+    });
 
     const { page, limit } = q;
     const result = paginated(
@@ -70,17 +94,20 @@ export class FlightSearchService {
   }
 
   // Bookable flights from -> to on a local date at the departure airport,
-  // with at least one cabin that has `seats` free seats. Earliest first.
+  // with at least one cabin (of the chosen category, if any) that has enough
+  // free seats. Earliest first.
   //  - 400 if an airport is not in the list (FLT-02).
   //  - Only Scheduled flights that have not departed (FLT-30) of active
   //    airlines (ACC-15).
-  //  - Infants take no seat, so `seats` is adults + children.
-  async findOptions(
-    from: string,
-    to: string,
-    date: string,
-    seats: number,
-  ): Promise<FlightOption[]> {
+  //  - Infants take no seat, so the seats needed are adults + children.
+  async findOptions({
+    from,
+    to,
+    date,
+    passengers,
+    cabin,
+  }: FlightSearchCriteria): Promise<FlightOption[]> {
+    const seats = seatsNeeded(passengers);
     const [departure] = await Promise.all([
       this.airports.assertAirportExists(from),
       this.airports.assertAirportExists(to),
@@ -105,18 +132,32 @@ export class FlightSearchService {
       .sort({ departureAt: 1 })
       .lean<LeanFlight[]>();
 
-    // Keep only cabins with enough free seats, and only flights with one.
+    // Keep only cabins with enough free seats (and of the chosen category),
+    // and only flights that still have one.
     const withSeats = flights
       .map((f) => ({
         ...f,
-        cabins: (f.cabins ?? []).filter((c) => availableSeats(c) >= seats),
+        cabins: (f.cabins ?? []).filter(
+          (c) => availableSeats(c) >= seats && (!cabin || c.category === cabin),
+        ),
       }))
       .filter((f) => f.cabins.length > 0);
 
-    return this.withAirlines(await this.flightViews.toViews(withSeats));
+    const views = await this.flightViews.toViews(withSeats);
+    return this.withAirlines(
+      views.map((v) => ({
+        ...v,
+        cabins: v.cabins.map((c) => ({
+          ...c,
+          totalFare: faresTotal(passengers, c.price),
+        })),
+      })),
+    );
   }
 
-  private async withAirlines(views: FlightView[]): Promise<FlightOption[]> {
+  private async withAirlines(
+    views: Omit<FlightOption, 'airline'>[],
+  ): Promise<FlightOption[]> {
     const ids = [...new Set(views.map((v) => v.airlineId))];
     const airlines = await this.airlines
       .find({ _id: { $in: ids } }, { name: 1, code: 1, logo: 1 })

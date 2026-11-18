@@ -147,6 +147,41 @@ describe('FlightSearchService (FLT-11)', () => {
     expect(res.data).toHaveLength(1);
   });
 
+  it('shows what the passengers pay per cabin: 2 adults + 1 infant = 420 USD', async () => {
+    const { service } = setup([flight(5)]);
+    const res = await service.search(query({ adults: 2, infants: 1 }));
+    expect(res.data[0].cabins[0]).toMatchObject({
+      price: 20000,
+      totalFare: 42000,
+    });
+  });
+
+  it('filters by cabin (FLT-12)', async () => {
+    const business = {
+      _id: new Types.ObjectId(),
+      category: CabinCategory.BUSINESS,
+      totalSeats: 8,
+      bookedSeats: 0,
+      heldSeats: 0,
+      price: 90000,
+      freeBags: 2,
+      maxKgPerBag: 32,
+    };
+    const both = flight(5);
+    both.cabins.push(business);
+    const economyOnly = flight(5);
+    const { service } = setup([both, economyOnly]);
+
+    const res = await service.search(query({ cabin: CabinCategory.BUSINESS }));
+    expect(res.data).toHaveLength(1);
+    expect(res.data[0].cabins.map((c) => c.category)).toEqual([
+      CabinCategory.BUSINESS,
+    ]);
+
+    const all = await service.search(query());
+    expect(all.data[0].cabins).toHaveLength(2);
+  });
+
   it('answers 200 with "No flights found" when nothing matches', async () => {
     const { service } = setup([]);
     await expect(service.search(query())).resolves.toMatchObject({
