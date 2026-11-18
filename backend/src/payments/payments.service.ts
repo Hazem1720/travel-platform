@@ -2,9 +2,12 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
   NotImplementedException,
 } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { isValidObjectId, Model, Types } from 'mongoose';
 import { BookingStatus } from '../common/enums/booking-status.enum';
 import { isCents, isPlatformCurrency } from '../common/helpers/money';
 import {
@@ -13,8 +16,15 @@ import {
   PayableBooking,
   PaymentBookingType,
   PaymentHandler,
+  PaymentStatus,
   RefundResult,
 } from './payment-handler';
+import {
+  LeanPayment,
+  Payment,
+  PaymentDocument,
+} from './schemas/payment.schema';
+import { StripeGateway, StripeIntent } from './stripe.gateway';
 
 export const BOOKING_NOT_FOUND = 'Booking not found';
 export const HOLD_EXPIRED = 'The hold has expired; please book again';
@@ -22,10 +32,9 @@ export const NOT_PENDING_PAYMENT = 'This booking is not waiting for payment';
 export const POLICIES_NOT_ACCEPTED =
   'Accept the cancellation and booking policies before paying';
 
-// PAY-01 and PAY-03: the contract other modules build against now. The
-// handler registry, the payability checks, confirmBooking and
-// releaseInventory work today. The Stripe parts (createPayment, refund with a
-// positive amount) answer 501 until PAY-01 and PAY-03 land; mock them in tests.
+// PAY-01 and PAY-03. createPayment, the Stripe webhook (handleStripeEvent)
+// and releaseInventory talk to Stripe through StripeGateway; refund with a
+// positive amount answers 501 until PAY-03.
 //
 // A booking module registers its handler once at startup:
 //
@@ -39,7 +48,14 @@ export const POLICIES_NOT_ACCEPTED =
 //   }
 @Injectable()
 export class PaymentsService {
+  private readonly logger = new Logger(PaymentsService.name);
   private readonly handlers = new Map<PaymentBookingType, PaymentHandler>();
+
+  constructor(
+    @InjectModel(Payment.name)
+    private readonly payments: Model<PaymentDocument>,
+    private readonly stripe: StripeGateway,
+  ) {}
 
   registerHandler(type: PaymentBookingType, handler: PaymentHandler): void {
     if (!Object.values(PaymentBookingType).includes(type)) {
@@ -175,17 +191,162 @@ export class PaymentsService {
     return policies;
   }
 
-  // PAY-01 (stub): creates a Stripe PaymentIntent for the booking total and
-  // returns its client secret. The checks above already run, so callers get
-  // the real 404/409/400 answers; the Stripe step answers 501 for now.
+  // PAY-01: POST /bookings/:type/:id/pay. Creates the Stripe PaymentIntent
+  // for the booking total and returns its client secret; the frontend
+  // confirms it with Stripe Elements, so card details never reach us.
+  // Paying again after a failed attempt (until the hold ends) returns the
+  // same PaymentIntent: one booking never gets two charges.
   async createPayment(
     type: PaymentBookingType,
     bookingId: string,
     userId: string,
   ): Promise<CreatedPayment> {
-    await this.getPayableFor(type, bookingId, userId);
-    throw new NotImplementedException(
-      'Stripe payments are not available yet (PAY-01)',
+    const booking = await this.getPayableFor(type, bookingId, userId);
+    const intent = await this.stripe.createIntent(
+      {
+        amount: booking.amount,
+        currency: booking.currency.toLowerCase(),
+        description: booking.description,
+        metadata: {
+          bookingType: type,
+          bookingId: booking.bookingId,
+          userId: booking.userId,
+        },
+      },
+      `pay-${type}-${booking.bookingId}`,
+    );
+    if (intent.status === 'canceled' || !intent.clientSecret) {
+      throw new ConflictException(HOLD_EXPIRED);
+    }
+
+    const payment = await this.recordPayment(type, booking, intent);
+    // A retry after a failed card: Pending again.
+    if (payment.status === PaymentStatus.FAILED) {
+      await this.payments.updateOne(
+        { _id: payment._id, status: PaymentStatus.FAILED },
+        { $set: { status: PaymentStatus.PENDING } },
+      );
+    }
+    return {
+      paymentId: String(payment._id),
+      clientSecret: intent.clientSecret,
+      amount: payment.amount,
+      currency: payment.currency,
+      expiresAt: booking.expiresAt!,
+    };
+  }
+
+  // One Payment per PaymentIntent (unique index): of two requests at the
+  // same moment, the second reads what the first stored.
+  private async recordPayment(
+    type: PaymentBookingType,
+    booking: PayableBooking,
+    intent: StripeIntent,
+  ): Promise<LeanPayment> {
+    const filter = { stripePaymentIntentId: intent.id };
+    try {
+      return await this.payments
+        .findOneAndUpdate(
+          filter,
+          {
+            $setOnInsert: {
+              bookingType: type,
+              bookingId: new Types.ObjectId(booking.bookingId),
+              userId: new Types.ObjectId(booking.userId),
+              amount: intent.amount,
+              currency: intent.currency.toUpperCase(),
+              status: PaymentStatus.PENDING,
+            },
+          },
+          { upsert: true, new: true },
+        )
+        .lean<LeanPayment>();
+    } catch (err) {
+      if ((err as { code?: number }).code !== 11000) throw err;
+      return this.payments.findOne(filter).lean<LeanPayment>();
+    }
+  }
+
+  // PAY-01: POST /payments/webhook, after StripeGateway verified the
+  // signature. The booking is confirmed only here, from Stripe's own
+  // "payment_intent.succeeded", never from anything the browser sends.
+  // Stripe may send an event twice or out of order; every step is safe to
+  // repeat. An error (500) makes Stripe send the event again later.
+  async handleStripeEvent(type: string, intent: StripeIntent | null) {
+    if (!intent) return;
+    const payment = await this.payments
+      .findOne({ stripePaymentIntentId: intent.id })
+      .lean<LeanPayment>();
+    // Not one of ours (another test in the same Stripe account).
+    if (!payment) return;
+
+    switch (type) {
+      case 'payment_intent.succeeded':
+        return this.onSucceeded(payment, intent);
+      case 'payment_intent.payment_failed':
+        // The frontend shows Stripe's message; the user may retry until
+        // the hold ends.
+        await this.setStatus(payment, PaymentStatus.FAILED, [
+          PaymentStatus.PENDING,
+        ]);
+        return;
+      case 'payment_intent.canceled':
+        await this.setStatus(payment, PaymentStatus.EXPIRED, [
+          PaymentStatus.PENDING,
+          PaymentStatus.FAILED,
+        ]);
+        return;
+    }
+  }
+
+  private async onSucceeded(
+    payment: LeanPayment,
+    intent: StripeIntent,
+  ): Promise<void> {
+    // Stripe must have received exactly the booking total (PAY-04).
+    if (
+      intent.amountReceived !== payment.amount ||
+      !isPlatformCurrency(intent.currency)
+    ) {
+      this.logger.error(
+        `Payment ${intent.id} received ${intent.amountReceived} ` +
+          `${intent.currency}, expected ${payment.amount} ${payment.currency}; ` +
+          'booking not confirmed',
+      );
+      return;
+    }
+    await this.setStatus(payment, PaymentStatus.SUCCEEDED, [
+      PaymentStatus.PENDING,
+      PaymentStatus.FAILED,
+      PaymentStatus.EXPIRED,
+    ]);
+    try {
+      await this.confirmBooking(payment.bookingType, String(payment.bookingId));
+    } catch (err) {
+      if (!(err instanceof ConflictException)) throw err;
+      // The booking expired or was cancelled before the money arrived:
+      // give it all back. (Hold expiry cancels the PaymentIntent first, so
+      // this only happens in a race.) PAY-03 will record the refund.
+      const refundId = await this.stripe.refundIntent(
+        intent.id,
+        `refund-unconfirmed-${intent.id}`,
+      );
+      this.logger.warn(
+        `Payment ${intent.id} arrived for ${payment.bookingType} booking ` +
+          `${String(payment.bookingId)} that cannot be confirmed ` +
+          `(${err.message}); refunded in full (${refundId})`,
+      );
+    }
+  }
+
+  private async setStatus(
+    payment: LeanPayment,
+    status: PaymentStatus,
+    from: PaymentStatus[],
+  ): Promise<void> {
+    await this.payments.updateOne(
+      { _id: payment._id, status: { $in: from } },
+      { $set: { status } },
     );
   }
 
@@ -197,14 +358,59 @@ export class PaymentsService {
     await this.handler(type).confirm(bookingId);
   }
 
-  // Called by the hold-expiry job (and by PAY-01 when a hold runs out during
-  // payment): Expired and inventory released. Cancelling the PaymentIntent is
-  // added with PAY-01.
+  // Called when a hold runs out (the expiry jobs, and FLT-22 before a new
+  // hold): the PaymentIntent is cancelled first, then the booking is
+  // Expired and its seats or rooms released (conventions.md, "Hold
+  // expiry"). Cancelling first means no payment can succeed afterwards. If
+  // Stripe says the payment already succeeded, the booking is confirmed
+  // instead. If Stripe cannot be reached, nothing changes and the next run
+  // tries again, so a booking is never expired with a live PaymentIntent.
   async releaseInventory(
     type: PaymentBookingType,
     bookingId: string,
   ): Promise<void> {
-    await this.handler(type).expire(bookingId);
+    const handler = this.handler(type);
+    const open = isValidObjectId(bookingId)
+      ? await this.payments
+          .find({
+            bookingType: type,
+            bookingId: new Types.ObjectId(bookingId),
+            status: { $in: [PaymentStatus.PENDING, PaymentStatus.FAILED] },
+          })
+          .lean<LeanPayment[]>()
+      : [];
+
+    for (const payment of open) {
+      let status: string;
+      try {
+        status = await this.stripe.cancelIntent(payment.stripePaymentIntentId);
+      } catch (err) {
+        this.logger.error(
+          `Hold expiry of ${type} booking ${bookingId} postponed: ` +
+            (err as Error).message,
+        );
+        return;
+      }
+      if (status === 'succeeded') {
+        // Paid just before the end of the hold: the webhook may still be
+        // on its way; confirming twice is safe.
+        await this.setStatus(payment, PaymentStatus.SUCCEEDED, [
+          PaymentStatus.PENDING,
+          PaymentStatus.FAILED,
+        ]);
+        await this.confirmBooking(type, bookingId);
+        return;
+      }
+      if (status !== 'canceled') {
+        // Still processing at Stripe: wait for the outcome.
+        return;
+      }
+      await this.setStatus(payment, PaymentStatus.EXPIRED, [
+        PaymentStatus.PENDING,
+        PaymentStatus.FAILED,
+      ]);
+    }
+    await handler.expire(bookingId);
   }
 
   // PAY-03 (stub): refunds `amount` cents of the booking's payment through

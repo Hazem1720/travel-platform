@@ -9,6 +9,9 @@ const STATUS_TEXT: Record<number, string> = {
   409: 'Conflict',
   423: 'Locked',
   500: 'Internal Server Error',
+  501: 'Not Implemented',
+  502: 'Bad Gateway',
+  503: 'Service Unavailable',
 };
 
 export interface ApiErrorExample {
