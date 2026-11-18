@@ -62,7 +62,7 @@ function setup(opts: { user?: any; updatedUser?: any; provider?: any } = {}) {
   const airlines = provider();
   const hotels = provider();
   const audit = { log: jest.fn(async () => ({})) };
-  const notifications = { create: jest.fn(async () => ({})) };
+  const notifications = { create: jest.fn<any, any[]>(async () => ({})) };
   const service = new AdminAccountsService(
     users as any,
     airlines as any,
