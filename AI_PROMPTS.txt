@@ -636,3 +636,14 @@ Next item, FLT-17: a public flight details page with the airline, flight number,
 How the output was used:
 Claude wrote FlightDetailsService: Hazem's toViews() for local times, duration and every cabin (availableSeats = total - booked - held, freeBags, maxKgPerBag), plus the airline (name, code, logo, extraBagPrice, maxExtraBags) and its cancellation tiers sorted by daysBefore. Unknown or invalid ids, Cancelled flights (the plan's suggestion) and flights of inactive airlines answer 404; a departed flight is shown as Departed and not bookable. GET /api/flights/:id is public, declared after GET /flights/search in the same controller, and listed in PUBLIC_ROUTES. Tests use Hazem's real toViews() with Cairo and Dubai time zones, and an HTTP test checks that /flights/search is never read as an id.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-11, FLT-12, FLT-15, FLT-17
+Prompt:
+Review PR #156. Then: fix them myself (the review findings on Aabsy's flight search PR).
+How the output was used:
+Claude reviewed PR #156 merged with develop (build, 610 tests and lint passed) and found four problems, which it fixed on the PR branch in separate commits: round-trip returnFlights used the outbound ?page, so a new ?returnPage pages them on their own; a same-day round trip listed flights back that leave before the outbound lands, now left out; minPrice/maxPrice only checked the cheapest cabin, now each cabin's price per seat is checked and cabins outside the range are left out; the public search and details showed bookedSeats and heldSeats, now only availableSeats (publicCabin(), PublicCabinDto). It also made one airline query per flight list instead of two, and marked FLT-11/12/15/17 In Review in the tracker. A review point about reusing Hazem's fieldError() was dropped: Aabsy's version is the one that matches the shared error format. I checked each change and the new tests before pushing; Aabsy's original code is otherwise unchanged.
+================================================
