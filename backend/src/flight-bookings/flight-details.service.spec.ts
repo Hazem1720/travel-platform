@@ -136,6 +136,15 @@ describe('FlightDetailsService (FLT-17)', () => {
     ]);
   });
 
+  it('does not show guests the booked and held seat counts', async () => {
+    const { service } = setup();
+    const d = await service.details(String(FLIGHT));
+    for (const c of d.cabins) {
+      expect(c).not.toHaveProperty('bookedSeats');
+      expect(c).not.toHaveProperty('heldSeats');
+    }
+  });
+
   it('answers 404 for an unknown or invalid id', async () => {
     const { service, flights } = setup(null);
     await expect(

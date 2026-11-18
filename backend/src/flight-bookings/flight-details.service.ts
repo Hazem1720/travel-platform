@@ -13,10 +13,13 @@ import {
   FlightDocument,
   FlightStatus,
 } from '../flights/schemas/flight.schema';
+import { PublicCabin, publicCabin } from './flight-search.service';
 
 // GET /api/flights/:id (FLT-17): Hazem's flight view with every cabin (price,
 // seats remaining, baggage allowance), plus the airline and its policies.
-export interface FlightDetails extends FlightView {
+// Public, so cabins leave out bookedSeats and heldSeats (publicCabin()).
+export interface FlightDetails extends Omit<FlightView, 'cabins'> {
+  cabins: PublicCabin[];
   airline: {
     _id: string;
     name: string;
@@ -60,6 +63,7 @@ export class FlightDetailsService {
     const [view] = await this.flightViews.toViews([flight]);
     return {
       ...view,
+      cabins: view.cabins.map(publicCabin),
       airline: {
         _id: String(airline._id),
         name: airline.name,

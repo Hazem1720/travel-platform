@@ -159,6 +159,13 @@ describe('FlightSearchService (FLT-11)', () => {
     });
   });
 
+  it('does not show guests the booked and held seat counts', async () => {
+    const { service } = setup([flight(5)]);
+    const res = await service.search(query());
+    expect(res.data[0].cabins[0]).not.toHaveProperty('bookedSeats');
+    expect(res.data[0].cabins[0]).not.toHaveProperty('heldSeats');
+  });
+
   it('filters by cabin (FLT-12)', async () => {
     const business = {
       _id: new Types.ObjectId(),

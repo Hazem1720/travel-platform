@@ -20,7 +20,13 @@ export class FlightAirlineSummaryDto {
   logo: string | null;
 }
 
-export class CabinOptionDto extends CabinDto {
+// A cabin in the public search and details: no bookedSeats or heldSeats.
+export class PublicCabinDto extends OmitType(CabinDto, [
+  'bookedSeats',
+  'heldSeats',
+] as const) {}
+
+export class CabinOptionDto extends PublicCabinDto {
   @ApiProperty({
     example: 42000,
     description:

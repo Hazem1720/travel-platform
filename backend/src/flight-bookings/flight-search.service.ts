@@ -29,9 +29,29 @@ import {
 
 export const NO_FLIGHTS_FOUND = 'No flights found';
 
-// One cabin in the results: Hazem's cabin view plus totalFare, what these
+// A cabin as guests see it (FLT-11, FLT-17): Hazem's cabin view without
+// bookedSeats and heldSeats, which are the airline's sales figures. Guests
+// get availableSeats (total - booked - held) instead.
+export type PublicCabin = Omit<
+  FlightView['cabins'][number],
+  'bookedSeats' | 'heldSeats'
+>;
+
+export function publicCabin(c: FlightView['cabins'][number]): PublicCabin {
+  return {
+    _id: c._id,
+    category: c.category,
+    totalSeats: c.totalSeats,
+    availableSeats: c.availableSeats,
+    price: c.price,
+    freeBags: c.freeBags,
+    maxKgPerBag: c.maxKgPerBag,
+  };
+}
+
+// One cabin in the results: the public cabin plus totalFare, what these
 // passengers pay in it before extra bags (FLT-12: infants pay 10%).
-export type CabinOption = FlightView['cabins'][number] & { totalFare: number };
+export type CabinOption = PublicCabin & { totalFare: number };
 
 // One flight in the results: Hazem's flight view (local times, GEN-06) plus
 // the airline, with only the cabins that have enough free seats and match
@@ -184,7 +204,7 @@ export class FlightSearchService {
       .map((v) => ({
         ...v,
         cabins: v.cabins.map((c) => ({
-          ...c,
+          ...publicCabin(c),
           totalFare: faresTotal(passengers, c.price),
         })),
         // The cheapest listed cabin (all of them match every filter).
