@@ -647,3 +647,14 @@ Review PR #156. Then: fix them myself (the review findings on Aabsy's flight sea
 How the output was used:
 Claude reviewed PR #156 merged with develop (build, 610 tests and lint passed) and found four problems, which it fixed on the PR branch in separate commits: round-trip returnFlights used the outbound ?page, so a new ?returnPage pages them on their own; a same-day round trip listed flights back that leave before the outbound lands, now left out; minPrice/maxPrice only checked the cheapest cabin, now each cabin's price per seat is checked and cabins outside the range are left out; the public search and details showed bookedSeats and heldSeats, now only availableSeats (publicCabin(), PublicCabinDto). It also made one airline query per flight list instead of two, and marked FLT-11/12/15/17 In Review in the tracker. A review point about reusing Hazem's fieldError() was dropped: Aabsy's version is the one that matches the shared error format. I checked each change and the new tests before pushing; Aabsy's original code is otherwise unchanged.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-11, FLT-12, FLT-15, FLT-17, FLT-19, FLT-21, FLT-22, FLT-23, ACC-13, ACC-15, ACC-16, FLT-01, FLT-03, FLT-04, FLT-05, FLT-08, FLT-09, FLT-30, GEN-06
+Prompt:
+Yes, fix the tracker (after merging #156: bring the rows from #156 and from Hazem's #169 to #172 up to date).
+How the output was used:
+Claude checked on GitHub which issues #156 and #169 to #172 closed and which spec files each PR added, then updated 19 rows in the CSV and the xlsx (Tracker sheet, Hazem's and Aabsy's sheets, Summary counts recounted from the Tracker sheet): 14 to Done with their PR link and test file, FLT-12 and FLT-19/21/22/23 to In Review with #175. A script checked that the official columns, owners, milestones and notes did not change and that the CSV and the Tracker sheet match row for row; the Summary counts for the other members came out unchanged, which confirmed the recount.
+================================================
