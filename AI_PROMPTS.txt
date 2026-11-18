@@ -801,3 +801,14 @@ is all my work in phase 3 done? ... Yes, add them (the two flight PAY-02 methods
 How the output was used:
 Claude checked the team plan: my phase 3 is HTL-16, HTL-18, PAY-02, HTL-15 and HTL-12, all Done except PAY-02, whose flight side was missing; Aabsy had not answered the comment on #175 asking who adds it. With the deadline a day away I asked Claude to add it. It added getPolicies and acceptPolicies to Aabsy's FlightPaymentHandler, following my hotel version: the outbound airline is the provider and its cancellation tiers apply to the whole booking (FLT-12a), baggage shows its extra-bag price and limit and each booked cabin's free bags and weight; acceptance is stored once, only while PendingPayment within the hold. The handler now also takes the Flight and Airline models, so Aabsy's flight-hold e2e passes them. Unit tests cover a round trip with two airlines, unknown ids and the acceptance rules. Live check on the shared database with TEST data (deleted afterwards): policies 200 with the airline's tiers and baggage, accepted:false 400, accept 200 and again 200 keeping the first time, stored in the booking, 401 without a session and 404 for another user. Build, 742 unit tests and the read-only eslint check pass.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-17
+Prompt:
+Start HTL-17
+How the output was used:
+Claude followed my chapter of the team plan (confirm(): Confirmed, Held locks to Booked, HT- reference with a unique index and retry, BOOKING_CONFIRMED notification; GET /api/hotel-bookings/:id). Before writing it, it found that lockNights clears other reservations' expired Held locks, so a payment arriving after the hold could have confirmed a reservation whose night was already taken. confirm() therefore checks that all rooms x nights are Booked for the reservation; if not, it expires it, frees its nights and answers 409, so PAY-01 refunds in full. The confirmation page uses assertOwner (404 for others) and adds the hotel's address and check-in/check-out times. Unit tests cover confirming, a repeated event, Expired and Cancelled refused, a lost night, a failed notification and ownership; an old HTL-18 test that expected 501 now checks the hand-over. Live test with the Stripe sandbox and TEST hotel, rooms and users (deleted afterwards): 2 rooms x 3 nights paid with the test Visa -> Confirmed, HT- reference, 6 nights Booked, notification with the details; one held night deleted before paying -> Expired, nights freed, no notification, and Stripe shows a full refund; the page answers 401 without a session and 404 for another user. Build, 771 unit tests and the read-only eslint check pass.
+================================================
