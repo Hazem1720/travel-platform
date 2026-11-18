@@ -11,7 +11,7 @@ import {
   ApiErrors,
   UNAUTHENTICATED,
 } from '../common/swagger/api-error.decorator';
-import { AdminAccountsService } from './admin-accounts.service';
+import { AccountListService } from './account-list.service';
 import { AccountPageDto } from './dto/account.dto';
 import { AccountQueryDto } from './dto/account-query.dto';
 
@@ -20,8 +20,8 @@ import { AccountQueryDto } from './dto/account-query.dto';
 @ApiCookieAuth('access_token')
 @Roles(Role.ADMIN)
 @Controller('admin/accounts')
-export class AdminAccountsController {
-  constructor(private readonly accounts: AdminAccountsService) {}
+export class AccountListController {
+  constructor(private readonly accounts: AccountListService) {}
 
   @Get()
   @ApiOperation({

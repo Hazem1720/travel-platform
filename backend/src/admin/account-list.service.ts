@@ -33,7 +33,7 @@ export const escapeRegex = (text: string) =>
 // routes (ACC-15, ACC-16) and Memo's password reset (ACC-07a) use the ids
 // it returns.
 @Injectable()
-export class AdminAccountsService {
+export class AccountListService {
   constructor(
     @InjectModel(User.name) private readonly users: Model<UserDocument>,
   ) {}

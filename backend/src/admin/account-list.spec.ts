@@ -4,9 +4,9 @@ import { validate } from 'class-validator';
 import { AccountStatus, Role } from '../common/enums/role.enum';
 import {
   ACCOUNT_FIELDS,
-  AdminAccountsService,
+  AccountListService,
   escapeRegex,
-} from './admin-accounts.service';
+} from './account-list.service';
 import { AccountQueryDto } from './dto/account-query.dto';
 
 // ACC-14: the admin's account list.
@@ -35,7 +35,7 @@ describe('Admin account list (ACC-14)', () => {
       countDocuments: jest.fn(async () => total),
     };
     return {
-      service: new AdminAccountsService(model as any),
+      service: new AccountListService(model as any),
       model,
       query,
     };
