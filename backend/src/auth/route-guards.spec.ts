@@ -34,6 +34,8 @@ const PUBLIC_ROUTES = [
   'GET /hotels/:id/rooms/available',
   'GET /itineraries/public/search',
   'GET /itineraries/public/:id',
+  // PAY-01: called by Stripe; the Stripe-Signature header is checked instead.
+  'POST /payments/webhook',
 ];
 
 interface Route {

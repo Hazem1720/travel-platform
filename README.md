@@ -60,6 +60,23 @@ Some networks block the DNS lookup used by `mongodb+srv://` strings. In MongoDB 
 
 `seed:admin` needs `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `backend/.env`. The password must follow the account rule (at least 8 characters, a letter and a digit). Running it again never changes an existing admin's password unless you add `-- --reset-password`.
 
+### Test payments locally (PAY-01, Stripe test mode)
+
+Without the Stripe keys the server still starts; only paying answers 503.
+
+1. In the Stripe dashboard, in a **sandbox** (test mode), open Developers, then API keys, and copy the secret key into `STRIPE_SECRET_KEY`. It must start with `sk_test_`: the server refuses live keys.
+2. Install the Stripe CLI (`winget install Stripe.StripeCli` on Windows) and run `stripe login`, choosing the same sandbox.
+3. Run `stripe listen --print-secret` and put the `whsec_...` it prints in `STRIPE_WEBHOOK_SECRET`. Restart the server.
+4. Keep this running while you test, so Stripe's events reach your server:
+
+        stripe listen --forward-to localhost:3000/api/payments/webhook
+
+5. Hold a booking, accept its policies, then call `POST /api/bookings/{type}/{id}/pay`. The `clientSecret` it returns starts with the PaymentIntent id (`pi_..._secret_...`). Without a frontend, pay it from the CLI with a test card:
+
+        stripe payment_intents confirm pi_... --payment-method pm_card_visa
+
+   Use `pm_card_chargeDeclined` to see a declined card. The booking becomes Confirmed only when the webhook arrives.
+
 ## Git workflow
 
 - `main`: stable milestone versions. `develop`: integration branch.

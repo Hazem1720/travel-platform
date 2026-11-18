@@ -15,6 +15,7 @@ import {
 } from '../src/notifications/schemas/notification.schema';
 import { PaymentBookingType } from '../src/payments/payment-handler';
 import { PaymentsService } from '../src/payments/payments.service';
+import { Payment, PaymentSchema } from '../src/payments/schemas/payment.schema';
 import { FlightBookingsReaderService } from '../src/flight-bookings/flight-bookings.reader.service';
 import { FlightHoldService } from '../src/flight-bookings/flight-hold.service';
 import { FlightQuoteService } from '../src/flight-bookings/flight-quote.service';
@@ -392,7 +393,11 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
       );
       // Memo's real PaymentsService with the real flight handler, as the
       // Stripe webhook will use them.
-      payments = new PaymentsService();
+      // No PaymentIntents here, so releaseInventory never calls Stripe.
+      payments = new PaymentsService(
+        conn.model(Payment.name, PaymentSchema) as any,
+        {} as any,
+      );
       payments.registerHandler(
         PaymentBookingType.FLIGHT,
         new FlightPaymentHandler(bookings as any, hold, confirmations),

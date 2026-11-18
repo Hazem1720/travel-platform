@@ -113,7 +113,7 @@ describe('Hotel hold expiry and payment handler (HTL-18, PAY-01)', () => {
         checkIn: '2026-12-05',
         checkOut: '2026-12-08',
       });
-      const payments = new PaymentsService();
+      const payments = new PaymentsService({} as any, {} as any);
       payments.registerHandler(PaymentBookingType.HOTEL, handler);
       await expect(
         payments.getPayableFor(

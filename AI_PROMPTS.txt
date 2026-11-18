@@ -779,3 +779,14 @@ Review #175 ... can we fix it for him ... Merge it ... (then) Yes, do it (open t
 How the output was used:
 After #175 was merged, Claude set FLT-12, FLT-19, FLT-21, FLT-22 and FLT-23 to Done in requirements-tracker.csv and .xlsx (Tracker sheet, Aabsy's sheet, Summary) with each one's spec files as test evidence, and a note on FLT-12 that cancelling a round trip as a whole comes with Hasan's FLT-26. A script edited only the Status, Test evidence and Blocker / notes cells, checked that the CSV and the Tracker sheet match row for row and that the other parts of the xlsx are unchanged, and recounted the Summary from the Tracker sheet: only Aabsy's row (12 of 12 done) and the Total (59 of 104) changed. All six issues of #175 were already closed by the merge.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-01
+Prompt:
+what do i do now ... how do i setup the env ... can u do step 2 for me (install the Stripe CLI) ... Start PAY-01
+How the output was used:
+Claude installed the Stripe CLI with winget (I approved the download and licence and authorised it for my "memo sandbox" in the browser) and wrote the webhook secret from `stripe listen --print-secret` into backend/.env without showing it. It then built PAY-01: POST /api/bookings/:type/:id/pay creates a Stripe PaymentIntent for the booking total (one idempotency key per booking, so a retry after a declined card reuses it) and returns the clientSecret; POST /api/payments/webhook verifies the Stripe signature on the raw body and confirms the booking only on payment_intent.succeeded, after checking amount and currency; failed and canceled events mark the payment Failed or Expired; a payment for a booking that can no longer be confirmed is refunded in full. A Payment schema stores only the PaymentIntent id, amount, currency and status with the booking and user. Hold expiry now cancels the PaymentIntent first and confirms instead if Stripe says it already succeeded. StripeGateway is the only Stripe caller; env.validation refuses live keys. Unit tests use a fake Stripe and Payment model, and the signature tests use Stripe's own test-header helper. Three test files that build PaymentsService by hand (two of mine, Aabsy's flight-hold e2e) now pass the model and gateway. Live test against the shared database with TEST data and the Stripe sandbox: pay before accepting policies 400; test Visa -> webhook -> Confirmed with an FL- reference, seat booked, notification; declined card -> Failed, retry returned the same PaymentIntent and then confirmed; hold expired during payment -> PaymentIntent cancelled at Stripe, booking and payment Expired, seat released, /pay 409; forged webhook 400. All TEST data was deleted afterwards. Build, 759 unit tests and the read-only eslint check pass.
+================================================
