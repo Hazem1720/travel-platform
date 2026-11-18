@@ -8,6 +8,7 @@ import {
   MinLength,
   validateSync,
 } from 'class-validator';
+import { SUPPORTED_CURRENCIES } from '../common/constants/currencies';
 
 // Checked once at startup, so a missing or broken value stops the app with a
 // clear message instead of failing later (for example on the first login).
@@ -49,6 +50,15 @@ class EnvironmentVariables {
     message: 'FRONTEND_URL must be an http(s) URL',
   })
   FRONTEND_URL: string;
+
+  // PAY-04: the one currency of every price, payment and refund. USD unless
+  // set; it must be a supported currency (GEN-12). Never change it once the
+  // database holds prices: stored amounts are not converted.
+  @IsOptional()
+  @IsIn(SUPPORTED_CURRENCIES, {
+    message: `PLATFORM_CURRENCY must be one of: ${SUPPORTED_CURRENCIES.join(', ')}`,
+  })
+  PLATFORM_CURRENCY?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {
