@@ -768,3 +768,14 @@ can we fix it for him (the AI_PROMPTS.txt merge conflict on Aabsy's PR #175)
 How the output was used:
 Claude merged develop into feature/FLT-19-flight-quote. Git's line merge had interleaved the two sides' entries in AI_PROMPTS.txt, so it rebuilt the end of the file instead: develop's version first, then Aabsy's three entries (FLT-19/FLT-21, FLT-22/GEN-11, FLT-23) whole, and checked that every block keeps its header and closing line. No code changed in the merge. Build, unit tests and the read-only eslint check passed on the merged branch before it was pushed.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-12, FLT-19, FLT-21, FLT-22, FLT-23
+Prompt:
+Review #175 ... can we fix it for him ... Merge it ... (then) Yes, do it (open the tracker PR marking these five Done)
+How the output was used:
+After #175 was merged, Claude set FLT-12, FLT-19, FLT-21, FLT-22 and FLT-23 to Done in requirements-tracker.csv and .xlsx (Tracker sheet, Aabsy's sheet, Summary) with each one's spec files as test evidence, and a note on FLT-12 that cancelling a round trip as a whole comes with Hasan's FLT-26. A script edited only the Status, Test evidence and Blocker / notes cells, checked that the CSV and the Tracker sheet match row for row and that the other parts of the xlsx are unchanged, and recounted the Summary from the Tracker sheet: only Aabsy's row (12 of 12 done) and the Total (59 of 104) changed. All six issues of #175 were already closed by the merge.
+================================================
