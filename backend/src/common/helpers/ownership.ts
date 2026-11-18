@@ -32,8 +32,6 @@ export function isOwner(
   user: AuthUser,
 ): boolean {
   return (
-    !!resourceUserId &&
-    !!user?.id &&
-    String(resourceUserId) === String(user.id)
+    !!resourceUserId && !!user?.id && String(resourceUserId) === String(user.id)
   );
 }

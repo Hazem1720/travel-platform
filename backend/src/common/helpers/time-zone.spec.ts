@@ -136,9 +136,9 @@ describe('time-zone helpers', () => {
     it('is 0 on the same day and negative after it', () => {
       const now = new Date('2026-12-01T08:00:00Z');
       expect(localDaysUntil('2026-12-01T18:00:00Z', 'Asia/Dubai', now)).toBe(0);
-      expect(
-        localDaysUntil('2026-11-29T10:00:00Z', 'Asia/Dubai', now),
-      ).toBe(-2);
+      expect(localDaysUntil('2026-11-29T10:00:00Z', 'Asia/Dubai', now)).toBe(
+        -2,
+      );
     });
   });
 });
