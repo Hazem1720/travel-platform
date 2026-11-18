@@ -592,3 +592,14 @@ Finish everything in my chapter that does not depend on anyone. Hazem's Flight s
 How the output was used:
 Claude wrote src/flight-bookings/flight-booking.rules.ts (CabinCategory and PassengerType enums, ageOn, passengerTypeForAge, seatsNeeded, assertPassengerMix, assertPassengers, assertSearchCriteria, parseFlightSort, priceInRange, fareFor, assertExtraBags and priceBooking, the one price function the summary, the hold and the payment will share) and the FlightSearchQueryDto and FlightQuoteDto. Errors use the GEN-02 field format (for example passengers.1.dateOfBirth). Unit tests cover the chapter's cases: a 13-year-old "child", adults=0, 2 infants with 1 adult, the same airport twice, returnDate before date, minPrice above maxPrice, 100/200/300 with 200-300 giving 2, 2 adults and 1 infant in a 200 USD cabin costing 420 USD, too many or too heavy bags. Decisions to confirm with the team: extra bags apply to every segment of a round trip, the same cabin is used both ways, and the search takes adults/children/infants instead of a single passengers count. The routes come once Hazem's Flight schema is merged.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-11
+Prompt:
+Hazem's flights are merged. Build my items one at a time, starting with FLT-11, show me what you are doing and commit after every chunk so we can go back if something breaks: GET /api/flights/search (public) for Scheduled flights of active airlines on a local date at the departure airport with enough free seats, 400 for unknown or identical airports, and 200 with "No flights found" when nothing matches. Reuse Hazem's helpers.
+How the output was used:
+Claude merged develop into my branch (keeping both sides of AI_PROMPTS.txt and restoring the header of my GEN-01/GEN-07 entry), switched my rules to Hazem's CabinCategory, added ?passengers next to ?adults&children&infants (passengerCounts(), mixing them is 400), and wrote FlightSearchService: assertAirportExists for both airports, localDayRangeUtc for the local day's UTC window, Hazem's bookableFilter and availableSeats, inactive airlines excluded, only cabins with enough seats, airline name/code/logo added, paginated 10 per page, and findOptions() exported for Moharm's ITN-26. FlightSearchController adds the public GET /api/flights/search with Swagger docs; FlightBookingsModule is registered before FlightsModule, and the route is in PUBLIC_ROUTES. Unit and HTTP tests cover the chapter's cases (00:30 Cairo on 2 Dec found on 2 Dec and not on 1 Dec, 3 free seats for 4 passengers not listed, infants take no seat, inactive airlines excluded, same or unknown airport 400, no match message, pagination). Claude explained each chunk before I moved on.
+================================================
