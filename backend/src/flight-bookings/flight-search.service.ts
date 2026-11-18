@@ -112,9 +112,13 @@ export class FlightSearchService {
         : null,
     ]);
 
+    // Each list has its own page: ?page for the outbound flights and
+    // ?returnPage for the flights back, so neither hides the other.
     return {
       ...toPage(outbound, q.page, q.limit),
-      returnFlights: inbound ? toPage(inbound, q.page, q.limit) : null,
+      returnFlights: inbound
+        ? toPage(returnsAfter(outbound, inbound), q.returnPage ?? 1, q.limit)
+        : null,
     };
   }
 
@@ -211,7 +215,23 @@ export class FlightSearchService {
   }
 }
 
-// The same page and limit apply to both lists of a round trip.
+// FLT-12 round trip: a flight back must leave after the user has landed.
+// On a same-day round trip, drop the returns that depart before the
+// earliest outbound arrival (no outbound flight can connect to them).
+export function returnsAfter(
+  outbound: FlightOption[],
+  inbound: FlightOption[],
+): FlightOption[] {
+  if (outbound.length === 0) return inbound;
+  const earliestArrival = Math.min(
+    ...outbound.map((o) => new Date(o.arrival.utc).getTime()),
+  );
+  return inbound.filter(
+    (r) => new Date(r.departure.utc).getTime() > earliestArrival,
+  );
+}
+
+// One page of one list (the outbound flights or the flights back).
 function toPage(
   options: FlightOption[],
   page: number,
