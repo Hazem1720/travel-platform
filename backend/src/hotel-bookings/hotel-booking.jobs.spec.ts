@@ -53,7 +53,11 @@ describe('Hotel hold expiry and payment handler (HTL-18, PAY-01)', () => {
         findById: jest.fn(() => ({ lean: async () => found })),
       };
       const holds = { expire: jest.fn(async () => undefined) };
-      const handler = new HotelPaymentHandler(bookings as any, holds as any);
+      const handler = new HotelPaymentHandler(
+        bookings as any,
+        {} as any,
+        holds as any,
+      );
       return { handler, holds };
     }
 
