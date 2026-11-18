@@ -27,7 +27,7 @@ import { RoomLock, RoomLockSchema } from './schemas/room-lock.schema';
 // and reservations with their 10-minute hold (POST /hotel-bookings). The
 // 'hotel' PaymentHandler is registered with PaymentsService at startup
 // (PAY-01). Exported for Rawda (HTL-02, HTL-05, HTL-06, HTL-08), Moharm
-// (ITN-25), Hasan (HTL-20 to HTL-24, ACC-17) and Hafez (GEN-09, GEN-10):
+// (ITN-25), Hasan (HTL-20 to HTL-24, ACC-17) and Emad (GEN-09, GEN-10):
 // import HotelBookingsModule and inject @InjectModel(HotelBooking.name) or
 // @InjectModel(Review.name). It registers the Hotel and Room models itself
 // instead of importing HotelsModule, so HotelsModule can import this module

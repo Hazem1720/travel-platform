@@ -12,7 +12,7 @@ export const MAX_REVIEW_TEXT = 1000;
 //   /reviews/:id) and keeps Hotel.ratingAverage / ratingCount up to date
 //   (HTL-23), and lists them (HTL-24).
 // - Rawda shows the newest visible reviews on the hotel page (HTL-02).
-// - Hafez reports, hides and deletes them (GEN-09, GEN-10).
+// - Emad reports, hides and deletes them (GEN-09, GEN-10).
 // Every public list must filter `hidden: false`: hidden reviews are visible
 // only to their author and admins (conventions.md, "Reports and hidden
 // content"). The rating of a hidden review still counts in the average.
