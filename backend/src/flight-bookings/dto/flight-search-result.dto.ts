@@ -43,8 +43,9 @@ export class FlightOptionDto extends OmitType(FlightDto, ['cabins'] as const) {
   @ApiProperty({
     example: 20000,
     description:
-      'Cheapest listed cabin per seat, USD cents: used by minPrice, ' +
-      'maxPrice and sort=price (FLT-15)',
+      'Cheapest listed cabin per seat, USD cents, used by sort=price. ' +
+      'minPrice and maxPrice leave out the cabins outside the range ' +
+      '(FLT-15).',
   })
   lowestPrice: number;
 }

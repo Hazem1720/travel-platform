@@ -329,6 +329,29 @@ describe('FlightSearchService (FLT-11)', () => {
       expect(numbers(res).sort()).toEqual([200, 300]);
     });
 
+    it('leaves out the cabins outside the range, not just the flight', async () => {
+      const f = flight(5);
+      f.cabins.push({
+        _id: new Types.ObjectId(),
+        category: CabinCategory.BUSINESS,
+        totalSeats: 8,
+        bookedSeats: 0,
+        heldSeats: 0,
+        price: 90000,
+        freeBags: 2,
+        maxKgPerBag: 32,
+      });
+      const { service } = setup([f]);
+
+      const cheap = await service.search(query({ maxPrice: 30000 }));
+      expect(cheap.data[0].cabins.map((c) => c.price)).toEqual([20000]);
+
+      // Only Business is in range, so lowestPrice is its price.
+      const dear = await service.search(query({ minPrice: 50000 }));
+      expect(dear.data[0].cabins.map((c) => c.price)).toEqual([90000]);
+      expect(dear.data[0].lowestPrice).toBe(90000);
+    });
+
     it('minPrice above maxPrice is 400', async () => {
       const { service } = setup(priced());
       await expect(

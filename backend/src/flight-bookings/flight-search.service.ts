@@ -34,8 +34,8 @@ export const NO_FLIGHTS_FOUND = 'No flights found';
 export type CabinOption = FlightView['cabins'][number] & { totalFare: number };
 
 // One flight in the results: Hazem's flight view (local times, GEN-06) plus
-// the airline, with only the cabins that have enough free seats (and match
-// ?cabin when it is given).
+// the airline, with only the cabins that have enough free seats and match
+// ?cabin and ?minPrice/?maxPrice when they are given.
 export interface FlightOption extends Omit<FlightView, 'cabins'> {
   airline: { _id: string; name: string; code: string; logo: string | null };
   cabins: CabinOption[];
@@ -164,13 +164,17 @@ export class FlightSearchService {
       .sort({ departureAt: 1 })
       .lean<LeanFlight[]>();
 
-    // Keep only cabins with enough free seats (and of the chosen category),
-    // and only flights that still have one.
+    // Keep only cabins with enough free seats, of the chosen category and,
+    // FLT-15, priced per seat inside the inclusive range; and only flights
+    // that still have one. The other criteria stay applied.
     const withSeats = flights
       .map((f) => ({
         ...f,
         cabins: (f.cabins ?? []).filter(
-          (c) => availableSeats(c) >= seats && (!cabin || c.category === cabin),
+          (c) =>
+            availableSeats(c) >= seats &&
+            (!cabin || c.category === cabin) &&
+            priceInRange(c.price, minPrice, maxPrice),
         ),
       }))
       .filter((f) => f.cabins.length > 0);
@@ -183,11 +187,9 @@ export class FlightSearchService {
           ...c,
           totalFare: faresTotal(passengers, c.price),
         })),
-        // The chosen cabin's price, or the cheapest one with enough seats.
+        // The cheapest listed cabin (all of them match every filter).
         lowestPrice: Math.min(...v.cabins.map((c) => c.price)),
       }))
-      // FLT-15: the other criteria stay applied; the range is inclusive.
-      .filter((o) => priceInRange(o.lowestPrice, minPrice, maxPrice))
       .sort(byFlightSort(sort));
     return this.withAirlines(options);
   }

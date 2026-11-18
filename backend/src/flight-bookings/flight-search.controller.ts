@@ -39,8 +39,8 @@ export class FlightSearchController {
       'back (to -> from), otherwise it is null. ?page pages the outbound ' +
       'list and ?returnPage the flights back; flights back that leave ' +
       'before the earliest outbound arrival are left out. FLT-15: ?minPrice and ' +
-      '?maxPrice (inclusive, USD cents) on lowestPrice, the chosen or ' +
-      'cheapest cabin; ?sort=price|duration|departure with :asc or :desc ' +
+      '?maxPrice (inclusive, USD cents per seat) keep only the cabins in ' +
+      'the range; lowestPrice is the cheapest listed cabin; ?sort=price|duration|departure with :asc or :desc ' +
       '(default departure:asc). No match: 200 with an empty list and ' +
       '"No flights found".',
   })
