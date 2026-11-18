@@ -228,12 +228,7 @@ describe('ACC-15 provider deactivation', () => {
     const { service, airlines, users, audit, notifications } = setup({
       provider: airline,
     });
-    const res = await service.setProviderActive(
-      admin,
-      'airline',
-      'id',
-      false,
-    );
+    const res = await service.setProviderActive(admin, 'airline', 'id', false);
     expect(res).toMatchObject({ isActive: false, notified: 1 });
     expect(airlines.findOneAndUpdate.mock.calls[0][1]).toEqual({
       $set: { isActive: false },
