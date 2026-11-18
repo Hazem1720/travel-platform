@@ -479,3 +479,36 @@ Do what is still open from Ziad's PR except Aabsy's work: build my HTL-11 hotel 
 How the output was used:
 Claude wrote GET /api/hotels/search (public, paginated): city or country, checkIn, checkOut, guests and rooms (default 1); 400 for checkOut not after checkIn, checkIn in the past, no or an unknown city or country. It lists active hotels with at least `rooms` free rooms (from HotelAvailabilityService.freeRoomsByHotel) whose largest occupancies cover the guests, cheapest first, with fromPricePerNight and freeRoomCount. The logic is in HotelSearchService.search(), exported from HotelBookingsModule, and ITN-25 now calls it instead of its own copy (Ziad's module; he was told in the PR). Unit tests cover the plan's cases (rooms of 2 and 3: 5 guests in 2 rooms listed, 6 guests or 3 rooms not; yesterday and checkOut = checkIn give 400). npm run build, npm test (457 passed), npm run test:e2e and the read-only eslint check on the changed files passed. Not yet tried in Swagger against Atlas (this computer's IP is not on the Atlas access list).
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-01, ACC-04, ACC-05, ACC-06, ACC-08, ACC-09, ACC-18, ACC-19, FLT-02, GEN-12, ACC-11, FLT-01, FLT-09, GEN-06
+Prompt:
+Look at the team plan PDF. Earlier I asked Claude to remove the work already done from the PDF, but that was wrong: if any feature is missing from the plan PDF, put it back in the PDF under the one responsible for it.
+How the output was used:
+Claude compared the PDF text with the tracker and found 10 requirements missing (Hazem's finished accounts work ACC-01, ACC-04, ACC-05, ACC-06, ACC-08, ACC-09, ACC-18, ACC-19, plus FLT-02 and GEN-12) and 4 of Hazem's cards cut down to "what is left" (ACC-11, FLT-01, FLT-09, GEN-06). It rebuilt the PDF from the 15 November sources with the owner changes kept: every requirement is listed again in its owner's chapter, finished ones under "Already done or Milestone 2 only", the four partly done cards show their full scope with a status line, and Hazem's phase 1 is back in the phase table marked merged. Statuses come from the tracker after PR #162. Checked that all 115 requirement texts appear in the new PDF exactly once. The tracker was not changed.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-01, ITN-03, ITN-05, ITN-07, ITN-08, ITN-09, ITN-10, ITN-12, ITN-14, ITN-16, ITN-18, ITN-20, ITN-21, ITN-25, ITN-26
+Prompt:
+Test Ziad's (Moharm's) PR #163 and merge it, then do what is still open except Aabsy's work: update the tracker, test it against the shared database, and note that Memo and Hazem are both team leaders.
+How the output was used:
+Claude checked out the PR merged with the latest develop and ran npm run build, npm test (448 passed), npm run test:e2e and the read-only eslint check (the PR's files are clean; 4 prettier errors in common/helpers already exist on develop). It reviewed the routes for @Roles, DTO validation, owner checks (404 for other users), public-search filters and the FXRatesAPI key, found no blocker, and I merged the PR. It then marked ITN-01 to ITN-21 Done and ITN-25 and ITN-26 In Progress in the tracker CSV and xlsx (Moharm sheet and Summary counts too), with the PR link, test evidence and the remaining blockers. The live test against Atlas could not run because this computer's IP is not on the Atlas access list.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-11, ITN-25, ITN-01
+Prompt:
+I have access to MongoDB Atlas now: test Ziad's itinerary routes and my HTL-11 search against the shared database, then merge #164 and #165.
+How the output was used:
+Claude ran the backend against Atlas and walked through Ziad's ITN routes with two TEST users (42 of 42 checks passed; ITN-18 answers 503 because FXRATES_API_KEY is empty, as designed). For HTL-11 it inserted TEST hotels, rooms and room locks directly (there are no hotels in Atlas yet), and 17 of 17 checks passed, including ITN-25 returning the same hotels as GET /hotels/search. The live test showed the reference cities include New York and London, so it changed the past check-in rule from the UTC date to the local date of the city's airport time zone, with tests. All TEST users, itineraries, hotels, rooms and locks were deleted afterwards. I merged #164; this branch marks HTL-11 and ITN-25 Done.
+================================================
