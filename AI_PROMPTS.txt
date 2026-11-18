@@ -614,3 +614,14 @@ Continue with my items one at a time and give me a progress tracker after each c
 How the output was used:
 Claude added faresTotal(counts, cabinFare) to the rules (checked against priceBooking so both always agree), made findOptions() take one criteria object { from, to, date, passengers, cabin } for Moharm's ITN-26, filtered cabins by ?cabin, added totalFare to each cabin in the results (2 adults and 1 infant in a 200 USD cabin: 42000 cents), and added returnFlights: the reversed route on returnDate (the local date at the return's departure airport) as its own paged list with its own "No flights found", or null for one way. Swagger shows the new fields. Tests cover the 420 USD case, the cabin filter, the reversed route and Dubai's local day, separate empty messages and returnDate before date (400). Claude reported each commit with a progress tracker.
 ================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-15
+Prompt:
+Next item, FLT-15: filter the flight search by an inclusive minimum and maximum price while keeping the other criteria, 400 when min is above max, and sort by price, duration or departure time. Tracker after each commit.
+How the output was used:
+Claude added lowestPrice to each result (the chosen cabin's price per seat, or the cheapest cabin with enough seats), filtered on it with the existing priceInRange rule, and sorted the whole result before paging with parseFlightSort (price, duration as arrival minus departure in UTC, or departure; :asc or :desc; ties by earliest departure; unknown sort is 400). minPrice, maxPrice and sort are also part of the findOptions() criteria for Moharm. Swagger documents the new parameters and field. Tests cover 100/200/300 with 200-300 giving 2, min above max (400), every sort order both ways, an unknown sort and the chosen cabin's price.
+================================================
