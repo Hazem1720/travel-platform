@@ -3,7 +3,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AirportsModule } from '../airports/airports.module';
 import { ExchangeRatesModule } from '../exchange-rates/exchange-rates.module';
 import { HotelBookingsModule } from '../hotel-bookings/hotel-bookings.module';
-import { HotelsModule } from '../hotels/hotels.module';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import {
   ActivitiesController,
@@ -38,8 +37,7 @@ import { TransportCostsService } from './transport-costs.service';
       { name: User.name, schema: UserSchema },
     ]),
     ExchangeRatesModule,
-    // ITN-25: hotels and room availability (Rawda, Memo).
-    HotelsModule,
+    // ITN-25: Memo's hotel search (HTL-11).
     HotelBookingsModule,
     // ITN-26: airports (Hazem).
     AirportsModule,

@@ -48,7 +48,10 @@ export class HotelSearchQueryDto extends PaginationQueryDto {
   @IsDateOnly()
   checkIn: string;
 
-  @ApiProperty({ example: '2026-12-07', description: 'YYYY-MM-DD, after checkIn' })
+  @ApiProperty({
+    example: '2026-12-07',
+    description: 'YYYY-MM-DD, after checkIn',
+  })
   @IsDateOnly()
   checkOut: string;
 
@@ -92,7 +95,9 @@ export class HotelSearchResultDto {
   @ApiProperty({ example: 4, minimum: 1, maximum: 5 })
   starClass: number;
 
-  @ApiProperty({ example: ['/api/uploads/3f2b8c1e-4a5d-4e6f-9a7b-1c2d3e4f5a6b.png'] })
+  @ApiProperty({
+    example: ['/api/uploads/3f2b8c1e-4a5d-4e6f-9a7b-1c2d3e4f5a6b.png'],
+  })
   images: string[];
 
   @ApiProperty({ example: ['wifi', 'pool'] })

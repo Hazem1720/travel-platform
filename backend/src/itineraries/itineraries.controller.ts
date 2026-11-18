@@ -195,7 +195,8 @@ export class ItinerariesController {
       'Hotels available for one city group of my itinerary (ITN-25, reuses HTL-11)',
     description:
       "Check-in is the group's first day and check-out the day after its " +
-      'last day. Prices are USD cents per night (PAY-04).',
+      'last day. The hotels are those GET /hotels/search (HTL-11) returns ' +
+      "for the group's city and dates. Prices are USD cents per night (PAY-04).",
   })
   @ApiOkResponse({
     schema: {
@@ -211,12 +212,20 @@ export class ItinerariesController {
         },
         data: [
           {
-            _id: '6735a1f4c1a2b3c4d5e6f801',
+            id: '6735a1f4c1a2b3c4d5e6f801',
             name: 'TEST Nile View Hotel',
+            address: '1 Corniche El Nil',
             cityId: 'luxor',
+            countryCode: 'EG',
             starClass: 4,
+            images: [],
+            amenities: ['wifi'],
+            ratingAverage: 0,
+            ratingCount: 0,
+            checkInTime: '14:00',
+            checkOutTime: '12:00',
             fromPricePerNight: 12000,
-            freeRooms: [],
+            freeRoomCount: 2,
           },
         ],
         meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
@@ -228,7 +237,8 @@ export class ItinerariesController {
       status: 400,
       message: 'Validation failed',
       details: { groupIndex: ['groupIndex must be between 0 and 2'] },
-      description: 'No such group, or more rooms than guests',
+      description:
+        "No such group, more rooms than guests, or the group's check-in date is in the past",
     },
     UNAUTHENTICATED,
     NOT_A_USER,

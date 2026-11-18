@@ -107,11 +107,12 @@ describe('HotelSearchService (HTL-11)', () => {
       '2026-12-05',
       '2026-12-07',
     );
-    expect(result.map((h) => [h.name, h.fromPricePerNight, h.freeRoomCount]))
-      .toEqual([
-        ['TEST Cheap', 5000, 1],
-        ['TEST Two Rooms', 9000, 2],
-      ]);
+    expect(
+      result.map((h) => [h.name, h.fromPricePerNight, h.freeRoomCount]),
+    ).toEqual([
+      ['TEST Cheap', 5000, 1],
+      ['TEST Two Rooms', 9000, 2],
+    ]);
     expect(result[0]).toMatchObject({ id: H2, cityId: 'cairo', starClass: 4 });
   });
 
@@ -154,8 +155,9 @@ describe('HotelSearchService (HTL-11)', () => {
 
   it('needs a known city or country (400)', async () => {
     const { service } = setup({});
-    expect(await details(service.search(criteria({ cityId: undefined }))))
-      .toEqual({ city: ['Give a city or a country'] });
+    expect(
+      await details(service.search(criteria({ cityId: undefined }))),
+    ).toEqual({ city: ['Give a city or a country'] });
     expect(
       await details(service.search(criteria({ cityId: 'atlantis' }))),
     ).toEqual({ city: ['Unknown city "atlantis"'] });

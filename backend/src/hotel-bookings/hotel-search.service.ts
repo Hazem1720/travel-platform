@@ -98,7 +98,10 @@ export class HotelSearchService {
     if (c.cityId && !(await this.cities.exists({ _id: c.cityId }))) {
       throw badRequest('city', `Unknown city "${c.cityId}"`);
     }
-    if (c.countryCode && !(await this.countries.exists({ _id: c.countryCode }))) {
+    if (
+      c.countryCode &&
+      !(await this.countries.exists({ _id: c.countryCode }))
+    ) {
       throw badRequest('country', `Unknown country "${c.countryCode}"`);
     }
 
