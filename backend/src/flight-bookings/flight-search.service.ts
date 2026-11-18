@@ -93,6 +93,9 @@ export interface FlightSearchResult extends FlightOptionList {
 }
 
 type LeanFlight = Flight & { _id: Types.ObjectId };
+type LeanAirline = Pick<Airline, 'name' | 'code' | 'logo'> & {
+  _id: Types.ObjectId;
+};
 
 // FLT-11 flight search. Moharm's itineraries (ITN-26) call findOptions()
 // directly, so the rules live here and not in the controller.
@@ -169,9 +172,11 @@ export class FlightSearchService {
     // 2 Dec is 22:30 UTC on 1 Dec, so search that day's UTC window.
     const { start, end } = localDayRangeUtc(date, departure.timeZone);
     const bookable = bookableFilter();
-    const inactive = await this.airlines
-      .find({ isActive: false }, { _id: 1 })
-      .lean<{ _id: Types.ObjectId }[]>();
+    // One airline query: the active airlines (ACC-15) both filter the
+    // flights and give each result its airline name, code and logo.
+    const active = await this.airlines
+      .find({ isActive: { $ne: false } }, { name: 1, code: 1, logo: 1 })
+      .lean<LeanAirline[]>();
 
     const flights = await this.flights
       .find({
@@ -179,7 +184,7 @@ export class FlightSearchService {
         from,
         to,
         departureAt: { ...bookable.departureAt, $gte: start, $lt: end },
-        airlineId: { $nin: inactive.map((a) => a._id) },
+        airlineId: { $in: active.map((a) => a._id) },
       })
       .sort({ departureAt: 1 })
       .lean<LeanFlight[]>();
@@ -211,23 +216,14 @@ export class FlightSearchService {
         lowestPrice: Math.min(...v.cabins.map((c) => c.price)),
       }))
       .sort(byFlightSort(sort));
-    return this.withAirlines(options);
-  }
 
-  private async withAirlines(
-    views: Omit<FlightOption, 'airline'>[],
-  ): Promise<FlightOption[]> {
-    const ids = [...new Set(views.map((v) => v.airlineId))];
-    const airlines = await this.airlines
-      .find({ _id: { $in: ids } }, { name: 1, code: 1, logo: 1 })
-      .lean<(Airline & { _id: Types.ObjectId })[]>();
-    const byId = new Map(airlines.map((a) => [String(a._id), a]));
-    return views.map((v) => {
-      const a = byId.get(v.airlineId);
+    const byId = new Map(active.map((a) => [String(a._id), a]));
+    return options.map((o) => {
+      const a = byId.get(o.airlineId);
       return {
-        ...v,
+        ...o,
         airline: {
-          _id: v.airlineId,
+          _id: o.airlineId,
           name: a?.name ?? '',
           code: a?.code ?? '',
           logo: a?.logo ?? null,

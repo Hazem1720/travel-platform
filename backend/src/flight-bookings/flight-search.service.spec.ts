@@ -47,12 +47,12 @@ describe('FlightSearchService (FLT-11)', () => {
       lean: jest.fn(async () => found),
     };
     const flights = { find: jest.fn(() => flightQuery) };
+    // Only the active airlines come back (the INACTIVE one does not).
     const airlines = {
-      find: jest.fn((filter: { isActive?: boolean }) => ({
-        lean: async () =>
-          filter.isActive === false
-            ? [{ _id: INACTIVE }]
-            : [{ _id: AIRLINE, name: 'Nile Air', code: 'NP', logo: null }],
+      find: jest.fn(() => ({
+        lean: async () => [
+          { _id: AIRLINE, name: 'Nile Air', code: 'NP', logo: null },
+        ],
       })),
     };
     const airports = {
@@ -82,7 +82,7 @@ describe('FlightSearchService (FLT-11)', () => {
       airports as any,
       views as any,
     );
-    return { service, flights, flightQuery };
+    return { service, flights, flightQuery, airlines };
   }
 
   const query = (q: Partial<FlightSearchQueryDto> = {}) =>
@@ -116,15 +116,20 @@ describe('FlightSearchService (FLT-11)', () => {
   });
 
   it('lists only Scheduled, not yet departed flights of active airlines', async () => {
-    const { service, flights, flightQuery } = setup();
+    const { service, flights, flightQuery, airlines } = setup();
     await service.search(query());
+    expect(airlines.find).toHaveBeenCalledTimes(1);
+    expect((airlines.find.mock.calls as any[])[0][0]).toEqual({
+      isActive: { $ne: false },
+    });
     const filter = (flights.find.mock.calls as any[])[0][0];
     expect(filter).toMatchObject({
       status: FlightStatus.SCHEDULED,
       from: 'CAI',
       to: 'DXB',
-      airlineId: { $nin: [INACTIVE] },
+      airlineId: { $in: [AIRLINE] },
     });
+    expect(filter.airlineId.$in).not.toContain(INACTIVE);
     expect(filter.departureAt.$gt).toBeInstanceOf(Date);
     expect(flightQuery.sort).toHaveBeenCalledWith({ departureAt: 1 });
   });
