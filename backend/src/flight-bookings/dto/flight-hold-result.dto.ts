@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { BookingStatus } from '../../common/enums/booking-status.enum';
+import { ZonedTimeDto } from '../../flights/dto/flight.dto';
 import { CabinCategory } from '../../flights/schemas/flight.schema';
 import { PassengerDto } from './flight-quote.dto';
 
@@ -70,4 +71,30 @@ export class FlightHoldResultDto {
 
   @ApiProperty({ example: '2026-11-18T12:00:00.000Z' })
   createdAt: string;
+}
+
+// GET /api/flight-bookings/:id (FLT-23): each time also in local time.
+export class BookingSegmentViewDto extends OmitType(BookingSegmentDto, [
+  'departureAt',
+  'arrivalAt',
+] as const) {
+  @ApiProperty({ type: ZonedTimeDto })
+  departure: ZonedTimeDto;
+
+  @ApiProperty({ type: ZonedTimeDto })
+  arrival: ZonedTimeDto;
+}
+
+export class FlightBookingViewDto extends OmitType(FlightHoldResultDto, [
+  'segments',
+] as const) {
+  @ApiProperty({ type: [BookingSegmentViewDto] })
+  segments: BookingSegmentViewDto[];
+
+  @ApiProperty({
+    example: '2026-11-18T12:04:00.000Z',
+    nullable: true,
+    description: 'When the payment confirmed it',
+  })
+  confirmedAt: string | null;
 }

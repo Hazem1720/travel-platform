@@ -1,9 +1,20 @@
-import { Body, Controller, HttpCode, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Res,
+} from '@nestjs/common';
+import { Response } from 'express';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
+  ApiParam,
+  ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -16,7 +27,16 @@ import {
   UNAUTHENTICATED,
 } from '../common/swagger/api-error.decorator';
 import { FlightQuoteDto } from './dto/flight-quote.dto';
-import { FlightHoldResultDto } from './dto/flight-hold-result.dto';
+import {
+  FlightBookingViewDto,
+  FlightHoldResultDto,
+} from './dto/flight-hold-result.dto';
+import { renderETicket } from './e-ticket.pdf';
+import {
+  BOOKING_NOT_FOUND,
+  ETICKET_NOT_CONFIRMED,
+  FlightConfirmationService,
+} from './flight-confirmation.service';
 import { FlightQuoteResultDto } from './dto/flight-quote-result.dto';
 import { FlightHoldService } from './flight-hold.service';
 import { FlightQuoteService } from './flight-quote.service';
@@ -31,6 +51,7 @@ export class FlightBookingsController {
   constructor(
     private readonly quotes: FlightQuoteService,
     private readonly holds: FlightHoldService,
+    private readonly confirmations: FlightConfirmationService,
   ) {}
 
   @Post()
@@ -128,5 +149,79 @@ export class FlightBookingsController {
   )
   hold(@CurrentUser() user: AuthUser, @Body() dto: FlightQuoteDto) {
     return this.holds.hold(user.id, dto);
+  }
+
+  @Get(':id')
+  @ApiParam({ name: 'id', example: '6737b2f4c1a2b3c4d5e6f201' })
+  @ApiOperation({
+    summary: 'My flight booking: the confirmation page (FLT-23)',
+    description:
+      'The reference, status, every flight with local departure and ' +
+      'arrival times, cabin, passengers, baggage and the price paid. Only ' +
+      "the owner sees it; another user's booking answers 404.",
+  })
+  @ApiOkResponse({ type: FlightBookingViewDto })
+  @ApiErrors(
+    UNAUTHENTICATED,
+    {
+      ...MUST_CHANGE_PASSWORD,
+      message: 'You do not have permission for this action',
+      description: 'Not a registered user, or the account must act first',
+    },
+    {
+      status: 404,
+      message: BOOKING_NOT_FOUND,
+      description: "Unknown id, or another user's booking",
+    },
+  )
+  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.confirmations.getForOwner(user.id, id);
+  }
+
+  @Get(':id/e-ticket')
+  @ApiParam({ name: 'id', example: '6737b2f4c1a2b3c4d5e6f201' })
+  @ApiOperation({
+    summary: 'Download the e-ticket PDF of my Confirmed booking (FLT-23)',
+    description:
+      'Reference, flights with local times, passenger names and the total.',
+  })
+  @ApiProduces('application/pdf')
+  @ApiOkResponse({
+    description: 'The e-ticket as a PDF file',
+    schema: { type: 'string', format: 'binary' },
+  })
+  @ApiErrors(
+    {
+      status: 400,
+      message: ETICKET_NOT_CONFIRMED,
+      description: 'The booking is not Confirmed (for example PendingPayment)',
+    },
+    UNAUTHENTICATED,
+    {
+      ...MUST_CHANGE_PASSWORD,
+      message: 'You do not have permission for this action',
+      description: 'Not a registered user, or the account must act first',
+    },
+    {
+      status: 404,
+      message: BOOKING_NOT_FOUND,
+      description: "Unknown id, or another user's booking",
+    },
+  )
+  async eTicket(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Res() res: Response,
+  ): Promise<void> {
+    const booking = await this.confirmations.getTicketData(user.id, id);
+    const pdf = await renderETicket(booking);
+    res
+      .status(200)
+      .set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="e-ticket-${booking.reference}.pdf"`,
+        'Content-Length': String(pdf.length),
+      })
+      .end(pdf);
   }
 }

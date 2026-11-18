@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { configureApp } from '../app.setup';
 import { FlightBookingsController } from './flight-bookings.controller';
+import { FlightConfirmationService } from './flight-confirmation.service';
 import { FlightHoldService } from './flight-hold.service';
 import { FlightQuoteService } from './flight-quote.service';
 
@@ -13,6 +14,34 @@ describe('POST /api/flight-bookings (FLT-19, FLT-21)', () => {
   const quote = jest.fn(async () => ({ price: { total: 42000 } }));
 
   const hold = jest.fn(async () => ({ status: 'PendingPayment' }));
+  const view = {
+    reference: 'FL-ABCD1234',
+    status: 'Confirmed',
+    confirmedAt: new Date('2026-11-18T12:00:00Z'),
+    segments: [
+      {
+        flightNumber: 'NP101',
+        from: 'CAI',
+        to: 'DXB',
+        cabin: 'Economy',
+        seats: 1,
+        departure: {
+          local: '2026-12-02T00:30',
+          timeZone: 'Africa/Cairo',
+          utcOffset: '+02:00',
+        },
+        arrival: {
+          local: '2026-12-02T06:30',
+          timeZone: 'Asia/Dubai',
+          utcOffset: '+04:00',
+        },
+      },
+    ],
+    passengers: [{ type: 'adult', fullName: 'Sara Ali', extraBags: [] }],
+    totalAmount: 20000,
+  };
+  const getForOwner = jest.fn(async () => view);
+  const getTicketData = jest.fn(async () => view);
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -20,6 +49,10 @@ describe('POST /api/flight-bookings (FLT-19, FLT-21)', () => {
       providers: [
         { provide: FlightQuoteService, useValue: { quote } },
         { provide: FlightHoldService, useValue: { hold } },
+        {
+          provide: FlightConfirmationService,
+          useValue: { getForOwner, getTicketData },
+        },
       ],
     }).compile();
     app = moduleRef.createNestApplication({ logger: false });
@@ -85,5 +118,33 @@ describe('POST /api/flight-bookings (FLT-19, FLT-21)', () => {
       .expect(201);
     expect(res.body).toEqual({ status: 'PendingPayment' });
     expect(hold).toHaveBeenCalledWith('user-1', expect.objectContaining(body));
+  });
+
+  it('GET /:id returns my booking (FLT-23)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/flight-bookings/6737b2f4c1a2b3c4d5e6f201')
+      .expect(200);
+    expect(res.body.reference).toBe('FL-ABCD1234');
+    expect(getForOwner).toHaveBeenCalledWith(
+      'user-1',
+      '6737b2f4c1a2b3c4d5e6f201',
+    );
+  });
+
+  it('GET /:id/e-ticket downloads a PDF named after the reference', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/flight-bookings/6737b2f4c1a2b3c4d5e6f201/e-ticket')
+      .buffer(true)
+      .parse((r, cb) => {
+        const parts: Buffer[] = [];
+        r.on('data', (c: Buffer) => parts.push(c));
+        r.on('end', () => cb(null, Buffer.concat(parts)));
+      })
+      .expect(200);
+    expect(res.headers['content-type']).toBe('application/pdf');
+    expect(res.headers['content-disposition']).toBe(
+      'attachment; filename="e-ticket-FL-ABCD1234.pdf"',
+    );
+    expect((res.body as Buffer).subarray(0, 5).toString()).toBe('%PDF-');
   });
 });
