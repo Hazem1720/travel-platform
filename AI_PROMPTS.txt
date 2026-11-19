@@ -961,7 +961,9 @@ Prompt:
 Yes, merge both (#194, #195) ... Yes, sync tracker
 How the output was used:
 Before merging, Claude saw that #195's head was a commit it had not tested and found that Hazem had pushed to it; it then found that Hazem had already merged #194 and #195, plus ACC-02/ACC-07 (#206), ITN-27 (#205), FLT-28 (#204) and BLG-13 (#203), so nothing was merged twice. It checked develop (build, 918 unit tests, eslint) and that the email hooks were intact. For the tracker sync its script refused to run because the CSV and the xlsx disagreed on develop: when #194's branch was updated, the binary xlsx kept the other side's version and lost ITN-28 In Review and BON-02 Done, while the CSV merged line by line. Claude aligned the two files and set the eight rows to Done in both, with PR links and test files; Owner stays Memo (a credit question for Hazem and me), and the rows Hazem built say so in Blocker / notes. The Summary now shows 8 of my 11 bonus items done.
-===========================
+====================
+
+
 
 
 
@@ -1057,4 +1059,12 @@ Prompt:
 Yes, start FLT-29
 How the output was used:
 Claude built FLT-29 for airline moderators in its own FlightPassengersModule (so it does not touch Mostafa's FlightBookingsModule or my open FLT-25 PR), reusing Hazem's FlightsService.getOwned for the ownership check (404 unknown flight, 403 another airline's flight). GET /api/flights/:id/bookings lists the flight's paid bookings (Confirmed, Completed, Cancelled; unpaid holds left out), newest first, 10 per page, with reference, passenger names, the cabin and seats on this flight (the right segment of a round trip), and the seats remaining per cabin (total - booked - held). GET /api/flights/:id/passengers/export downloads a CSV with one row per passenger of the Confirmed and Completed bookings (reference, name, type, date of birth, passport number, cabin, status), sorted by reference; every field is quoted and a value starting with = + - @ is prefixed so a spreadsheet cannot run it as a formula. 7 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test moderator, two of their flights, another airline's flight and five bookings: the list, the seat counts, the round-trip segment, the CSV headers and content (a cancelled booking and an unpaid hold left out, a quoted name and a formula-looking name made safe), 403 for another airline's flight and for a regular user, 404 for an unknown flight, 401 without a session. Build, lint and all 882 unit tests pass.
+=======
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: ACC-17
+Prompt:
+Yes, start ACC-17
+How the output was used:
+Claude built ACC-17 as my own AdminBookingsModule under the admin/ prefix, as the note in admin.module.ts asks. GET /api/admin/bookings (admins only, read-only) lists every flight and hotel booking in one list, newest first, 10 per page: type, reference, status, user (name, email), provider (airline name looked up, hotel name from the booking), a summary (flight routes or hotel name), travel start and end dates, amount and currency. Filters: type (flight or hotel), status, and a travel date range from/to (flight departure date in UTC or hotel check-in; from after to is 400). The two collections are combined inside MongoDB with $unionWith so filtering, sorting and paging cover both; with a type filter only that collection is read. 7 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test admin and five bookings: the combined list and its order, a round trip's route and dates, each filter, paging over the combined list, 400 for a bad type or reversed dates, 403 for a regular user, 401 without a session, no write routes. Build, lint and all 925 unit tests pass.
 ================================================
