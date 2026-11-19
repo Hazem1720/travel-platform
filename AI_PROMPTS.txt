@@ -962,3 +962,14 @@ Yes, merge both (#194, #195) ... Yes, sync tracker
 How the output was used:
 Before merging, Claude saw that #195's head was a commit it had not tested and found that Hazem had pushed to it; it then found that Hazem had already merged #194 and #195, plus ACC-02/ACC-07 (#206), ITN-27 (#205), FLT-28 (#204) and BLG-13 (#203), so nothing was merged twice. It checked develop (build, 918 unit tests, eslint) and that the email hooks were intact. For the tracker sync its script refused to run because the CSV and the xlsx disagreed on develop: when #194's branch was updated, the binary xlsx kept the other side's version and lost ITN-28 In Review and BON-02 Done, while the CSV merged line by line. Claude aligned the two files and set the eight rows to Done in both, with PR links and test files; Owner stays Memo (a credit question for Hazem and me), and the rows Hazem built say so in Blocker / notes. The Summary now shows 8 of my 11 bonus items done.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: BLG-01, BLG-02, BLG-03, BLG-04, BLG-05, BLG-06, BLG-07, BLG-08, BLG-09, BLG-10, BLG-12, GEN-09, GEN-10, HTL-02, HTL-05, HTL-06, HTL-08, ACC-11, ITN-26, GEN-12, GEN-13
+Prompt:
+i think there is some extra issues that i dont know where they came from they are marked as not started ... Yes, sync tracker
+How the output was used:
+Claude compared the project board, the GitHub issues, the tracker and the official sheet. No issue was extra: the 12 Not Started on the board (ACC-10, GEN-02 to GEN-05, GEN-14 to GEN-17, FLT-27, HTL-26, BON-01) are all in the official sheet and were created with the rest on 2026-10-17. The tracker was behind the board instead, so Claude synced 21 rows from the merged PRs and their tests: Hafez's blog items (#188) and Emad's comments, likes and reports (#183) to Done, Rawda's HTL-02/05/06/08 to In Review (#215), and ACC-11 (#146), ITN-26 (#199), GEN-12 and GEN-13 (#197 and earlier) to Done. Hasan's 11 rows were left to his own PR #218. Claude also added scripts/sync-tracker-xlsx.py (standard library only), which copies the CSV's team columns into the xlsx Tracker and owner sheets and recomputes the Summary, refusing to run if official columns or owners disagree; run on develop's files first, it found nothing to change, which confirmed it reproduces the existing Summary exactly.
+================================================
