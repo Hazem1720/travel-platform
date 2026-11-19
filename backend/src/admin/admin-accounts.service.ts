@@ -4,12 +4,14 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  Optional,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import * as bcrypt from 'bcrypt';
 import { Model, Types } from 'mongoose';
 import { Airline, AirlineDocument } from '../airlines/schemas/airline.schema';
 import { AuditService } from '../audit/audit.service';
+import { EmailService } from '../email/email.service';
 import {
   AuditAction,
   AuditTargetType,
@@ -59,6 +61,9 @@ export class AdminAccountsService {
     @InjectModel(Hotel.name) private readonly hotels: Model<HotelDocument>,
     private readonly audit: AuditService,
     private readonly notifications: NotificationsService,
+    // GEN-01-B (added by Memo): the moderator invitation email. Optional,
+    // so tests without it work as before.
+    @Optional() private readonly email?: EmailService,
   ) {}
 
   private providerModel(kind: ProviderKind): Model<any> {
@@ -91,6 +96,14 @@ export class AdminAccountsService {
       targetId: user._id,
       details: { email: dto.email, role: dto.role, providerId: dto.providerId },
     });
+    // GEN-01-B: not awaited and never throws; the account exists either way.
+    void this.email
+      ?.sendModeratorInvitation({
+        email: dto.email,
+        name: dto.name,
+        role: dto.role,
+      })
+      .catch(() => undefined);
     return toManagedAccount(user.toObject());
   }
 
