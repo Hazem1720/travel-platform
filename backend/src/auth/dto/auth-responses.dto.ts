@@ -30,6 +30,12 @@ export class UserProfileDto {
   mustChangePassword: boolean;
 
   @ApiProperty({
+    example: true,
+    description: 'ACC-02: false until the emailed link is opened',
+  })
+  emailVerified: boolean;
+
+  @ApiProperty({
     type: String,
     nullable: true,
     example: null,

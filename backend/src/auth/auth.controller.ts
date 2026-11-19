@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Query,
   HttpCode,
   Patch,
   Post,
@@ -28,6 +29,11 @@ import { AuthService } from './auth.service';
 import { MessageDto, UserProfileDto } from './dto/auth-responses.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { LoginDto } from './dto/login.dto';
+import {
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyEmailQueryDto,
+} from './dto/password-reset.dto';
 import { RegisterDto } from './dto/register.dto';
 
 const SETS_COOKIES =
@@ -165,5 +171,101 @@ export class AuthController {
   @ApiErrors(UNAUTHENTICATED, { status: 403, message: 'Account is suspended' })
   me(@CurrentUser() user: AuthUser) {
     return this.auth.getProfile(user.id);
+  }
+
+  @Get('verify-email')
+  @Public()
+  @ApiOperation({
+    summary: 'Verify my email address with the emailed link (ACC-02, bonus)',
+    description:
+      'The link in the email sent after registration. It works once and ' +
+      'expires after 24 hours. Until then, holding or paying for a booking ' +
+      'answers 403. Without SMTP settings no email can be sent, so new ' +
+      'accounts start verified.',
+  })
+  @ApiOkResponse({
+    type: MessageDto,
+    schema: {
+      example: { message: 'Your email address is verified. You can now book.' },
+    },
+  })
+  @ApiErrors({
+    status: 400,
+    message: 'This verification link is invalid or has expired',
+  })
+  verifyEmail(@Query() q: VerifyEmailQueryDto) {
+    return this.auth.verifyEmail(q.token);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(200)
+  @ApiCookieAuth('access_token')
+  @ApiOperation({
+    summary: 'Email me a new verification link (ACC-02, bonus)',
+    description: 'Replaces the previous link.',
+  })
+  @ApiOkResponse({
+    type: MessageDto,
+    schema: { example: { message: 'A new verification link has been sent' } },
+  })
+  @ApiErrors(
+    { status: 400, message: 'Your email address is already verified' },
+    UNAUTHENTICATED,
+  )
+  resendVerification(@CurrentUser() user: AuthUser) {
+    return this.auth.resendVerification(user.id);
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Email me a password reset link (ACC-07, bonus)',
+    description:
+      'The answer is the same whether or not the email has an account. ' +
+      'The link expires after 30 minutes, works once, and a newer request ' +
+      'replaces it. It opens the frontend page FRONTEND_URL/reset-password; ' +
+      'in Swagger, send its token to POST /api/auth/reset-password.',
+  })
+  @ApiOkResponse({
+    type: MessageDto,
+    schema: {
+      example: {
+        message:
+          'If an account exists for this email, a password reset link has been sent',
+      },
+    },
+  })
+  @ApiErrors({
+    status: 400,
+    message: 'Validation failed',
+    details: { email: ['email must be an email'] },
+  })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.auth.forgotPassword(dto.email);
+  }
+
+  @Post('reset-password')
+  @Public()
+  @HttpCode(200)
+  @ApiOperation({
+    summary: 'Set a new password with the emailed link (ACC-07, bonus)',
+    description:
+      'Signs out every session; a lockout or a temporary password no ' +
+      'longer applies. Then log in with the new password.',
+  })
+  @ApiOkResponse({
+    type: MessageDto,
+    schema: {
+      example: { message: 'Your password has been reset. You can now log in.' },
+    },
+  })
+  @ApiErrors({
+    status: 400,
+    message: 'This password reset link is invalid or has expired',
+    description: 'Unknown, used, replaced or expired link, or a weak password',
+  })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.auth.resetPassword(dto);
   }
 }

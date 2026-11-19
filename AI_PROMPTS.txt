@@ -912,3 +912,14 @@ do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
 How the output was used:
 My chapter says GEN-01-B extends Aabsy's NotificationsService and to agree the hook point with him. Claude kept the change in his code to one optional hook: a new global src/email module (nodemailer, SMTP settings only in .env, off without SMTP_HOST) is called from NotificationsService.create() after the notification is saved, not awaited and never throwing; a second optional hook in Hazem's createModerator() sends the moderator invitation, deliberately without the temporary password. Unit tests use a fake SMTP transport. Live check with a local SMTP test inbox (no outside account) and the Stripe sandbox, TEST data deleted afterwards: a hotel booking confirmation produced the email "Your booking is confirmed" with the reservation details; with the inbox stopped, the next booking was still confirmed and its in-app notification created, and the server only logged ECONNREFUSED. The run also found that recent Stripe CLI versions refuse stripe listen without --events, so the README command and the webhook's Swagger text were fixed, and it showed PAY-01's hold expiry confirming a booking whose payment had succeeded but whose webhook was missed. Build, 791 unit tests and the read-only eslint check pass.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-02, ACC-07 (bonus, Memo's items, built at my request as team leader on Memo's GEN-01-B email module)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude built both on Memo's EmailService (two new email types) in my auth module. ACC-02: a new account is unverified and gets a single-use verification link (24 hours; only its SHA-256 hash is stored); GET /api/auth/verify-email?token= verifies it (reuse or expiry: 400), POST /api/auth/resend-verification replaces it, and holding or paying for a flight or hotel booking answers 403 until verified (a @RequireVerifiedEmail() check in the global guard). Accounts from before ACC-02, admins and moderators count as verified; with email off (no SMTP) new accounts start verified, so nothing breaks without a test inbox. ACC-07: POST /api/auth/forgot-password always gives the same answer; for an existing account it emails a link to FRONTEND_URL/reset-password that expires after 30 minutes and is replaced by a newer request; POST /api/auth/reset-password sets the new password once (a used, older or expired link is 400), signs out every session and clears a lockout. Unit tests, and an HTTP test against a real MongoDB with a real SMTP test inbox (Mailpit) on a temporary CI branch.
+================================================
