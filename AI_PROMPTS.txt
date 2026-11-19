@@ -984,3 +984,14 @@ yes check for both issues of ml1 ... Yes, do both
 How the output was used:
 Claude audited the 45 GET routes on develop and the list routes in the 11 open PRs for GEN-05, and the validation pipe and error filter for GEN-02. GEN-02's backend part was already complete (details per field, nested paths, database errors in the same shape), so the tracker marks it In Progress with only the M2 frontend left. For GEN-05 every list used PaginationQueryDto and paginated() except GET /itineraries/:id/bookings (ITN-27), which returned every linked booking; Claude paginated it (10 per page, limit above 10 is 400, no sort), kept the budget counting all links, made POST and DELETE answer with the first page in the same { data, meta } shape, and added unit tests for paging and for the query DTO through the real validation pipe. Build, 920 unit tests and eslint passed. The other gap, availableRooms on the hotel details page in Rawda's #215, was raised as a comment on that PR instead of changing her code.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-05, GEN-02
+Prompt:
+now i think this wasnt supposed to be in issues what do u think i think these things must be in a rules file or something and also the frontend issues tell me what do u think ... Yes, do both
+How the output was used:
+Claude recommended keeping one issue per requirement (the project PDF asks for requirement IDs in GitHub issues for traceability) but handling GEN-02 and GEN-05 as rules: written in docs/api/conventions.md and enforced by tests, with the issue pointing to both. It added common/pagination/pagination-routes.spec.ts: every GET route must be listed as a list (query built on PaginationQueryDto with limit at most 10, and a documented { data, meta } response) or as not a list with a reason, so a new unpaginated list fails CI. Routes from open PRs are pre-listed so their CI does not break. Claude checked the test fails when a route is unlisted or a list loses its pagination query, and passes with each of the 11 open PRs merged in. Build, 926 unit tests and eslint passed. It also moved the seven M2-only frontend issues to a GitHub "Milestone 2" milestone so they leave the Milestone 1 view.
+================================================
