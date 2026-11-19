@@ -35,3 +35,23 @@ export function isOwner(
     !!resourceUserId && !!user?.id && String(resourceUserId) === String(user.id)
   );
 }
+
+// Itineraries store ownerId as the user id string (their schema does not
+// cast it), while some other collections store ObjectIds. A filter that
+// matches a user id in either form, for queries Mongoose does not cast
+// (aggregations) or that must also match older documents.
+export function idInAnyForm(id: Types.ObjectId | string): {
+  $in: (string | Types.ObjectId)[];
+} {
+  const text = String(id);
+  return Types.ObjectId.isValid(text)
+    ? { $in: [text, new Types.ObjectId(text)] }
+    : { $in: [text] };
+}
+
+// The same for a list of ids, e.g. { ownerId: { $nin: idsInAnyForm(ids) } }.
+export function idsInAnyForm(
+  ids: (Types.ObjectId | string)[],
+): (string | Types.ObjectId)[] {
+  return ids.flatMap((id) => idInAnyForm(id).$in);
+}

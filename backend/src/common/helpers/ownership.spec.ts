@@ -2,7 +2,7 @@ import { NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { Role } from '../enums/role.enum';
 import { AuthUser } from '../types/auth-user.type';
-import { assertOwner, isOwner } from './ownership';
+import { assertOwner, idInAnyForm, idsInAnyForm, isOwner } from './ownership';
 
 // ACC-11: bookings and private itineraries belong to one user; anyone else
 // gets 404 so the resource's existence is not revealed.
@@ -71,5 +71,17 @@ describe('isOwner', () => {
     expect(isOwner(id, user)).toBe(true);
     expect(isOwner(new Types.ObjectId(), user)).toBe(false);
     expect(isOwner(null, user)).toBe(false);
+  });
+});
+
+describe('idInAnyForm (stored id strings and ObjectIds)', () => {
+  it('matches a user id as a string or as an ObjectId', () => {
+    const id = '6735a1f4c1a2b3c4d5e6f001';
+    expect(idInAnyForm(id)).toEqual({ $in: [id, new Types.ObjectId(id)] });
+    expect(idsInAnyForm([new Types.ObjectId(id)])).toEqual([
+      id,
+      new Types.ObjectId(id),
+    ]);
+    expect(idInAnyForm('not-an-id')).toEqual({ $in: ['not-an-id'] });
   });
 });

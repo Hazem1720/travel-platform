@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Optional } from '@nestjs/common';
+import { EmailService } from '../email/email.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
@@ -22,6 +23,9 @@ export class NotificationsService {
   constructor(
     @InjectModel(Notification.name)
     private readonly notifications: Model<NotificationDocument>,
+    // GEN-01-B (added by Memo): the same notification by email. Optional,
+    // so tests and modules without it work as before.
+    @Optional() private readonly email?: EmailService,
   ) {}
 
   // For other modules, e.g. after a confirmed booking:
@@ -44,6 +48,11 @@ export class NotificationsService {
       message,
       data: data ?? null,
     });
+    // GEN-01-B: not awaited, and it never throws, so a slow or broken mail
+    // server cannot delay or undo the in-app notification.
+    void this.email
+      ?.sendNotification(userId, type, message)
+      .catch(() => undefined);
     return doc.toObject();
   }
 
