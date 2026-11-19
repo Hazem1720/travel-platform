@@ -901,3 +901,14 @@ TN-26 flight search from an itinerary can u do this and test it then merge it
 How the output was used:
 Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: BLG-13 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude added PATCH /api/posts/:id/itinerary to Hafez's blog module as the team plan says: the author attaches one of their own public itineraries (itineraryId, or null to detach); a private, hidden, someone else's or unknown itinerary is 400 and someone else's post is 404. The post page shows the itinerary (title, countries, start date, number of days) only while it stays public and visible, so making it private later or an admin hiding it removes it from the post. Unit tests and an HTTP test against a real MongoDB on a temporary CI branch.
+================================================

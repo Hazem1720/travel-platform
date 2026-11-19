@@ -14,6 +14,11 @@ import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
 import { CommentsService } from '../comments/comments.service';
 import {
+  Itinerary,
+  ItineraryDocument,
+  ItineraryVisibility,
+} from '../itineraries/schemas/itinerary.schema';
+import {
   assertImageLimit,
   IMAGE_LIMITS,
   UploadedImage,
@@ -35,6 +40,25 @@ type PostRow = Post & { _id: Types.ObjectId };
 export type PostDetails = Record<string, unknown> & {
   author: { id: unknown; name: string };
   comments: unknown;
+  itinerary: AttachedItinerary | null;
+};
+
+// BLG-13: what a post shows of its attached itinerary.
+export interface AttachedItinerary {
+  id: unknown;
+  title: string;
+  countries: string[];
+  startDate: Date;
+  dayCount: number;
+}
+
+export const ITINERARY_NOT_ATTACHABLE =
+  'You can attach only one of your own public itineraries';
+
+// Public and not hidden (GEN-10): what anyone may see of an itinerary.
+const PUBLIC_ITINERARY = {
+  visibility: ItineraryVisibility.PUBLIC,
+  hidden: { $ne: true },
 };
 
 export function escapeRegex(text: string): string {
@@ -57,6 +81,8 @@ export class BlogService {
     private readonly users: Model<UserDocument>,
     private readonly uploadsService: UploadsService,
     private readonly comments: CommentsService,
+    @InjectModel(Itinerary.name)
+    private readonly itineraries: Model<ItineraryDocument>,
   ) {}
 
   // BLG-01: Create a new blog post, as a Draft unless Published is asked for.
@@ -160,6 +186,66 @@ export class BlogService {
       ...post,
       author: { id: post.authorId, name: author.name },
       comments,
+      itinerary: await this.attachedItinerary(post.itineraryId),
+    };
+  }
+
+  // BLG-13 (bonus): attach one of the author's own public itineraries to
+  // the post, or detach it with itineraryId: null. A private, hidden, someone
+  // else's or unknown itinerary is 400.
+  async attachItinerary(
+    user: AuthUser,
+    id: string,
+    itineraryId: string | null,
+  ) {
+    const post = await this.findOwned(user, id);
+    if (itineraryId === null) {
+      post.itineraryId = null;
+    } else {
+      const itinerary = isValidObjectId(itineraryId)
+        ? await this.itineraries
+            .findOne(
+              {
+                _id: itineraryId,
+                ownerId: new Types.ObjectId(user.id),
+                ...PUBLIC_ITINERARY,
+              },
+              { _id: 1 },
+            )
+            .lean()
+        : null;
+      if (!itinerary) {
+        throw new BadRequestException({
+          error: 'Bad Request',
+          message: ITINERARY_NOT_ATTACHABLE,
+          details: { itineraryId: [ITINERARY_NOT_ATTACHABLE] },
+        });
+      }
+      post.itineraryId = itinerary._id as Types.ObjectId;
+    }
+    await post.save();
+    return {
+      ...post.toObject(),
+      itinerary: await this.attachedItinerary(post.itineraryId),
+    };
+  }
+
+  // The attached itinerary while it is still public and visible; if the
+  // author made it private later, or an admin hid it, the post shows none.
+  private async attachedItinerary(
+    itineraryId: Types.ObjectId | null | undefined,
+  ): Promise<AttachedItinerary | null> {
+    if (!itineraryId) return null;
+    const it = await this.itineraries
+      .findOne({ _id: itineraryId, ...PUBLIC_ITINERARY })
+      .lean();
+    if (!it) return null;
+    return {
+      id: it._id,
+      title: it.title,
+      countries: it.countries,
+      startDate: it.startDate,
+      dayCount: it.days?.length ?? 0,
     };
   }
 
