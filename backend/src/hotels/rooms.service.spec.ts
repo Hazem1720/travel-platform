@@ -29,7 +29,13 @@ describe('RoomsService', () => {
       findOne: jest.fn(() => ({ lean: async () => opts.room ?? null })),
     };
     return {
-      service: new RoomsService(hotels as any, rooms as any),
+      service: new RoomsService(
+        hotels as any,
+        rooms as any,
+        {} as any,
+        {} as any,
+        {} as any,
+      ),
       hotels,
       rooms,
     };
