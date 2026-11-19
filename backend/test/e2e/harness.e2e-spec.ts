@@ -1,15 +1,19 @@
 import { SchedulerRegistry } from '@nestjs/schedule';
-import { readFileSync, readdirSync } from 'fs';
+import * as express from 'express';
+import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'fs';
 import { createConnection } from 'mongoose';
+import { tmpdir } from 'os';
 import { join } from 'path';
+import * as request from 'supertest';
 import { SeatAssignment } from '../../src/flight-bookings/schemas/seat-assignment.schema';
 import { RoomLock } from '../../src/hotel-bookings/schemas/room-lock.schema';
 import { traveler } from './actors';
 import { collectRoutes, createTestApp, dropTestDatabase, TestApp } from './app';
 import { paymentIntentEvent, signedWebhook } from './fakes';
-import { HitLine } from './recorder';
+import { checkCoverage } from './check-coverage';
+import { HitLine, recorder } from './recorder';
 import { HITS_PREFIX } from './run-dir';
-import { findSensitiveKeys } from './sensitive-keys';
+import { findSensitiveKeys, isValidationErrorBody } from './sensitive-keys';
 import { assertSafeTestUri } from './uri-guard';
 
 // Self-test of the e2e harness (E2E_PLAN.md section 1). These tests check
@@ -292,19 +296,132 @@ describe('e2e harness', () => {
       ).toEqual([{ key: 'passwordHash', path: 'items[0].owner.passwordHash' }]);
     });
 
-    it('treats field names in validation errors as names, not secrets', () => {
-      // The shared error format keys "details" by the field that failed.
+    // The exact body the validation pipe sends (validation.pipe.ts:33-38,
+    // all-exceptions.filter.ts:35-39 adds path and timestamp).
+    const validationError = (details: unknown) => ({
+      statusCode: 400,
+      error: 'Bad Request',
+      message: 'Validation failed',
+      details,
+      path: '/api/auth/register',
+      timestamp: '2026-11-19T00:00:00.000Z',
+    });
+
+    it('skips field names only in the exact validation-error shape', () => {
       expect(
-        findSensitiveKeys({
-          statusCode: 400,
-          message: 'Validation failed',
-          details: { password: ['password is too short'] },
-        }),
+        findSensitiveKeys(
+          validationError({
+            password: ['password is too short'],
+            passwordHash: ['property passwordHash should not exist'],
+          }),
+        ),
       ).toEqual([]);
-      // Outside an error body the same key is a leak.
-      expect(findSensitiveKeys({ details: { password: 'Passw0rd1' } })).toEqual(
-        [{ key: 'password', path: 'details.password' }],
+      expect(isValidationErrorBody(validationError({ password: ['x'] }))).toBe(
+        true,
       );
+    });
+
+    it('still finds passwordHash inside any other details object', () => {
+      const leaks: [string, unknown][] = [
+        // Another status, error or message, with the same details.
+        [
+          'a 409',
+          {
+            ...validationError({}),
+            statusCode: 409,
+            details: { passwordHash: 'h' },
+          },
+        ],
+        [
+          'another error',
+          {
+            ...validationError({}),
+            error: 'Conflict',
+            details: { passwordHash: 'h' },
+          },
+        ],
+        [
+          'another message',
+          {
+            ...validationError({}),
+            message: 'Request failed',
+            details: { passwordHash: 'h' },
+          },
+        ],
+        // The validation shape, but a value that is not a list of strings.
+        ['a string value', validationError({ passwordHash: 'h' })],
+        [
+          'a list with an object',
+          validationError({ passwordHash: [{ x: 1 }] }),
+        ],
+        ['a nested object', validationError({ user: { passwordHash: 'h' } })],
+        ['details as a list', validationError([{ passwordHash: 'h' }])],
+        // A validation body nested in another object is not the top level.
+        [
+          'nested validation body',
+          { error: validationError({ passwordHash: ['h'] }) },
+        ],
+        // No statusCode at all.
+        ['a plain details object', { details: { passwordHash: 'h' } }],
+      ];
+      for (const [name, body] of leaks) {
+        const keys = findSensitiveKeys(body).map((f) => f.key);
+        expect({ name, keys }).toEqual({ name, keys: ['passwordHash'] });
+      }
+    });
+
+    it('a passwordHash in any other details object fails the run', async () => {
+      // The real chain: recorder -> hit file -> check-coverage gate, on a
+      // small Express app and its own run folder.
+      const runDir = mkdtempSync(join(tmpdir(), 'travel-e2e-scan-'));
+      try {
+        const app = express();
+        app.use(recorder(runDir));
+        app.get('/validation', (_req, res) => {
+          res.status(400).json(validationError({ password: ['too short'] }));
+        });
+        app.get('/conflict', (_req, res) => {
+          res.status(409).json({
+            ...validationError({}),
+            statusCode: 409,
+            error: 'Conflict',
+            details: { passwordHash: 'h' },
+          });
+        });
+        app.get('/not-a-list', (_req, res) => {
+          res.status(400).json(validationError({ passwordHash: 'h' }));
+        });
+        app.get('/nested', (_req, res) => {
+          res
+            .status(400)
+            .json(validationError({ user: { passwordHash: 'h' } }));
+        });
+        for (const path of [
+          '/validation',
+          '/conflict',
+          '/not-a-list',
+          '/nested',
+        ]) {
+          await request(app).get(path);
+        }
+
+        const result = checkCoverage({
+          runDir,
+          jestJson: join(runDir, 'none.json'),
+          reportFile: join(runDir, 'report.md'),
+        });
+        const leaks = result.problems.filter((p) =>
+          p.startsWith('sensitive key'),
+        );
+        expect(result.ok).toBe(false);
+        expect(leaks).toEqual([
+          'sensitive key "passwordHash" at details.passwordHash in the response of GET /conflict (409)',
+          'sensitive key "passwordHash" at details.passwordHash in the response of GET /not-a-list (400)',
+          'sensitive key "passwordHash" at details.user.passwordHash in the response of GET /nested (400)',
+        ]);
+      } finally {
+        rmSync(runDir, { recursive: true, force: true });
+      }
     });
 
     it('lists every route Express serves, including aliased decorators', () => {
