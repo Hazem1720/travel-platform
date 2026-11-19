@@ -1278,3 +1278,14 @@ Approved, with one change: refuse every host of the backend/.env cluster, whatev
 How the output was used:
 Claude replaced the guard's same-database check with a same-cluster check (sameCluster in test/e2e/uri-guard.ts): a URI is refused, with or without the flag, if any host:port matches a host of the .env URI (default port 27017; localhost and 127.0.0.1 count as one), or if both are on Atlas under the same cluster domain, which also links the mongodb+srv and standard forms. It matched by host and port rather than hostname so that a teammate whose .env points at a local mongod is not blocked from the in-memory server. Self-tests cover the .env database, another database, no database, other credentials and host order, a single host, the srv form, and a local .env. Plan line and README updated; the refusal shown through npm run test:e2e:full.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-06 (Swagger documentation of logout)
+Prompt:
+Can u handle the part that didnt pass in part 2
+How the output was used:
+Test plan case 2.16 (every protected route documents a 401) flagged POST /api/auth/logout: it is public by design (always 200) but declared @ApiCookieAuth, so Swagger showed it as protected. Claude removed the two Swagger cookie-auth lines and described the route as public; the route's behaviour is unchanged. Re-ran Part 2 of the test plan (20/20) before merging.
+================================================

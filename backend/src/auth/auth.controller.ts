@@ -120,11 +120,14 @@ export class AuthController {
   @Post('logout')
   @Public()
   @HttpCode(200)
-  @ApiCookieAuth('refresh_token')
-  @ApiCookieAuth('access_token')
+  // Public (works with or without a session), so no lock icon: the browser
+  // still sends the cookies, which are revoked if present.
   @ApiOperation({
     summary:
       'Log out; clears cookies and revokes the refresh and access tokens (ACC-06)',
+    description:
+      'Public: always 200. If the request carries the session cookies, the ' +
+      'refresh token and every access token issued for it are revoked.',
   })
   @ApiOkResponse({
     type: MessageDto,
