@@ -185,10 +185,12 @@ export class BlogService {
       .lean();
     if (!author) throw new NotFoundException(POST_NOT_FOUND);
 
-    const comments = await this.comments.listForPost(id, {
-      page: 1,
-      limit: PAGE_SIZE,
-    });
+    // Comments are public only on a published, visible post; the author's
+    // draft or hidden post shows none (the comment list itself is public).
+    const isPublic = post.status === PostStatus.PUBLISHED && !post.hidden;
+    const comments = isPublic
+      ? await this.comments.listForPost(id, { page: 1, limit: PAGE_SIZE })
+      : paginated([], 0, 1, PAGE_SIZE);
     return {
       ...post,
       author: { id: post.authorId, name: author.name },
