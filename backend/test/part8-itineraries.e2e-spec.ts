@@ -148,21 +148,24 @@ describe('Test plan Part 8: itineraries', () => {
       const act = it.days[1].activities[0];
       const aid = idOf(act);
       check(act.name === 'TEST Egyptian Museum', 'shown on the day', { status: 200, body: it } as any);
-      const ed = await A.agent.patch(`${base}/${aid}`).send({ time: '11:30' });
+      const ed = await A.agent.patch(`/api/activities/${aid}`).send({ time: '11:30' });
       check(ed.status === 200, 'edit activity', ed);
       const bad = await A.agent.post(base).send({ name: 'TEST', time: '25:00' });
       check(bad.status === 400, 'bad time 400', bad);
       const neg = await A.agent.post(base).send({ name: 'TEST', cost: { amount: -1, currency: 'EGP' } });
       check(neg.status === 400, 'negative cost 400', neg);
-      const img = await A.agent.post(`${base}/${aid}/images`).attach('images', PNG, 'a.png');
+      const img = await A.agent.post(`/api/activities/${aid}/images`).attach('images', PNG, 'a.png');
       check(img.status === 201 || img.status === 200, 'activity image upload (ITN-12)', img);
       const url = JSON.stringify(img.body).match(/\/api\/uploads\/[\w.-]+/)?.[0] ?? '';
-      const di = await A.agent.delete(`${base}/${aid}/images/${url.split('/').pop()}`);
+      const di = await A.agent.delete(`/api/activities/${aid}/images/${url.split('/').pop()}`);
       check(di.status === 200 || di.status === 204, 'delete the image', di);
-      const extra = await A.agent.post(base).send({ name: 'TEST delete me' });
-      const del = await A.agent.delete(`${base}/${idOf(extra.body.activities?.slice(-1)[0] ?? extra.body)}`);
-      check(del.status === 200 || del.status === 204 || del.status === 404, 'delete activity', del);
-      return `delete: ${del.status}`;
+      await A.agent.post(base).send({ name: 'TEST delete me' }).expect(201);
+      const acts = (await get(A, I)).body.days[1].activities;
+      const del = await A.agent.delete(`/api/activities/${idOf(acts[acts.length - 1])}`);
+      check(del.status === 200 || del.status === 204, 'delete activity', del);
+      const other = await B.agent.patch(`/api/activities/${aid}`).send({ name: 'hacked' });
+      check(other.status === 404, "another user's activity 404", other);
+      check((await get(A, I)).body.days[1].activities.length === 1, 'one activity left');
     });
 
     await tc('8.8', async () => {
@@ -259,7 +262,8 @@ describe('Test plan Part 8: itineraries', () => {
 
     await tc('8.14', async () => {
       const airline = await createAirline(t);
-      const f = await createFlight(t, { airlineId: airline, from: 'DXB', to: 'CAI', day: 20 });
+      // The first day's city is Paris after the reorder in 8.6.
+      const f = await createFlight(t, { airlineId: airline, from: 'DXB', to: 'CDG', day: 20 });
       const r = await A.agent.get(`/api/itineraries/${I}/flights`).query({ origin: 'DXB' });
       check(r.status === 200, 'flights from the itinerary 200 (ITN-26)', r);
       check(JSON.stringify(r.body).includes(String(f._id)), 'flight to the first city on the start date', r);
