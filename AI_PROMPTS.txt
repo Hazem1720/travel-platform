@@ -901,3 +901,14 @@ TN-26 flight search from an itinerary can u do this and test it then merge it
 How the output was used:
 Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-29
+Prompt:
+Yes, start FLT-29
+How the output was used:
+Claude built FLT-29 for airline moderators in its own FlightPassengersModule (so it does not touch Mostafa's FlightBookingsModule or my open FLT-25 PR), reusing Hazem's FlightsService.getOwned for the ownership check (404 unknown flight, 403 another airline's flight). GET /api/flights/:id/bookings lists the flight's paid bookings (Confirmed, Completed, Cancelled; unpaid holds left out), newest first, 10 per page, with reference, passenger names, the cabin and seats on this flight (the right segment of a round trip), and the seats remaining per cabin (total - booked - held). GET /api/flights/:id/passengers/export downloads a CSV with one row per passenger of the Confirmed and Completed bookings (reference, name, type, date of birth, passport number, cabin, status), sorted by reference; every field is quoted and a value starting with = + - @ is prefixed so a spreadsheet cannot run it as a formula. 7 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test moderator, two of their flights, another airline's flight and five bookings: the list, the seat counts, the round-trip segment, the CSV headers and content (a cancelled booking and an unpaid hold left out, a quoted name and a formula-looking name made safe), 403 for another airline's flight and for a regular user, 404 for an unknown flight, 401 without a session. Build, lint and all 882 unit tests pass.
+================================================
