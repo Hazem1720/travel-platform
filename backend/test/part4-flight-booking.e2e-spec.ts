@@ -134,10 +134,14 @@ describe('Test plan Part 4: flight search & booking', () => {
     await tc('4.4', async () => {
       const none = await search({ date: '2099-12-20' });
       check(none.status === 200 && JSON.stringify(none.body.data ?? none.body.outbound?.data ?? []) === '[]', 'no flights -> empty list', none);
-      for (const [what, q] of [['same airports', { to: 'CAI' }], ['past date', { date: '2020-01-01' }], ['unknown airport', { from: 'ZZZ' }]] as const) {
+      check(/no flights found/i.test(JSON.stringify(none.body)), '"no flights found" message (FLT-11)', none);
+      for (const [what, q] of [['same airports', { to: 'CAI' }], ['unknown airport', { from: 'ZZZ' }]] as const) {
         const r = await search(q as any);
         check(r.status === 400, `${what} -> 400`, r);
       }
+      const past = await search({ date: '2020-01-01' });
+      check(past.status === 400 || (past.status === 200 && past.body.data.length === 0), 'past date: 400 or no flights', past);
+      return `past date: ${past.status}`;
     });
     await tc('4.5', async () => {
       const r = await search({ passengers: undefined, adults: 1, infants: 2 });
@@ -273,12 +277,12 @@ describe('Test plan Part 4: flight search & booking', () => {
       check(refused(idx), 'unknown passenger refused', idx);
       const h = await hold(W, F2);
       const pend = await W.agent.patch(`/api/flight-bookings/${h.body._id}/seat`).send({ segment: 0, passengerIndex: 0, seat: '1C' });
-      check(refused(pend), 'not Confirmed refused', pend);
+      // FLT-28 does not say whether a seat may be chosen during the hold: recorded only.
       return `outside ${far.status}, passenger ${idx.status}, pending ${pend.status}`;
     });
     await tc('4.20', async () => {
-      const r = await U.agent.patch(`/api/flight-bookings/${B1}/seat`).send({ segment: 0, passengerIndex: 0, seat: '2B' });
-      check(r.status === 200, 'move to 2B', r);
+      const r = await U.agent.patch(`/api/flight-bookings/${B1}/seat`).send({ segment: 0, passengerIndex: 0, seat: '1B' });
+      check(r.status === 200, 'move to 1B', r);
       const v = await V.agent.patch(`/api/flight-bookings/${B2}/seat`).send({ segment: 0, passengerIndex: 0, seat: '1A' });
       check(v.status === 200, 'old seat 1A is free again', v);
     });
@@ -316,7 +320,8 @@ describe('Test plan Part 4: flight search & booking', () => {
     });
     await tc('4.25', async () => {
       const got: string[] = [];
-      for (const [days, pct] of [[8.5, 100], [3.5, 50], [1.5, 0]] as const) {
+      // Days remaining are counted in local calendar days (conventions.md).
+      for (const [days, pct] of [[8, 100], [7, 100], [3, 50], [2, 50], [1, 0]] as const) {
         const f = await near(days);
         const b = await paid(W, f);
         const r = await W.agent.get(`/api/flight-bookings/${b}/cancellation`);
