@@ -62,20 +62,23 @@ Lives in `backend/test/e2e/`.
 **Test style**
 - **HTTP rule:** results are always checked over HTTP, and write routes also read back the stored document. Code reaches the database or services directly only to arrange data, to move times into the past, or to call cron jobs.
 - **Order:** tests run with `--randomize --showSeed`, so each `it` sets up its own state. A flow that depends on earlier steps is one `it`.
+- **Table-driven tests** check every row and fail once with the full list of mismatches, each naming its route (or case); they never stop at the first one.
+- **Setup requests:** a request that only arranges data (`actors.ts`, `fixtures.ts` `setup()`) sends `x-e2e-setup: 1`. The recorder still scans it, but the route gate does not count it.
 - **Existing files:** the 2 existing files move onto the harness; their `describe.skip` switch goes away.
 
 ## 2. Gates (fail CI, generated, no hand-kept tables)
 A script, `test/e2e/check-coverage.ts`, is run by `run.ts` after Jest. It reads Jest's `--json` output, the route lists and the hit files from `E2E_RUN_DIR`. The report also counts, per requirement, how many tests pass and how many are `it.failing`, so a requirement covered only by `it.failing` stands out.
 
 1. **Requirement gate.** Every M1 ID in the tracker (where `Milestone` is `M1`) must appear in the title of at least one passing `it` or a documented `it.failing`. The only other way out is an entry in `requirement-exclusions.ts`, with a reason (for example "frontend only"). A name in a title does not prove the rule is tested, so reviewers check that in section 5.
+   - **Only fully tested IDs count.** A title names in parentheses only the requirements the test checks completely, for example `(ACC-11)`. A requirement checked only in part is written `[partial: GEN-10, BLG-02]`. The gate ignores those IDs, and `e2e-coverage.md` lists them per requirement with the test titles.
 2. **Route gate.** The route list comes from **Nest's Express router stack**, not Swagger.
-   - Every route must have at least one 2xx hit, or appear in `route-exclusions.ts` with a reason.
+   - Every route must have at least one 2xx hit from a test (setup requests do not count), or appear in `route-exclusions.ts` with a reason.
    - Every **non-public** route must also have a 401 hit, and every `@Roles` route a 403 hit. Public routes need no 401.
    - A route missing from the Swagger document also fails, which checks the Swagger documentation rule of the project description in the other direction. (IM-12, the label in the old `app.e2e-spec.ts`, is not a tracker ID, so the requirement gate cannot use it.) A route hidden from Swagger on purpose is listed in `route-exclusions.ts` with that reason.
 3. **Sensitive-field gate:** any body flagged by the recorder fails the run.
 4. **Output:** the script writes `coverage/e2e-coverage.md`, with one table of requirements and one of routes, and uploads it as a CI artifact.
 
-## 3. Suites (each `it()` title names its REQ-IDs)
+## 3. Suites (each `it()` title names its REQ-IDs: fully tested in parentheses, `[partial: ...]` otherwise)
 **P0**
 1. **`access-control`**
    - Guard sweep over a **reviewed access table** (`test/e2e/access-table.ts`: every route is public, any logged-in account, or one role), not over the app's own decorators, so a removed `@Roles()` is caught:
@@ -87,7 +90,7 @@ A script, `test/e2e/check-coverage.ts`, is run by `run.ts` after Jest. It reads 
      - published posts, but never drafts or hidden posts;
      - public itineraries, but never private ones (404);
      - hidden reviews and comments never appear.
-   - A table of every `:id` route on bookings and itineraries. It fails when a router route is missing, and each entry is checked as user B (404).
+   - A table of every owner-only route: every `user` or `any` route with an `:id` (bookings, payments, itineraries, posts, comments, reviews, favourites, notifications), plus the routes where user B names user A's record in a body (paying A's booking, linking it into B's itinerary, attaching A's private itinerary to B's post, saving it as a favourite). It fails when such a route is neither in the table nor in the reviewed `NOT_OWNER_ONLY` list (comment, like, unlike). Each row is checked as user B: 404 for private records, identical to a missing id; 403 or 404 for another user's public content; nothing may change (snapshot per row).
    - Security on every create or update DTO:
      - extra fields such as `role`, `assignedProviderId` or `status` are rejected or have no effect;
      - `{"email":{"$gt":""}}` sent to login and search answers 400.
