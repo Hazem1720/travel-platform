@@ -276,7 +276,7 @@ describe('Test plan Part 6: hotel search, booking & reviews', () => {
       const r = await t.http().get(`/api/hotels/${A.h}/reviews`);
       check(r.status === 200 && r.body.ratingAverage === 4 && r.body.ratingCount === 1, 'average 4 from 1 review', r);
       check(r.body.data[0].text === 'TEST nice stay' && !!r.body.meta, 'review shown, paginated', r);
-      const s = await search({ minRating: 4 });
+      const s = await search({ minRating: 4, checkIn: `${Y}-12-24`, checkOut: `${Y}-12-25` });
       check(JSON.stringify(s.body).includes(A.h), 'now found with minRating 4', s);
     });
 
