@@ -37,6 +37,8 @@ const PUBLIC_ROUTES = [
   // BLG-02, BLG-08, BLG-09, BLG-12: guests read the blog.
   'GET /posts',
   'GET /posts/:id',
+  // BLG-05: a post's comments.
+  'GET /posts/:id/comments',
   'GET /tags/:tag/posts',
   'GET /authors/:id',
   // PAY-01: called by Stripe; the Stripe-Signature header is checked instead.

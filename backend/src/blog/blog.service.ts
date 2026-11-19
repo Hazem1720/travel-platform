@@ -6,9 +6,13 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, PipelineStage, Types } from 'mongoose';
 import { AccountStatus } from '../common/enums/role.enum';
-import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
+import {
+  PAGE_SIZE,
+  PaginationQueryDto,
+} from '../common/pagination/pagination-query.dto';
 import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
+import { CommentsService } from '../comments/comments.service';
 import {
   assertImageLimit,
   IMAGE_LIMITS,
@@ -30,6 +34,7 @@ type PostRow = Post & { _id: Types.ObjectId };
 // BLG-02: what the post page shows.
 export type PostDetails = Record<string, unknown> & {
   author: { id: unknown; name: string };
+  comments: unknown;
 };
 
 export function escapeRegex(text: string): string {
@@ -51,6 +56,7 @@ export class BlogService {
     @InjectModel(User.name)
     private readonly users: Model<UserDocument>,
     private readonly uploadsService: UploadsService,
+    private readonly comments: CommentsService,
   ) {}
 
   // BLG-01: Create a new blog post, as a Draft unless Published is asked for.
@@ -123,8 +129,9 @@ export class BlogService {
     return paginated(posts, total, query.page, query.limit);
   }
 
-  // BLG-02: a published, visible post with its author and like and comment
-  // counts.
+  // BLG-02: a published, visible post with its author, like and comment
+  // counts and the first page of comments (oldest first, BLG-05). More
+  // comments: GET /api/posts/:id/comments?page=2.
   async findById(id: string): Promise<PostDetails> {
     if (!isValidObjectId(id)) throw new NotFoundException(POST_NOT_FOUND);
     const post = await this.posts
@@ -145,7 +152,15 @@ export class BlogService {
       .lean();
     if (!author) throw new NotFoundException(POST_NOT_FOUND);
 
-    return { ...post, author: { id: post.authorId, name: author.name } };
+    const comments = await this.comments.listForPost(id, {
+      page: 1,
+      limit: PAGE_SIZE,
+    });
+    return {
+      ...post,
+      author: { id: post.authorId, name: author.name },
+      comments,
+    };
   }
 
   // BLG-04 and BLG-08: the author edits title, body, tags or status. The
@@ -165,7 +180,7 @@ export class BlogService {
     return post.toObject();
   }
 
-  // BLG-04: delete a post and its uploaded images.
+  // BLG-04: delete a post with its uploaded images, comments and likes.
   async remove(user: AuthUser, id: string) {
     if (!isValidObjectId(id)) throw new NotFoundException(POST_NOT_FOUND);
     const post = await this.posts.findOneAndDelete({
@@ -174,9 +189,10 @@ export class BlogService {
     });
     if (!post) throw new NotFoundException(POST_NOT_FOUND);
 
-    await Promise.all(
-      (post.images ?? []).map((url) => this.uploadsService.remove(url)),
-    );
+    await Promise.all([
+      this.comments.removeForPost(post._id),
+      ...(post.images ?? []).map((url) => this.uploadsService.remove(url)),
+    ]);
     return { message: 'Post deleted' };
   }
 
