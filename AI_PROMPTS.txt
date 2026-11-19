@@ -845,3 +845,14 @@ can i work on some of the bonus right now without waiting for the rest of the wo
 How the output was used:
 Claude checked the team plan (my bonus items may start once my own mandatory work is merged, which it is) and the project description (mandatory requirements come first; bonus never replaces them), listed which of my bonus items do not depend on Hasan or Hafez, and suggested BON-02 as the smallest while I talk to Hasan about his mandatory items. It built a new src/favourites module as my chapter suggests: POST /api/favourites saves an active hotel or a public itinerary (Moharm's findPublic decides what is public), GET /api/favourites lists them with the shared pagination (an entry that is no longer available stays listed without details), DELETE /api/favourites/:id removes my own. Unit tests cover the plan's checks. Live check with TEST hotels, itineraries and users (deleted afterwards): hotel and public itinerary saved and listed; private itinerary 404; same hotel twice 409; inactive hotel 404; bad type, sort or page size 400; itinerary made private shows available:false without details; another user's delete 404; 401 without a session. Build, 784 unit tests and the read-only eslint check pass.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-28
+Prompt:
+do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
+How the output was used:
+My chapter says ITN-28 lives in Moharm's src/itineraries and to agree the change with him first. To avoid changing his code, Claude built it as a separate src/itinerary-pdf module whose controller adds GET /api/itineraries/:id/pdf and uses his exported ItinerariesService.findOwned (same ownership rule as GET /itineraries/:id, 404 for others) and summarizeByCurrency for the budget. The PDF (pdfkit, as Aabsy's e-ticket) lists every day with date and city, notes, activities with time and cost, budget entries, intercity transport, and the budget per category and in total per currency. Unit tests read the text inside the PDF. Live check with a TEST user and itinerary (deleted afterwards): owner 200 application/pdf download with the right totals, another user 404, no session 401, unknown id 404, and his GET /itineraries/:id still 200. Build, 788 unit tests and the read-only eslint check pass.
+================================================
