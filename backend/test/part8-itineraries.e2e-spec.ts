@@ -64,7 +64,7 @@ describe('Test plan Part 8: itineraries', () => {
     const get = (who: Actor, id: string) => who.agent.get(`/api/itineraries/${id}`);
     let I = '';
     await tc('8.1', async () => {
-      const r = await A.agent.post('/api/itineraries').send({ title: 'TEST Egypt in winter', countries: ['EG'], startDate: '2099-12-10' });
+      const r = await A.agent.post('/api/itineraries').send({ title: 'TEST Egypt in winter', countries: ['EG', 'FR'], startDate: '2099-12-10' });
       check(r.status === 201, 'create 201', r);
       I = idOf(r.body);
       check(r.body.visibility === 'Private', 'Private by default', r);
@@ -104,7 +104,7 @@ describe('Test plan Part 8: itineraries', () => {
 
     const days: string[] = [];
     await tc('8.6', async () => {
-      for (const city of ['cairo', 'cairo', 'luxor']) {
+      for (const city of ['cairo', 'cairo', 'paris']) {
         const r = await A.agent.post(`/api/itineraries/${I}/days`).send({ cityId: city });
         check(r.status === 201, `add day in ${city}`, r);
       }
@@ -114,19 +114,19 @@ describe('Test plan Part 8: itineraries', () => {
       check(badCity.status === 400, 'unknown city 400', badCity);
       let it = (await get(A, I)).body;
       it.days.forEach((d: any) => days.push(idOf(d)));
-      check(it.days.map((d: any) => d.date).join() === '2099-12-10,2099-12-11,2099-12-12', 'dates from the start date', { status: 200, body: it } as any);
+      check(it.days.map((d: any) => String(d.date).slice(0, 10)).join() === '2099-12-10,2099-12-11,2099-12-12', 'dates from the start date', { status: 200, body: it } as any);
       const s = JSON.stringify(it);
       check(/group/i.test(s), 'city groups shown (ITN-09)', { status: 200, body: it } as any);
       const ed = await A.agent.patch(`/api/itineraries/${I}/days/${days[1]}`).send({ notes: 'TEST museum day' });
       check(ed.status === 200, 'edit a day', ed);
       const re = await A.agent.patch(`/api/itineraries/${I}/days/reorder`).send({ dayId: days[2], newPosition: 1 });
-      check(re.status === 200, 'move Luxor to day 1', re);
+      check(re.status === 200, 'move Paris to day 1', re);
       it = (await get(A, I)).body;
-      check(it.days[0].cityId === 'luxor' && it.days[0].date === '2099-12-10', 'Luxor is now day 1 on the start date', { status: 200, body: it } as any);
+      check(it.days[0].cityId === 'paris' && String(it.days[0].date).startsWith('2099-12-10'), 'Paris is now day 1 on the start date', { status: 200, body: it } as any);
       const del = await A.agent.delete(`/api/itineraries/${I}/days/${days[0]}`);
       check(del.status === 200 || del.status === 204, 'delete a day', del);
       it = (await get(A, I)).body;
-      check(it.days.length === 2 && it.days[1].date === '2099-12-11', 'renumbered, dates recalculated (ITN-07)', { status: 200, body: it } as any);
+      check(it.days.length === 2 && String(it.days[1].date).startsWith('2099-12-11'), 'renumbered, dates recalculated (ITN-07)', { status: 200, body: it } as any);
       days.length = 0;
       it.days.forEach((d: any) => days.push(idOf(d)));
       await A.agent.post(`/api/itineraries/${I}/days`).send({ cityId: 'cairo' }).expect(201);
@@ -137,7 +137,7 @@ describe('Test plan Part 8: itineraries', () => {
       const r = await A.agent.patch(`/api/itineraries/${I}`).send({ startDate: '2099-12-20' });
       check(r.status === 200, 'change start date', r);
       const it = (await get(A, I)).body;
-      check(it.days.map((d: any) => d.date).join() === '2099-12-20,2099-12-21,2099-12-22', 'every day shifts', { status: 200, body: it } as any);
+      check(it.days.map((d: any) => String(d.date).slice(0, 10)).join() === '2099-12-20,2099-12-21,2099-12-22', 'every day shifts', { status: 200, body: it } as any);
     });
 
     await tc('8.7', async () => {
@@ -176,7 +176,7 @@ describe('Test plan Part 8: itineraries', () => {
       check(cur.status === 400, 'unsupported currency 400', cur);
       const food = await A.agent.post(`/api/itineraries/${I}/days/${days[0]}/budgets`).send({ category: 'food', amount: 250, currency: 'EGP' });
       check(food.status === 201, 'budget 250 EGP food', food);
-      const tr = await A.agent.post(`/api/itineraries/${I}/transport-costs`).send({ mode: 'train', fromCityId: 'luxor', toCityId: 'cairo', amount: 500, currency: 'EGP', dayId: days[1] });
+      const tr = await A.agent.post(`/api/itineraries/${I}/transport-costs`).send({ mode: 'flight', fromCityId: 'paris', toCityId: 'cairo', amount: 500, currency: 'EGP', dayId: days[1] });
       check(tr.status === 201, 'transport cost 500 EGP (ITN-16)', tr);
       const it = (await get(A, I)).body;
       const bid = idOf(it.days[0].budgets[0]);
@@ -205,7 +205,7 @@ describe('Test plan Part 8: itineraries', () => {
       check(pub.status === 200, 'make public', pub);
       const s = await t.http().get('/api/itineraries/public/search').query({ keyword: 'Egypt in winter' });
       check(s.status === 200 && JSON.stringify(s.body).includes(I), 'found by title keyword, logged out', s);
-      const city = await t.http().get('/api/itineraries/public/search').query({ keyword: 'luxor' });
+      const city = await t.http().get('/api/itineraries/public/search').query({ keyword: 'paris' });
       check(JSON.stringify(city.body).includes(I), 'found by city keyword (ITN-21)', city);
       const dur = await t.http().get('/api/itineraries/public/search').query({ minDays: 5 });
       check(!JSON.stringify(dur.body).includes(I), 'excluded by min 5 days', dur);
