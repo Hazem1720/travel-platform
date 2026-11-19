@@ -893,6 +893,42 @@ Claude checked what was still open on my two cross-cutting requirements. GEN-12:
 
 ================================================
 Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-26 (finishing Moharm's requirement at my request as team leader)
+Prompt:
+TN-26 flight search from an itinerary can u do this and test it then merge it
+How the output was used:
+Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-28
+Prompt:
+do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
+How the output was used:
+My chapter says ITN-28 lives in Moharm's src/itineraries and to agree the change with him first. To avoid changing his code, Claude built it as a separate src/itinerary-pdf module whose controller adds GET /api/itineraries/:id/pdf and uses his exported ItinerariesService.findOwned (same ownership rule as GET /itineraries/:id, 404 for others) and summarizeByCurrency for the budget. The PDF (pdfkit, as Aabsy's e-ticket) lists every day with date and city, notes, activities with time and cost, budget entries, intercity transport, and the budget per category and in total per currency. Unit tests read the text inside the PDF. Live check with a TEST user and itinerary (deleted afterwards): owner 200 application/pdf download with the right totals, another user 404, no session 401, unknown id 404, and his GET /itineraries/:id still 200. Build, 788 unit tests and the read-only eslint check pass.
+
+Related Requirement: GEN-01-B
+Prompt:
+do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
+How the output was used:
+My chapter says GEN-01-B extends Aabsy's NotificationsService and to agree the hook point with him. Claude kept the change in his code to one optional hook: a new global src/email module (nodemailer, SMTP settings only in .env, off without SMTP_HOST) is called from NotificationsService.create() after the notification is saved, not awaited and never throwing; a second optional hook in Hazem's createModerator() sends the moderator invitation, deliberately without the temporary password. Unit tests use a fake SMTP transport. Live check with a local SMTP test inbox (no outside account) and the Stripe sandbox, TEST data deleted afterwards: a hotel booking confirmation produced the email "Your booking is confirmed" with the reservation details; with the inbox stopped, the next booking was still confirmed and its in-app notification created, and the server only logged ECONNREFUSED. The run also found that recent Stripe CLI versions refuse stripe listen without --events, so the README command and the webhook's Swagger text were fixed, and it showed PAY-01's hold expiry confirming a booking whose payment had succeeded but whose webhook was missed. Build, 791 unit tests and the read-only eslint check pass.
+
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-03, ITN-21, ACC-12, BLG-12 (bug fix found while testing the bonus items)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+A live test against a real MongoDB showed that itineraries store ownerId as the user id string (their schema type does not cast it), while three queries looked for an ObjectId: GET /api/itineraries (ITN-03, my itineraries) always answered 0, public itinerary search did not leave out deactivated authors (ACC-12, ITN-21), and the author page (BLG-12) never listed the author's itineraries. Claude added idInAnyForm()/idsInAnyForm() to the ownership helpers and used them in those three queries, so they match both the stored strings and ObjectIds, with no data migration; the other itinerary queries already used the string and were left unchanged. Tests updated, and checked live on the temporary CI branch.
+================================================
+
+================================================
+Date: 2026-11-19
 Student: Hasan Saeid
 Tool: Claude Code
 Related Requirement: HTL-20

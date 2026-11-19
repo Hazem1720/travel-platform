@@ -47,6 +47,7 @@ function setup(
     total?: number;
     names?: { _id: unknown; name: string }[];
     author?: any;
+    itinerary?: any;
   } = {},
 ) {
   const posts = {
@@ -87,13 +88,17 @@ function setup(
     })),
     removeForPost: jest.fn<any, any[]>(async () => undefined),
   };
+  const itineraries = {
+    findOne: jest.fn<any, any[]>(() => lean(opts.itinerary ?? null)),
+  };
   const service = new BlogService(
     posts as any,
     users as any,
     uploads as unknown as UploadsService,
     comments as any,
+    itineraries as any,
   );
-  return { service, posts, users, uploads, comments };
+  return { service, posts, users, uploads, comments, itineraries };
 }
 
 describe('BLG-01: create a post', () => {
@@ -242,6 +247,7 @@ describe('BLG-03: my posts', () => {
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
     );
     const res = await service.findMine(user, query);
     expect(String((find.mock.calls[0] as any[])[0].authorId)).toBe(authorId);
@@ -362,5 +368,91 @@ describe('BLG-10: post images', () => {
     await expect(service.removeImage(user, postId, 'x.jpg')).rejects.toThrow(
       NotFoundException,
     );
+  });
+});
+
+describe('BLG-13: attach an itinerary to a post', () => {
+  const itineraryId = new Types.ObjectId();
+  const publicTrip = {
+    _id: itineraryId,
+    title: 'A week in Egypt',
+    countries: ['EG'],
+    startDate: new Date('2026-12-01'),
+    days: [{}, {}, {}],
+  };
+
+  it("attaches one of the author's own public, visible itineraries", async () => {
+    const doc = postDoc();
+    const { service, itineraries } = setup({
+      owned: doc,
+      itinerary: publicTrip,
+    });
+    const res = await service.attachItinerary(
+      user,
+      postId,
+      String(itineraryId),
+    );
+    const filter = itineraries.findOne.mock.calls[0][0];
+    expect(filter.ownerId).toEqual({
+      $in: [authorId, new Types.ObjectId(authorId)],
+    });
+    expect(filter).toMatchObject({
+      _id: String(itineraryId),
+      visibility: 'Public',
+      hidden: { $ne: true },
+    });
+    expect(doc.itineraryId).toBe(itineraryId);
+    expect(doc.save).toHaveBeenCalled();
+    expect(res.itinerary).toEqual({
+      id: itineraryId,
+      title: 'A week in Egypt',
+      countries: ['EG'],
+      startDate: publicTrip.startDate,
+      dayCount: 3,
+    });
+  });
+
+  it("is 400 for a private, hidden, someone else's or invalid itinerary", async () => {
+    const { service } = setup({ owned: postDoc(), itinerary: null });
+    await expect(
+      service.attachItinerary(user, postId, String(itineraryId)),
+    ).rejects.toThrow('You can attach only one of your own public itineraries');
+    await expect(
+      setup({ owned: postDoc() }).service.attachItinerary(user, postId, 'x'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  it('detaches with null', async () => {
+    const doc = postDoc({ itineraryId });
+    const res = await setup({ owned: doc }).service.attachItinerary(
+      user,
+      postId,
+      null,
+    );
+    expect(doc.itineraryId).toBeNull();
+    expect(res.itinerary).toBeNull();
+  });
+
+  it("is 404 for someone else's post", async () => {
+    await expect(
+      setup().service.attachItinerary(user, postId, null),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('shows the itinerary on the post page only while it is public', async () => {
+    const shown = setup({
+      found: { _id: postId, authorId, itineraryId },
+      author: { name: 'Sara' },
+      itinerary: publicTrip,
+    });
+    expect((await shown.service.findById(postId)).itinerary).toMatchObject({
+      title: 'A week in Egypt',
+    });
+    const gone = setup({
+      found: { _id: postId, authorId, itineraryId },
+      author: { name: 'Sara' },
+      itinerary: null,
+    });
+    expect((await gone.service.findById(postId)).itinerary).toBeNull();
   });
 });

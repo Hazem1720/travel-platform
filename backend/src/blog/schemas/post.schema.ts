@@ -81,6 +81,15 @@ export class Post {
   @Prop({ type: Number, default: 0, min: 0 })
   commentCount: number;
 
+  // BLG-13 (bonus): one of the author's own public itineraries, shown on the
+  // post page while it stays public and visible.
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'Itinerary',
+    default: null,
+  })
+  itineraryId: Types.ObjectId | null;
+
   // GEN-10: hidden posts are visible only to their author and admins.
   @Prop({ type: Boolean, default: false, index: true })
   hidden: boolean;
