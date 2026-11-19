@@ -15,11 +15,13 @@ import { CommentsModule } from './comments/comments.module';
 import { ReportsModule } from './reports/reports.module';
 import { validateEnv } from './config/env.validation';
 import { FlightBookingsModule } from './flight-bookings/flight-bookings.module';
+import { EmailModule } from './email/email.module';
 import { FavouritesModule } from './favourites/favourites.module';
 import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { ItinerariesModule } from './itineraries/itineraries.module';
+import { ItineraryPdfModule } from './itinerary-pdf/itinerary-pdf.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReferenceModule } from './reference/reference.module';
@@ -45,6 +47,7 @@ import { UploadsModule } from './uploads/uploads.module';
     FlightsModule,
     UploadsModule,
     NotificationsModule,
+    EmailModule,
     AuditModule,
     // Before HotelsModule: GET /hotels/search (HTL-11) must be registered
     // before GET /hotels/:id.
@@ -52,6 +55,7 @@ import { UploadsModule } from './uploads/uploads.module';
     HotelsModule,
     PaymentsModule,
     ItinerariesModule,
+    ItineraryPdfModule,
     FavouritesModule,
     BlogModule,
     AdminAccountsModule,

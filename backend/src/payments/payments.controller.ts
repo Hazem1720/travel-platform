@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { RequireVerifiedEmail } from '../common/decorators/verified-email.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
@@ -60,6 +61,8 @@ export class PaymentsController {
   constructor(private readonly payments: PaymentsService) {}
 
   @Post(':type/:id/pay')
+  // ACC-02 (bonus): 403 until the account's email is verified.
+  @RequireVerifiedEmail()
   @ApiParam({
     name: 'type',
     enum: PaymentBookingType,
@@ -147,7 +150,10 @@ export class StripeWebhookController {
       'Expired. refund.created, refund.updated, refund.failed and ' +
       'charge.refund.updated update the refund status (PAY-03). Other ' +
       'events are acknowledged and ignored. Locally, run ' +
-      '`stripe listen --forward-to localhost:3000/api/payments/webhook`.',
+      '`stripe listen --forward-to localhost:3000/api/payments/webhook ' +
+      '--events payment_intent.succeeded,payment_intent.payment_failed,' +
+      'payment_intent.canceled,refund.created,refund.updated,' +
+      'refund.failed,charge.refund.updated`.',
   })
   @ApiOkResponse({ type: WebhookReceivedDto })
   @ApiErrors(

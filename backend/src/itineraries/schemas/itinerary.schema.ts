@@ -132,6 +132,49 @@ export class TransportCost {
 }
 export const TransportCostSchema = SchemaFactory.createForClass(TransportCost);
 
+// ITN-27 (bonus): one of the owner's own Confirmed or Completed flight or
+// hotel bookings, linked to a day. Its total (a snapshot, in the platform
+// currency's main unit) feeds the budget: hotels under Accommodation,
+// flights under Intercity transport. Never shown on public itineraries and
+// never cloned (ITN-21).
+export enum LinkedBookingType {
+  FLIGHT = 'flight',
+  HOTEL = 'hotel',
+}
+
+@Schema({ _id: true })
+export class LinkedBooking {
+  _id: Types.ObjectId;
+
+  @Prop({
+    type: String,
+    enum: Object.values(LinkedBookingType),
+    required: true,
+  })
+  type: LinkedBookingType;
+
+  @Prop({ type: Types.ObjectId, required: true })
+  bookingId: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, required: true })
+  dayId: Types.ObjectId;
+
+  // FL-... or HT-...
+  @Prop({ type: String, default: null })
+  reference: string | null;
+
+  // e.g. "NP101 CAI-DXB" or "Nile Hotel, 2026-12-01 to 2026-12-04"
+  @Prop({ type: String, required: true })
+  label: string;
+
+  @Prop({ type: Number, required: true, min: 0 })
+  amount: number;
+
+  @Prop({ type: String, enum: SUPPORTED_CURRENCIES, required: true })
+  currency: string;
+}
+export const LinkedBookingSchema = SchemaFactory.createForClass(LinkedBooking);
+
 // ITN-21: a clone credits the itinerary and author it was copied from. It is
 // a separate document, so deleting or changing the original never affects it.
 @Schema({ _id: false })
@@ -202,6 +245,10 @@ export class Itinerary {
 
   @Prop({ type: [TransportCostSchema], default: [] })
   transportCosts: TransportCost[];
+
+  // ITN-27 (bonus).
+  @Prop({ type: [LinkedBookingSchema], default: [] })
+  linkedBookings: LinkedBooking[];
 
   @Prop({ type: ClonedFromSchema, default: null })
   clonedFrom: ClonedFrom | null;

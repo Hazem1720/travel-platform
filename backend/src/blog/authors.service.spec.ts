@@ -90,7 +90,7 @@ describe('BLG-12: public author page', () => {
       hidden: { $ne: true },
     });
     expect((itineraries.find.mock.calls[0] as any[])[0]).toEqual({
-      ownerId: authorId,
+      ownerId: { $in: [String(authorId), authorId] },
       visibility: ItineraryVisibility.PUBLIC,
       hidden: { $ne: true },
     });

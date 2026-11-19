@@ -81,6 +81,35 @@ class EnvironmentVariables {
     message: 'STRIPE_WEBHOOK_SECRET must start with whsec_',
   })
   STRIPE_WEBHOOK_SECRET?: string;
+
+  // ACC-02 (bonus): where the API is reached, for the email verification
+  // link. Default http://localhost:PORT.
+  @IsOptional()
+  @Matches(/^https?:\/\/\S+$/, { message: 'APP_URL must be an http(s) URL' })
+  APP_URL?: string;
+
+  // GEN-01-B: email through SMTP (a test inbox in development). Optional:
+  // without SMTP_HOST, email is off.
+  @IsOptional()
+  @IsString()
+  SMTP_HOST?: string;
+
+  @IsOptional()
+  @Matches(/^\d+$/, { message: 'SMTP_PORT must be a number' })
+  SMTP_PORT?: string;
+
+  @IsOptional()
+  @IsString()
+  SMTP_USER?: string;
+
+  @IsOptional()
+  @IsString()
+  SMTP_PASS?: string;
+
+  // e.g. "Travel Platform <no-reply@example.test>"
+  @IsOptional()
+  @IsString()
+  SMTP_FROM?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {
