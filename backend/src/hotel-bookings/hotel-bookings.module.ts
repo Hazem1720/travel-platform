@@ -26,6 +26,8 @@ import { Review, ReviewSchema } from './schemas/review.schema';
 import { RoomLock, RoomLockSchema } from './schemas/room-lock.schema';
 // Hasan: reviews (HTL-23, HTL-24) and the Completed job (HTL-23).
 import { HotelStayCompletionJob } from './hotel-stay-completion.job';
+import { ReviewRepliesController } from './review-replies.controller';
+import { ReviewRepliesService } from './review-replies.service';
 import { ReviewsController } from './reviews.controller';
 import { ReviewsService } from './reviews.service';
 
@@ -54,6 +56,8 @@ import { ReviewsService } from './reviews.service';
   ],
   controllers: [
     ReviewsController,
+    // HTL-26 (bonus).
+    ReviewRepliesController,
     HotelSearchController,
     HotelRoomsController,
     HotelBookingsController,
@@ -61,6 +65,7 @@ import { ReviewsService } from './reviews.service';
   ],
   providers: [
     ReviewsService,
+    ReviewRepliesService,
     HotelStayCompletionJob,
     HotelAvailabilityService,
     HotelSearchService,
