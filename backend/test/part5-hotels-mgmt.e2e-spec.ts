@@ -217,19 +217,19 @@ describe('Test plan Part 5: hotels & rooms management', () => {
     });
 
     await tc('5.14', async () => {
-      const onBooked = await modX.agent.patch(`/api/hotels/${H}/rooms/${R1}/availability`).send({ block: { from: `${Y}-12-11`, to: `${Y}-12-11` } });
+      const onBooked = await modX.agent.patch(`/api/hotels/${H}/rooms/${R1}/availability`).send({ block: { from: `${Y}-12-11`, to: `${Y}-12-12` } });
       check(onBooked.status === 409, 'blocking a booked night -> 409', onBooked);
       const pend = await stay(V, H, R2id, `${Y}-12-05`, `${Y}-12-06`);
       check(pend.status === 201, 'V holds room 102 for 5 Dec (PendingPayment)', pend);
-      const onPending = await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ block: { from: `${Y}-12-05`, to: `${Y}-12-05` } });
+      const onPending = await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ block: { from: `${Y}-12-05`, to: `${Y}-12-06` } });
       check(onPending.status === 409, 'blocking a night held by a PendingPayment stay -> 409', onPending);
-      const blk = await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ block: { from: `${Y}-12-15`, to: `${Y}-12-16` } });
+      const blk = await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ block: { from: `${Y}-12-15`, to: `${Y}-12-17` } });
       check(blk.status === 200, 'block 15-16 Dec', blk);
       const b = await stay(U, H, R2id, `${Y}-12-15`, `${Y}-12-17`);
       check(refused(b), 'blocked nights cannot be booked', b);
-      const two = await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ block: { from: `${Y}-12-20`, to: `${Y}-12-20` }, unblock: { from: `${Y}-12-15`, to: `${Y}-12-15` } });
+      const two = await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ block: { from: `${Y}-12-20`, to: `${Y}-12-21` }, unblock: { from: `${Y}-12-15`, to: `${Y}-12-16` } });
       check(two.status === 400, 'two actions at once -> 400', two);
-      const un = await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ unblock: { from: `${Y}-12-15`, to: `${Y}-12-16` } });
+      const un = await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ unblock: { from: `${Y}-12-15`, to: `${Y}-12-17` } });
       check(un.status === 200, 'unblock', un);
       const again = await stay(U, H, R2id, `${Y}-12-15`, `${Y}-12-17`);
       check(again.status === 201, 'bookable again after unblocking', again);
@@ -237,7 +237,7 @@ describe('Test plan Part 5: hotels & rooms management', () => {
     });
 
     await tc('5.15', async () => {
-      await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ block: { from: `${Y}-12-25`, to: `${Y}-12-25` } }).expect(200);
+      await modX.agent.patch(`/api/hotels/${H}/rooms/${R2id}/availability`).send({ block: { from: `${Y}-12-25`, to: `${Y}-12-26` } }).expect(200);
       const r = await modX.agent.get(`/api/hotels/${H}/availability`).query({ from: `${Y}-12-09`, to: `${Y}-12-26` });
       check(r.status === 200, 'calendar 200', r);
       const rooms = r.body.data;
@@ -258,12 +258,18 @@ describe('Test plan Part 5: hotels & rooms management', () => {
     });
 
     await tc('5.16', async () => {
-      const r = await t.http().get(`/api/hotels/${H}`);
+      // HTL-02: available rooms only when dates are provided.
+      const r = await t.http().get(`/api/hotels/${H}`).query({ checkIn: `${Y}-12-20`, checkOut: `${Y}-12-22` });
       check(r.status === 200, 'details 200 logged out', r);
       const s = JSON.stringify(r.body);
-      check(s.includes('TEST Nile View') && s.includes('101') && s.includes('14:00'), 'name, rooms, policies', r);
-      check(/rating/i.test(s), 'rating shown', r);
-      check(r.body.images?.length >= 1, 'images', r);
+      check(s.includes('TEST Nile View') && s.includes('pool') && s.includes('14:00') && s.includes('12:00'), 'profile, amenities, check-in/out', r);
+      check(/refundPercent/.test(s), 'cancellation policy', r);
+      check(/rating/i.test(s) && Array.isArray(r.body.reviews), 'average rating and reviews', r);
+      check(r.body.images?.length >= 1, 'photos', r);
+      const rooms = r.body.availableRooms ?? [];
+      check(rooms.some((x: any) => x.name === '101' && x.totalPrice === 30000), 'available rooms with the stay total (2 x 15000)', r);
+      const noDates = await t.http().get(`/api/hotels/${H}`);
+      check(noDates.status === 200, 'details without dates 200', noDates);
     });
 
     await tc('5.17', async () => {
