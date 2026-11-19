@@ -879,3 +879,14 @@ now hafez and emad make the pull req of their work on phase 2 i want u to check 
 How the output was used:
 As team leader I reviewed Emad's comments, likes and moderation PR with Claude and kept his modules, routes and tests. Claude resolved the AI_PROMPTS.txt and app.module.ts conflicts with develop (Hafez's blog), and added what was missing to connect the two: a public GET /posts/:id/comments (visible comments, oldest first, deactivated authors as "Deleted user"), the first page of comments on the post page, and removal of a post's comments and likes when the post is deleted by its author or an admin (with its images). Moderation now closes every open report on an item it hides or deletes and records the resolution, the admin and the time; deleting a review recalculates the hotel's rating; an admin can read hidden content (GET /admin/content/:type/:id). Roles moved from the class to each route so the public list can exist. Tests were added for each change and the whole flow was run over HTTP against a real MongoDB on a temporary CI branch before merging.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-12, GEN-13
+Prompt:
+ok can u do my work that left
+How the output was used:
+Claude checked what was still open on my two cross-cutting requirements. GEN-12: reference data was only loaded by a manual script and currencies were not stored. Now the server seeds countries, cities, airports, attractions and a new currencies collection (one per currency of the official countries, with the countries that use it) every time it starts, idempotently and after validating every row (SEED_REFERENCE_ON_START=false turns it off; npm run seed:reference uses the same service), and public GET /api/reference/countries, /cities?country=, /attractions?city= and /currencies list them. GEN-13: added an application-wide test that walks every controller and fails if any request body or query is not a validated DTO class, checks the global pipe rejects unknown fields (e.g. a self-assigned role), that password and refresh-token hashes are never selected, and scans the code so every place that writes a password writes a bcrypt hash. Tested with unit tests and against a real MongoDB on a temporary CI branch before merging. ACC-10 is M2 only (a frontend redirect) and stays for Milestone 2.
+================================================

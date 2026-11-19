@@ -9,9 +9,15 @@ import {
   CitySchema,
   Country,
   CountrySchema,
+  Currency,
+  CurrencySchema,
 } from './schemas/reference.schemas';
+import { ReferenceSeedService } from './reference-seed.service';
+import { ReferenceController } from './reference.controller';
+import { ReferenceService } from './reference.service';
 
-// Global: any module can inject the Country, City, Airport and Attraction models.
+// Global: any module can inject the Country, City, Airport, Attraction and
+// Currency models. GEN-12: seeds them at start-up and lists them publicly.
 @Global()
 @Module({
   imports: [
@@ -20,8 +26,11 @@ import {
       { name: City.name, schema: CitySchema },
       { name: Airport.name, schema: AirportSchema },
       { name: Attraction.name, schema: AttractionSchema },
+      { name: Currency.name, schema: CurrencySchema },
     ]),
   ],
-  exports: [MongooseModule],
+  controllers: [ReferenceController],
+  providers: [ReferenceService, ReferenceSeedService],
+  exports: [MongooseModule, ReferenceSeedService],
 })
 export class ReferenceModule {}
