@@ -18,18 +18,16 @@ export class HotelBookingsReaderService {
   ) {}
 
   // A Confirmed reservation whose stay is not over: check-in still ahead or
-  // the guest still there (a stay is over once its check-out date has
-  // passed, HTL-23). Dates are compared as YYYY-MM-DD with today's UTC date.
+  // the guest still there. A stay stays Confirmed until its check-out date
+  // has passed in the hotel's city; then HotelStayCompletionJob (HTL-23)
+  // makes it Completed. So the status alone answers, with no UTC date.
   async hasUpcomingConfirmed(
     userId: Types.ObjectId | string,
-    now = new Date(),
   ): Promise<boolean> {
     if (!isValidObjectId(userId)) return false;
-    const today = now.toISOString().slice(0, 10);
     return !!(await this.bookings.exists({
       userId: new Types.ObjectId(String(userId)),
       status: BookingStatus.CONFIRMED,
-      checkOut: { $gte: today },
     }));
   }
 }

@@ -19,9 +19,9 @@ export class MyHotelBookingsQueryDto extends OmitType(PaginationQueryDto, [
     default: ReservationGroup.UPCOMING,
     description:
       'upcoming: Confirmed stays whose check-out date has not passed yet ' +
-      '(soonest check-in first), plus reservations still waiting for ' +
-      'payment. past: stays whose check-out date has passed (most recent ' +
-      'first). cancelled: Cancelled ' +
+      "in the hotel's city (soonest check-in first), plus reservations " +
+      'still waiting for payment. past: Completed stays, whose check-out ' +
+      'date has passed (most recent first). cancelled: Cancelled ' +
       'reservations (most recently cancelled first).',
   })
   @IsOptional()

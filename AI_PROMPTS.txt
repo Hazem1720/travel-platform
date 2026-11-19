@@ -1182,3 +1182,16 @@ now iwant u to make the 3 remaining bonus iissues and test them then merge
 How the output was used:
 Claude added PATCH /api/flight-bookings/:id/change-flight in its own module next to Hasan's FLT-26: the user's Confirmed booking moves to other flights on the same route and cabin with the same passengers, priced like a new booking (an unchanged segment keeps its price). The new seats are held first with FLT-22's atomic hold, so a full flight is a 409 and nothing changes. A lower or equal fare is applied at once and the difference refunded (PAY-03); a higher fare waits 10 minutes for the difference, paid with Stripe as a new payment type "flight-change" (POST /api/payments), and Stripe's webhook applies it; unpaid changes expire and release the seats. Seats chosen with FLT-28 on a changed flight are freed and the user is notified (BOOKING_CHANGED). PaymentsService now links a change payment to its booking and splits a later refund (e.g. FLT-26) over the booking's payments. Unit tests, and an HTTP test against a real MongoDB on a temporary CI branch (Stripe success simulated the way its webhook reports it, since CI has no Stripe key).
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-23, HTL-20, ACC-12
+Prompt:
+what is our status right now
+Yes, open the PR
+(The code change was drafted in an earlier Claude Code session for the follow-up noted in PR #218: "HTL-20's tabs, the HTL-23 Completed job and the ACC-12 hotel check use the UTC date rather than the hotel city's date". That session's exact prompt was not kept.)
+How the output was used:
+Claude changed HotelStayCompletionJob (HTL-23) to decide that a stay is over with the date in the hotel's city (HotelSearchService.today, the same rule as HTL-15 and HTL-21) instead of the UTC date: each minute it only loads Confirmed stays whose check-out date is before the latest date anywhere on Earth (UTC+14), looks up each hotel's city once, and completes the ones whose check-out date has passed there, still conditional on Confirmed so a cancel in between wins. HTL-20's Upcoming and Past tabs and ACC-12's "Confirmed stay ahead" check now follow the status (Confirmed = upcoming, Completed = past) with no UTC date, so a stay in New York or Tokyo no longer sits in the wrong tab for hours around midnight. These are Hasan's files; the PR says so. New unit tests cover a New York and a Tokyo hotel on either side of local midnight and a deleted hotel (UTC fallback). Claude fast-forwarded the branch to the latest develop, then ran build, the read-only eslint check and all 1081 unit tests, which pass.
+================================================

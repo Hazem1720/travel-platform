@@ -12,7 +12,6 @@ import {
   GROUP_SORT,
   groupFilter,
   MyHotelBookingsService,
-  utcToday,
 } from './my-hotel-bookings.service';
 
 // HTL-20: my hotel reservations, grouped as Upcoming, Past and Cancelled.
@@ -27,29 +26,23 @@ describe('My hotel reservations (HTL-20)', () => {
   const NOW = new Date('2026-12-05T09:30:00.000Z');
 
   describe('which tab a reservation belongs in', () => {
-    it("uses today's UTC date in the same YYYY-MM-DD form as the stay dates", () => {
-      expect(utcToday(NOW)).toBe('2026-12-05');
-      // Just before midnight UTC is still the same day.
-      expect(utcToday(new Date('2026-12-05T23:59:59.999Z'))).toBe('2026-12-05');
-    });
-
-    it('upcoming: Confirmed stays not over yet, and holds still payable', () => {
+    // The tabs follow the status, with no UTC date: the Completed job
+    // (HotelStayCompletionJob) turns Confirmed into Completed once the
+    // check-out date has passed in the hotel's city.
+    it('upcoming: Confirmed stays (not Completed yet), and holds still payable', () => {
       expect(groupFilter(ReservationGroup.UPCOMING, userId, NOW)).toEqual({
         userId,
         $or: [
-          { status: BookingStatus.CONFIRMED, checkOut: { $gte: '2026-12-05' } },
+          { status: BookingStatus.CONFIRMED },
           { status: BookingStatus.PENDING_PAYMENT, expiresAt: { $gt: NOW } },
         ],
       });
     });
 
-    it('past: Completed stays, and Confirmed stays whose check-out has passed', () => {
+    it('past: Completed stays', () => {
       expect(groupFilter(ReservationGroup.PAST, userId, NOW)).toEqual({
         userId,
-        $or: [
-          { status: BookingStatus.COMPLETED },
-          { status: BookingStatus.CONFIRMED, checkOut: { $lt: '2026-12-05' } },
-        ],
+        status: BookingStatus.COMPLETED,
       });
     });
 
@@ -64,68 +57,40 @@ describe('My hotel reservations (HTL-20)', () => {
     // in exactly one tab, or in none if it was never paid.
     function tabsOf(r: {
       status: BookingStatus;
-      checkOut: string;
       expiresAt?: Date | null;
     }): ReservationGroup[] {
-      const today = utcToday(NOW);
       const matches = (f: any): boolean =>
         (f.$or ?? [f]).some(
           (c: any) =>
             c.status === r.status &&
-            (!c.checkOut ||
-              (c.checkOut.$gte !== undefined &&
-                r.checkOut >= c.checkOut.$gte) ||
-              (c.checkOut.$lt !== undefined && r.checkOut < c.checkOut.$lt)) &&
             (!c.expiresAt || (r.expiresAt ?? new Date(0)) > c.expiresAt.$gt),
         );
-      expect(today).toBe('2026-12-05');
       return Object.values(ReservationGroup).filter((g) =>
         matches(groupFilter(g, userId, NOW)),
       );
     }
 
     it.each([
-      ['a stay next week', ['upcoming'], BookingStatus.CONFIRMED, '2026-12-12'],
       [
-        'a stay checking out today',
+        'a Confirmed stay, including on its check-out day',
         ['upcoming'],
         BookingStatus.CONFIRMED,
-        '2026-12-05',
       ],
-      [
-        'a stay that ended yesterday, not yet Completed',
-        ['past'],
-        BookingStatus.CONFIRMED,
-        '2026-12-04',
-      ],
-      ['a Completed stay', ['past'], BookingStatus.COMPLETED, '2026-11-20'],
-      [
-        'a Cancelled reservation',
-        ['cancelled'],
-        BookingStatus.CANCELLED,
-        '2026-12-20',
-      ],
-      ['an Expired hold (never paid)', [], BookingStatus.EXPIRED, '2026-12-20'],
-    ] as const)('%s -> %j', (_label, expected, status, checkOut) => {
-      expect(tabsOf({ status, checkOut })).toEqual(expected);
+      ['a Completed stay', ['past'], BookingStatus.COMPLETED],
+      ['a Cancelled reservation', ['cancelled'], BookingStatus.CANCELLED],
+      ['an Expired hold (never paid)', [], BookingStatus.EXPIRED],
+    ] as const)('%s -> %j', (_label, expected, status) => {
+      expect(tabsOf({ status })).toEqual(expected);
     });
 
     it('a hold still waiting for payment is upcoming; a dead one is nowhere', () => {
       const live = new Date(NOW.getTime() + 5 * 60_000);
       const dead = new Date(NOW.getTime() - 60_000);
       expect(
-        tabsOf({
-          status: BookingStatus.PENDING_PAYMENT,
-          checkOut: '2026-12-20',
-          expiresAt: live,
-        }),
+        tabsOf({ status: BookingStatus.PENDING_PAYMENT, expiresAt: live }),
       ).toEqual(['upcoming']);
       expect(
-        tabsOf({
-          status: BookingStatus.PENDING_PAYMENT,
-          checkOut: '2026-12-20',
-          expiresAt: dead,
-        }),
+        tabsOf({ status: BookingStatus.PENDING_PAYMENT, expiresAt: dead }),
       ).toEqual([]);
     });
   });

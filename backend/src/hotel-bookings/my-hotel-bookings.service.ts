@@ -17,44 +17,32 @@ import {
   HotelBookingDocument,
 } from './schemas/hotel-booking.schema';
 
-// Today's date as YYYY-MM-DD in UTC, the format of checkIn and checkOut.
-// UTC rather than each hotel's local date: it only decides which tab a stay
-// appears in, and is at most a few hours off around midnight.
-export function utcToday(now: Date = new Date()): string {
-  return now.toISOString().slice(0, 10);
-}
-
 // Which reservations belong in each tab (HTL-20).
 //
-// A stay is over once its check-out date has passed (HTL-23), so on the
-// check-out day itself it is still upcoming. "Past" also takes Confirmed
-// stays that are over but not yet marked Completed, so a stay never stays
-// "upcoming" after it ended, whether or not the Completed job has run.
+// A stay is over once its check-out date has passed in the hotel's city
+// (HTL-23), so on the check-out day itself it is still upcoming. The
+// Completed job (HotelStayCompletionJob, every minute) makes that call with
+// each hotel's local date, so the tabs follow the status: Confirmed is
+// upcoming, Completed is past. No UTC date here, which would move a stay in
+// New York or Tokyo to the wrong tab for hours around midnight.
 // Expired reservations (a hold that was never paid) appear in no tab.
 export function groupFilter(
   group: ReservationGroup,
   userId: Types.ObjectId,
   now: Date = new Date(),
 ): FilterQuery<HotelBookingDocument> {
-  const today = utcToday(now);
   switch (group) {
     case ReservationGroup.UPCOMING:
       return {
         userId,
         $or: [
-          { status: BookingStatus.CONFIRMED, checkOut: { $gte: today } },
+          { status: BookingStatus.CONFIRMED },
           // A hold still waiting for payment, so the user can find it again.
           { status: BookingStatus.PENDING_PAYMENT, expiresAt: { $gt: now } },
         ],
       };
     case ReservationGroup.PAST:
-      return {
-        userId,
-        $or: [
-          { status: BookingStatus.COMPLETED },
-          { status: BookingStatus.CONFIRMED, checkOut: { $lt: today } },
-        ],
-      };
+      return { userId, status: BookingStatus.COMPLETED };
     case ReservationGroup.CANCELLED:
       return { userId, status: BookingStatus.CANCELLED };
   }
