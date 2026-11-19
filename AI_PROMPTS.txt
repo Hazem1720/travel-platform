@@ -1124,6 +1124,17 @@ Claude read my chapter of the team plan and built my four open phase 2 items in 
 Date: 2026-11-19
 Student: Hazem Ahmed
 Tool: Claude Code
+Related Requirement: HTL-26 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+now iwant u to make the 3 remaining bonus iissues and test them then merge
+How the output was used:
+Claude added POST /api/reviews/:id/reply in its own files next to Hasan's reviews (HTL-23): the hotel moderator of the reviewed hotel replies once (another hotel's moderator 403, a second reply 409 through one conditional update, unknown review 404); the reviewer gets an in-app notification (new type REVIEW_REPLIED, also emailed by GEN-01-B); the reply shows on GET /api/hotels/:id/reviews. Unit tests and an HTTP test against a real MongoDB on a temporary CI branch.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
 Related Requirement: BON-01 (bonus, Memo's item, built at my request as team leader)
 Prompt:
 now iwant u to make the 3 remaining bonus iissues and test them then merge
