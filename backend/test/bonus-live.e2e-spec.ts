@@ -343,7 +343,7 @@ withDatabase('Hasan + Rawda + bonus live check', () => {
       await u
         .post(`/api/flight-bookings/${b1._id}/cancel`)
         .send({ refundAmount: 65000 })
-        .expect(201)
+        .expect(200)
     ).body;
     expect(cancelled.status).toBe('Cancelled');
     expect(cancelled.refund.amount).toBe(65000);
