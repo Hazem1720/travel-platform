@@ -22,6 +22,7 @@ import { FavouritesModule } from './favourites/favourites.module';
 import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelReservationsModule } from './hotel-bookings/hotel-reservations.module';
+import { HotelCancellationModule } from './hotel-bookings/hotel-cancellation.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { FlightCancellationModule } from './flight-bookings/flight-cancellation.module';
 import { ItinerariesModule } from './itineraries/itineraries.module';
@@ -61,6 +62,8 @@ import { UploadsModule } from './uploads/uploads.module';
     HotelsModule,
     // HTL-22: GET /hotels/:id/reservations.
     HotelReservationsModule,
+    // HTL-21: GET /hotel-bookings/:id/cancellation and POST .../cancel.
+    HotelCancellationModule,
     PaymentsModule,
     // FLT-06: POST /flights/:id/cancel.
     FlightCancellationModule,
