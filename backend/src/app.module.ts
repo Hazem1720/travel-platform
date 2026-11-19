@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AdminAccountsModule } from './admin/admin-accounts.module';
 import { AdminModule } from './admin/admin.module';
+import { AdminBookingsModule } from './admin/admin-bookings.module';
 import { AirlinesModule } from './airlines/airlines.module';
 import { AirportsModule } from './airports/airports.module';
 import { AuditModule } from './audit/audit.module';
@@ -75,6 +76,8 @@ import { UploadsModule } from './uploads/uploads.module';
     BlogModule,
     AdminAccountsModule,
     AdminModule,
+    // ACC-17: GET /admin/bookings.
+    AdminBookingsModule,
     CommentsModule,
     ReportsModule,
   ],
