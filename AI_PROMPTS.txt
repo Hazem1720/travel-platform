@@ -901,3 +901,14 @@ TN-26 flight search from an itinerary can u do this and test it then merge it
 How the output was used:
 Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-25
+Prompt:
+Yes, start FLT-25
+How the output was used:
+Claude built FLT-25 the same way as my HTL-20, on Mostafa's FlightBooking schema: my own MyFlightBookingsController and MyFlightBookingsService under the /flight-bookings prefix, GET /api/flight-bookings?group=upcoming|past|cancelled, 10 per page. Upcoming = Confirmed bookings with a flight that has not landed yet (so a round trip half flown and a flight in the air count) plus holds still waiting for payment, soonest departure first; Past = Completed bookings and Confirmed bookings whose flights have all landed (the same rule as the flight Completed job, so nothing waits for the job), most recent first; Cancelled = most recently cancelled first; Expired holds appear in no tab. Each row shows the reference, each flight (number, route, departure and arrival in UTC, cabin), the passengers' names and types, total and status; passport numbers and birth dates stay on Mostafa's GET /flight-bookings/:id. 11 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with 10 bookings in every situation: each tab right, a just-landed Confirmed booking already in Past, no passport data in the list, the other user's booking never shown, the details page still 200 for the owner and 404 for another user, 401 without a session, 400 for an unknown group or a sort parameter. Build, lint and all 886 unit tests pass.
+================================================
