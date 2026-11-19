@@ -36,10 +36,10 @@ Lives in `backend/test/e2e/`.
 - A **single node is enough.** The code uses no Mongo transactions: `startSession` in `auth.service.ts:121` is the login cookie session, not `ClientSession`. A replica set only adds start-up time. The suite would fail loudly if that changed.
 - **URI guard** in `setup-e2e-env.ts`. It throws when:
   - there is no URI;
-  - the URI's host and database match `MONGODB_URI` in `backend/.env`, the shared database (checked first, and refused even with `E2E_ALLOW_ATLAS=1`);
+  - the URI reaches any host of the `backend/.env` cluster (`MONGODB_URI`), whatever the database name: any host:port in common (`localhost` and `127.0.0.1` count as one), or, on Atlas, the same cluster domain (`abc12.mongodb.net`), which also links its `mongodb+srv` and standard forms. Checked first, and refused even with `E2E_ALLOW_ATLAS=1`;
   - any host in the URI is not `127.0.0.1` or `localhost` (an allow-list), unless `E2E_ALLOW_ATLAS=1` is set. This covers every form: `mongodb+srv://`, a standard `mongodb://` Atlas address with several hosts, an IP, another hostname.
 
-  So no test reaches another machine unless `E2E_ALLOW_ATLAS=1` is set on purpose, and none ever reaches the shared database. (With the flag, another database on the same cluster is allowed; that is the throwaway Atlas check in section 4.)
+  So no test reaches another machine unless `E2E_ALLOW_ATLAS=1` is set on purpose, and none ever reaches the shared cluster. The flag is only for a separate throwaway cluster (the Atlas check in section 4).
 - `createTestApp(suite)` gives each suite its own database named `e2e-<suite>-<uuid>`. `close()` drops only that database, and refuses any name without the `e2e-` prefix.
 - **Indexes:** after `app.init()`, wait for `conn.model(n).init()` on every model before the first test. A self-test then checks with `listIndexes` that the unique `{roomId, date}` index (`room-lock.schema.ts:59`) and the unique seat-assignment indexes (`seat-assignment.schema.ts:39-46`) exist. Seat counts on a flight have no index; they rely on conditional updates.
 
@@ -192,7 +192,7 @@ Before each milestone, someone checks once by hand with `stripe listen --forward
   - `expect-expect` (every test asserts something);
   - `no-standalone-expect`;
   - `no-restricted-properties` bans `expect.anything` and `no-restricted-syntax` bans `expect.any(Object)`, everywhere in `test/` (a lint rule cannot target only status and body). CI runs this lint read-only.
-- **Atlas check:** before each milestone, one full run with `E2E_ALLOW_ATLAS=1` against a **separate throwaway** Atlas database. The result goes on the tracking issue.
+- **Atlas check:** before each milestone, one full run with `E2E_ALLOW_ATLAS=1` against a **separate throwaway Atlas cluster** (the guard refuses the `backend/.env` cluster). The result goes on the tracking issue.
 
 ## 5. Delivery and review
 - **Order:**

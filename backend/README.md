@@ -55,7 +55,7 @@ The plan is in [`test/E2E_PLAN.md`](test/E2E_PLAN.md). The tests boot the real `
 
 An exclusion that is no longer needed also fails, so remove the IDs and routes your tests cover.
 
-To use another database instead, set `E2E_MONGODB_URI` in the shell (not in `.env`). Without a flag the tests accept only `127.0.0.1` and `localhost`. Any other host (Atlas in either form, another machine) also needs `E2E_ALLOW_ATLAS=1`, for a separate throwaway database. The shared database from `backend/.env` is refused even with the flag:
+To use another database instead, set `E2E_MONGODB_URI` in the shell (not in `.env`). Without a flag the tests accept only `127.0.0.1` and `localhost`. Any other host (Atlas in either form, another machine) also needs `E2E_ALLOW_ATLAS=1`, and only for a separate throwaway cluster: every host of the `backend/.env` cluster is refused, whatever the database name, even with the flag:
 
 ```bash
 E2E_MONGODB_URI=mongodb://127.0.0.1:27017/travel_platform_e2e npm run test:e2e:full

@@ -104,9 +104,9 @@ describe('e2e harness', () => {
         expect(() => assertSafeTestUri(ok, noFlag)).not.toThrow();
       }
       for (const remote of [
-        // A *.mongodb.net cluster with a different database name than .env.
-        sameClusterOtherDb,
-        'mongodb+srv://u:p@throwaway.example.mongodb.net/e2e',
+        // A separate Atlas cluster, in both forms.
+        'mongodb+srv://u:p@throwaway.zz999.mongodb.net/e2e',
+        'mongodb://ac-t-00-00.zz999.mongodb.net:27017/e2e?ssl=true',
         'mongodb://10.0.0.5:27017/e2e',
         'mongodb://db.internal:27017/e2e',
         'mongodb://[::1]:27017/e2e',
@@ -121,31 +121,58 @@ describe('e2e harness', () => {
       }
     });
 
-    it('with E2E_ALLOW_ATLAS=1, accepts another database elsewhere', () => {
-      expect(() =>
-        assertSafeTestUri(
-          'mongodb+srv://u:p@throwaway.example.mongodb.net/e2e',
-          withFlag,
-        ),
-      ).not.toThrow();
-      expect(() =>
-        assertSafeTestUri(sameClusterOtherDb, withFlag),
-      ).not.toThrow();
+    it('with E2E_ALLOW_ATLAS=1, accepts a separate throwaway cluster', () => {
+      for (const separate of [
+        'mongodb+srv://u:p@throwaway.zz999.mongodb.net/e2e',
+        'mongodb://ac-t-00-00.zz999.mongodb.net:27017/e2e?ssl=true',
+        'mongodb://10.0.0.5:27017/e2e',
+      ]) {
+        expect(() => assertSafeTestUri(separate, withFlag)).not.toThrow();
+      }
     });
 
-    it('refuses the shared database from backend/.env, with or without E2E_ALLOW_ATLAS=1', () => {
+    it('refuses every host of the backend/.env cluster, whatever the database, even with E2E_ALLOW_ATLAS=1', () => {
       for (const uri of [
+        // The .env database itself.
         shared,
-        // Other credentials, options, host order and case: same database.
+        // Another database name on the same cluster.
+        sameClusterOtherDb,
+        // No database name at all.
+        shared.replace('/travel?', '/?'),
+        // Other credentials, options, host order and case.
         'mongodb://someone:else@AC-SHARD-00-02.abc12.mongodb.net:27017,' +
           'ac-shard-00-00.abc12.mongodb.net:27017,' +
-          'ac-shard-00-01.abc12.mongodb.net:27017/travel?retryWrites=true',
+          'ac-shard-00-01.abc12.mongodb.net:27017/other?retryWrites=true',
+        // Just one of its hosts, with the default port written out or left out.
+        'mongodb://ac-shard-00-01.abc12.mongodb.net:27017/e2e',
+        'mongodb://ac-shard-00-01.abc12.mongodb.net/e2e',
+        // The mongodb+srv form of the same cluster (same Atlas domain).
+        'mongodb+srv://u:p@cluster0.abc12.mongodb.net/e2e',
       ]) {
         for (const options of [noFlag, withFlag]) {
           expect(() => assertSafeTestUri(uri, options)).toThrow(
-            'this is the shared database',
+            'this is the shared cluster from backend/.env',
           );
         }
+      }
+    });
+
+    it('matches the .env cluster by host and port, so a local .env never blocks the in-memory server', () => {
+      const localShared = 'mongodb://localhost:27017/travel';
+      expect(() =>
+        assertSafeTestUri('mongodb://127.0.0.1:61234/e2e', {
+          allowAtlas: false,
+          sharedUri: localShared,
+        }),
+      ).not.toThrow();
+      for (const uri of [
+        'mongodb://localhost:27017/e2e',
+        'mongodb://localhost/other',
+        'mongodb://127.0.0.1:27017/e2e',
+      ]) {
+        expect(() =>
+          assertSafeTestUri(uri, { allowAtlas: true, sharedUri: localShared }),
+        ).toThrow('this is the shared cluster from backend/.env');
       }
     });
 

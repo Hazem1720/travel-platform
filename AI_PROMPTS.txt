@@ -1268,3 +1268,13 @@ Push 1 and 2 as new commits on the same PR, then stop again.
 How the output was used:
 Claude made the URI guard an allow-list (127.0.0.1 and localhost; anything else needs E2E_ALLOW_ATLAS=1; the backend/.env database is checked first and refused even with the flag) and showed it refusing a standard-form *.mongodb.net URI with another database name. It narrowed the leak-scan skip to the exact validation body of validation.pipe.ts:33-38 and the filter's Mongoose branch (top level, 400, "Bad Request", "Validation failed", details a plain object of string lists; only the keys directly under details), and added self-tests: nine other details shapes still report passwordHash, and a recorder -> hit file -> gate run on a small Express app fails on three of them. Two commits, each tested on its own. It also listed every original assertion of the two moved e2e files next to its new line.
 ================================================
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: Backend e2e harness (PR #234 review change)
+Prompt:
+Approved, with one change: refuse every host of the backend/.env cluster, whatever the database name and even with E2E_ALLOW_ATLAS=1. The flag is only for a separate throwaway cluster. Push it as a new commit on #234, update the plan line and README to match, show me the refusal, then stop.
+How the output was used:
+Claude replaced the guard's same-database check with a same-cluster check (sameCluster in test/e2e/uri-guard.ts): a URI is refused, with or without the flag, if any host:port matches a host of the .env URI (default port 27017; localhost and 127.0.0.1 count as one), or if both are on Atlas under the same cluster domain, which also links the mongodb+srv and standard forms. It matched by host and port rather than hostname so that a teammate whose .env points at a local mongod is not blocked from the in-memory server. Self-tests cover the .env database, another database, no database, other credentials and host order, a single host, the srv form, and a local .env. Plan line and README updated; the refusal shown through npm run test:e2e:full.
+================================================

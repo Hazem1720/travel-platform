@@ -6,10 +6,10 @@ import { join } from 'path';
 // and by setup-e2e-env.ts in every test worker.
 
 export interface UriGuardOptions {
-  // E2E_ALLOW_ATLAS=1: a database on another machine (for example a
-  // throwaway Atlas database) was chosen on purpose.
+  // E2E_ALLOW_ATLAS=1: a separate, throwaway cluster (for example on Atlas)
+  // was chosen on purpose. Never the backend/.env cluster.
   allowAtlas: boolean;
-  // MONGODB_URI from backend/.env (the shared database), if there is one.
+  // MONGODB_URI from backend/.env (the shared cluster), if there is one.
   sharedUri: string | null;
 }
 
@@ -21,8 +21,8 @@ export const LOCAL_HOSTS: readonly string[] = ['127.0.0.1', 'localhost'];
 
 // Throws if `uri` may not be used, in this order:
 //   1. missing or not a MongoDB URI;
-//   2. the backend/.env database (same hosts and database name): refused
-//      always, even with E2E_ALLOW_ATLAS=1;
+//   2. any host of the backend/.env cluster, whatever the database name:
+//      refused always, even with E2E_ALLOW_ATLAS=1 (see sameCluster);
 //   3. any host not in LOCAL_HOSTS, unless E2E_ALLOW_ATLAS=1.
 // The message never contains the URI, because it can hold a password.
 export function assertSafeTestUri(
@@ -39,17 +39,18 @@ export function assertSafeTestUri(
   if (!target) {
     throw new Error('E2E URI guard: not a mongodb:// or mongodb+srv:// URI');
   }
-  if (sharedUri && sameDatabase(uri, sharedUri)) {
+  if (sharedUri && sameCluster(uri, sharedUri)) {
     throw new Error(
-      'E2E URI guard: this is the shared database from backend/.env ' +
-        '(MONGODB_URI). Tests never run against it, even with E2E_ALLOW_ATLAS=1.',
+      'E2E URI guard: this is the shared cluster from backend/.env ' +
+        '(MONGODB_URI), whatever the database name. Tests never run on it, ' +
+        'even with E2E_ALLOW_ATLAS=1, which is only for a separate throwaway cluster.',
     );
   }
   if (!allowAtlas && !isLocal(target)) {
     throw new Error(
       `E2E URI guard: refusing a database that is not on ${LOCAL_HOSTS.join(' or ')}. ` +
         'For a separate, throwaway database elsewhere (for example on Atlas), ' +
-        'set E2E_ALLOW_ATLAS=1.',
+        'set E2E_ALLOW_ATLAS=1 (never the backend/.env cluster).',
     );
   }
 }
@@ -70,19 +71,56 @@ function hostname(hostAndPort: string): string {
     : hostAndPort.replace(/:\d+$/, '');
 }
 
-// Same host(s) and same database name. A URI without a database name uses
+// "host" and "host:27017" are the same server (27017 is the default port),
+// and so are "localhost" and "127.0.0.1".
+function hostKey(hostAndPort: string): string {
+  const name = hostname(hostAndPort);
+  const port = hostAndPort.slice(name.length).replace(/^:/, '') || '27017';
+  return `${name === 'localhost' ? '127.0.0.1' : name}:${port}`;
+}
+
+// Atlas names every host of a cluster under one domain, for example
+// cluster0.abc12.mongodb.net (mongodb+srv) and
+// ac-x-shard-00-00.abc12.mongodb.net (standard form). The last three labels
+// ("abc12.mongodb.net") link the two forms; null for any other host.
+function atlasDomain(hostAndPort: string): string | null {
+  const name = hostname(hostAndPort);
+  if (!/\.mongodb\.net$/.test(name)) return null;
+  return name.split('.').slice(-3).join('.');
+}
+
+// True if `a` reaches any server of the cluster in `b`, whatever the
+// database name, credentials or options:
+//   - any host:port of one is a host:port of the other; or
+//   - both are on Atlas under the same domain, which also catches the
+//     mongodb+srv and standard forms of the same cluster.
+export function sameCluster(a: string, b: string): boolean {
+  const pa = parseUri(a);
+  const pb = parseUri(b);
+  if (!pa || !pb) return false;
+  const keysB = new Set(pb.hostList.map(hostKey));
+  if (pa.hostList.some((h) => keysB.has(hostKey(h)))) return true;
+  const domainsB = new Set(
+    pb.hostList.map(atlasDomain).filter((d): d is string => !!d),
+  );
+  return pa.hostList.some((h) => {
+    const d = atlasDomain(h);
+    return !!d && domainsB.has(d);
+  });
+}
+
+// Same cluster and same database name. A URI without a database name uses
 // "test", as the MongoDB driver does.
 export function sameDatabase(a: string, b: string): boolean {
   const pa = parseUri(a);
   const pb = parseUri(b);
-  return !!pa && !!pb && pa.hosts === pb.hosts && pa.db === pb.db;
+  return !!pa && !!pb && sameCluster(a, b) && pa.db === pb.db;
 }
 
 interface ParsedUri {
   srv: boolean;
+  // Lower-cased "host" or "host:port" entries.
   hostList: string[];
-  // Sorted and lower-cased, for comparing two URIs.
-  hosts: string;
   db: string;
 }
 
@@ -96,7 +134,6 @@ function parseUri(uri: string): ParsedUri | null {
   return {
     srv: !!m[1],
     hostList,
-    hosts: [...hostList].sort().join(','),
     db: decodeURIComponent(m[3] || '') || 'test',
   };
 }
