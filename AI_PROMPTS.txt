@@ -834,3 +834,14 @@ merge (PR #190) ... Yes, open it (a tracker PR marking PAY-03 Done)
 How the output was used:
 After #190 was merged and issue #75 closed, Claude set PAY-03 to Done in requirements-tracker.csv and .xlsx (Tracker sheet, my sheet, Summary) with the same checked script as before: only the Status cell changed, the CSV and the Tracker sheet match row for row, the other parts of the xlsx are unchanged, and the Summary recount changed only my row (12 of 12 mandatory done) and the Total.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: BON-02
+Prompt:
+can i work on some of the bonus right now without waiting for the rest of the work especially hasans as he didnt start at all ... Start BON-02
+How the output was used:
+Claude checked the team plan (my bonus items may start once my own mandatory work is merged, which it is) and the project description (mandatory requirements come first; bonus never replaces them), listed which of my bonus items do not depend on Hasan or Hafez, and suggested BON-02 as the smallest while I talk to Hasan about his mandatory items. It built a new src/favourites module as my chapter suggests: POST /api/favourites saves an active hotel or a public itinerary (Moharm's findPublic decides what is public), GET /api/favourites lists them with the shared pagination (an entry that is no longer available stays listed without details), DELETE /api/favourites/:id removes my own. Unit tests cover the plan's checks. Live check with TEST hotels, itineraries and users (deleted afterwards): hotel and public itinerary saved and listed; private itinerary 404; same hotel twice 409; inactive hotel 404; bad type, sort or page size 400; itinerary made private shows available:false without details; another user's delete 404; 401 without a session. Build, 784 unit tests and the read-only eslint check pass.
+================================================
