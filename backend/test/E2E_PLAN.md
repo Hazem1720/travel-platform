@@ -36,10 +36,10 @@ Lives in `backend/test/e2e/`.
 - A **single node is enough.** The code uses no Mongo transactions: `startSession` in `auth.service.ts:121` is the login cookie session, not `ClientSession`. A replica set only adds start-up time. The suite would fail loudly if that changed.
 - **URI guard** in `setup-e2e-env.ts`. It throws when:
   - there is no URI;
-  - the URI is a `mongodb+srv` (Atlas) address and `E2E_ALLOW_ATLAS=1` is not set;
-  - the URI's host and database match `MONGODB_URI` in `backend/.env`, the shared database.
+  - the URI's host and database match `MONGODB_URI` in `backend/.env`, the shared database (checked first, and refused even with `E2E_ALLOW_ATLAS=1`);
+  - any host in the URI is not `127.0.0.1` or `localhost` (an allow-list), unless `E2E_ALLOW_ATLAS=1` is set. This covers every form: `mongodb+srv://`, a standard `mongodb://` Atlas address with several hosts, an IP, another hostname.
 
-  So no write can reach the shared cluster by mistake.
+  So no test reaches another machine unless `E2E_ALLOW_ATLAS=1` is set on purpose, and none ever reaches the shared database. (With the flag, another database on the same cluster is allowed; that is the throwaway Atlas check in section 4.)
 - `createTestApp(suite)` gives each suite its own database named `e2e-<suite>-<uuid>`. `close()` drops only that database, and refuses any name without the `e2e-` prefix.
 - **Indexes:** after `app.init()`, wait for `conn.model(n).init()` on every model before the first test. A self-test then checks with `listIndexes` that the unique `{roomId, date}` index (`room-lock.schema.ts:59`) and the unique seat-assignment indexes (`seat-assignment.schema.ts:39-46`) exist. Seat counts on a flight have no index; they rely on conditional updates.
 

@@ -6,14 +6,25 @@ import { join } from 'path';
 // and by setup-e2e-env.ts in every test worker.
 
 export interface UriGuardOptions {
-  // E2E_ALLOW_ATLAS=1: a throwaway Atlas database was chosen on purpose.
+  // E2E_ALLOW_ATLAS=1: a database on another machine (for example a
+  // throwaway Atlas database) was chosen on purpose.
   allowAtlas: boolean;
   // MONGODB_URI from backend/.env (the shared database), if there is one.
   sharedUri: string | null;
 }
 
-// Throws if `uri` may not be used. The message never contains the URI,
-// because it can hold a password.
+// An allow-list: without E2E_ALLOW_ATLAS=1, every host in the URI must be
+// one of these (the in-memory MongoDB listens on 127.0.0.1). Anything else,
+// in any form (mongodb+srv://, mongodb://host1,host2,..., an IP), needs the
+// flag.
+export const LOCAL_HOSTS: readonly string[] = ['127.0.0.1', 'localhost'];
+
+// Throws if `uri` may not be used, in this order:
+//   1. missing or not a MongoDB URI;
+//   2. the backend/.env database (same hosts and database name): refused
+//      always, even with E2E_ALLOW_ATLAS=1;
+//   3. any host not in LOCAL_HOSTS, unless E2E_ALLOW_ATLAS=1.
+// The message never contains the URI, because it can hold a password.
 export function assertSafeTestUri(
   uri: string | undefined,
   { allowAtlas, sharedUri }: UriGuardOptions,
@@ -24,38 +35,70 @@ export function assertSafeTestUri(
         'test:e2e:full (they start an in-memory MongoDB), or set E2E_MONGODB_URI.',
     );
   }
-  if (!/^mongodb(\+srv)?:\/\//.test(uri)) {
-    throw new Error('E2E URI guard: the URI must start with mongodb://');
-  }
-  if (uri.startsWith('mongodb+srv://') && !allowAtlas) {
-    throw new Error(
-      'E2E URI guard: refusing a mongodb+srv (Atlas) URI. Use a separate, ' +
-        'throwaway Atlas database and set E2E_ALLOW_ATLAS=1 to allow it.',
-    );
+  const target = parseUri(uri);
+  if (!target) {
+    throw new Error('E2E URI guard: not a mongodb:// or mongodb+srv:// URI');
   }
   if (sharedUri && sameDatabase(uri, sharedUri)) {
     throw new Error(
       'E2E URI guard: this is the shared database from backend/.env ' +
-        '(MONGODB_URI). Tests never run against it.',
+        '(MONGODB_URI). Tests never run against it, even with E2E_ALLOW_ATLAS=1.',
     );
   }
+  if (!allowAtlas && !isLocal(target)) {
+    throw new Error(
+      `E2E URI guard: refusing a database that is not on ${LOCAL_HOSTS.join(' or ')}. ` +
+        'For a separate, throwaway database elsewhere (for example on Atlas), ' +
+        'set E2E_ALLOW_ATLAS=1.',
+    );
+  }
+}
+
+// True if every host is in LOCAL_HOSTS. A mongodb+srv:// name is a DNS
+// record for other hosts, so it is never local.
+function isLocal(target: ParsedUri): boolean {
+  return (
+    !target.srv &&
+    target.hostList.every((h) => LOCAL_HOSTS.includes(hostname(h)))
+  );
+}
+
+// "127.0.0.1:27017" -> "127.0.0.1"; "[::1]:27017" -> "[::1]".
+function hostname(hostAndPort: string): string {
+  return hostAndPort.startsWith('[')
+    ? hostAndPort.slice(0, hostAndPort.indexOf(']') + 1)
+    : hostAndPort.replace(/:\d+$/, '');
 }
 
 // Same host(s) and same database name. A URI without a database name uses
 // "test", as the MongoDB driver does.
 export function sameDatabase(a: string, b: string): boolean {
-  const pa = parse(a);
-  const pb = parse(b);
+  const pa = parseUri(a);
+  const pb = parseUri(b);
   return !!pa && !!pb && pa.hosts === pb.hosts && pa.db === pb.db;
 }
 
-function parse(uri: string): { hosts: string; db: string } | null {
-  const m = /^mongodb(?:\+srv)?:\/\/(?:[^@/]*@)?([^/?]+)(?:\/([^?]*))?/.exec(
+interface ParsedUri {
+  srv: boolean;
+  hostList: string[];
+  // Sorted and lower-cased, for comparing two URIs.
+  hosts: string;
+  db: string;
+}
+
+function parseUri(uri: string): ParsedUri | null {
+  const m = /^mongodb(\+srv)?:\/\/(?:[^@/]*@)?([^/?]+)(?:\/([^?]*))?/.exec(
     uri.trim(),
   );
   if (!m) return null;
-  const hosts = m[1].toLowerCase().split(',').sort().join(',');
-  return { hosts, db: decodeURIComponent(m[2] || '') || 'test' };
+  const hostList = m[2].toLowerCase().split(',').filter(Boolean);
+  if (!hostList.length) return null;
+  return {
+    srv: !!m[1],
+    hostList,
+    hosts: [...hostList].sort().join(','),
+    db: decodeURIComponent(m[3] || '') || 'test',
+  };
 }
 
 // MONGODB_URI from backend/.env, read directly so that a test never needs

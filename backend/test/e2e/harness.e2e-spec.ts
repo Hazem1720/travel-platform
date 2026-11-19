@@ -79,63 +79,103 @@ describe('e2e harness', () => {
   });
 
   describe('URI guard', () => {
+    // The shared database in the standard (non-srv) Atlas form, like the one
+    // in backend/.env: three hosts on mongodb.net.
     const shared =
-      'mongodb+srv://team:secret@cluster0.example.mongodb.net/travel';
+      'mongodb://team:secret@ac-shard-00-00.abc12.mongodb.net:27017,' +
+      'ac-shard-00-01.abc12.mongodb.net:27017,' +
+      'ac-shard-00-02.abc12.mongodb.net:27017/travel?ssl=true&authSource=admin';
+    const sameClusterOtherDb = shared.replace('/travel?', '/e2e_other?');
+    const refusedRemote = 'refusing a database that is not on';
+    const noFlag = { allowAtlas: false, sharedUri: shared };
+    const withFlag = { allowAtlas: true, sharedUri: shared };
 
-    it('refuses a mongodb+srv (Atlas) URI unless E2E_ALLOW_ATLAS=1', () => {
+    it('accepts only 127.0.0.1 and localhost without E2E_ALLOW_ATLAS=1', () => {
+      for (const ok of [
+        'mongodb://127.0.0.1:27017/e2e',
+        'mongodb://localhost:27017/e2e',
+        'mongodb://LOCALHOST/e2e',
+        'mongodb://127.0.0.1:27017,localhost:27018/e2e?replicaSet=rs0',
+      ]) {
+        expect(() => assertSafeTestUri(ok, noFlag)).not.toThrow();
+      }
+      for (const remote of [
+        // A *.mongodb.net cluster with a different database name than .env.
+        sameClusterOtherDb,
+        'mongodb+srv://u:p@throwaway.example.mongodb.net/e2e',
+        'mongodb://10.0.0.5:27017/e2e',
+        'mongodb://db.internal:27017/e2e',
+        'mongodb://[::1]:27017/e2e',
+        // One local host is not enough: every host must be local.
+        'mongodb://127.0.0.1:27017,db.internal:27017/e2e',
+        // "localhost" inside another name is not localhost.
+        'mongodb://localhost.attacker.example:27017/e2e',
+        // A mongodb+srv name is never local, even if it says localhost.
+        'mongodb+srv://localhost/e2e',
+      ]) {
+        expect(() => assertSafeTestUri(remote, noFlag)).toThrow(refusedRemote);
+      }
+    });
+
+    it('with E2E_ALLOW_ATLAS=1, accepts another database elsewhere', () => {
       expect(() =>
         assertSafeTestUri(
           'mongodb+srv://u:p@throwaway.example.mongodb.net/e2e',
-          {
-            allowAtlas: false,
-            sharedUri: null,
-          },
+          withFlag,
         ),
-      ).toThrow('refusing a mongodb+srv (Atlas) URI');
+      ).not.toThrow();
       expect(() =>
-        assertSafeTestUri(
-          'mongodb+srv://u:p@throwaway.example.mongodb.net/e2e',
-          {
-            allowAtlas: true,
-            sharedUri: shared,
-          },
-        ),
+        assertSafeTestUri(sameClusterOtherDb, withFlag),
       ).not.toThrow();
     });
 
-    it('refuses the shared database from backend/.env, even with E2E_ALLOW_ATLAS=1', () => {
+    it('refuses the shared database from backend/.env, with or without E2E_ALLOW_ATLAS=1', () => {
       for (const uri of [
         shared,
-        // Other credentials and options, same cluster and database.
-        'mongodb+srv://someone:else@CLUSTER0.example.mongodb.net/travel?retryWrites=true',
+        // Other credentials, options, host order and case: same database.
+        'mongodb://someone:else@AC-SHARD-00-02.abc12.mongodb.net:27017,' +
+          'ac-shard-00-00.abc12.mongodb.net:27017,' +
+          'ac-shard-00-01.abc12.mongodb.net:27017/travel?retryWrites=true',
       ]) {
-        expect(() =>
-          assertSafeTestUri(uri, { allowAtlas: true, sharedUri: shared }),
-        ).toThrow('this is the shared database');
+        for (const options of [noFlag, withFlag]) {
+          expect(() => assertSafeTestUri(uri, options)).toThrow(
+            'this is the shared database',
+          );
+        }
       }
     });
 
-    it('refuses a missing URI and never prints the URI it refuses', () => {
-      expect(() =>
-        assertSafeTestUri(undefined, { allowAtlas: false, sharedUri: null }),
-      ).toThrow('no test database URI');
-      let message = '';
-      try {
-        assertSafeTestUri(shared, { allowAtlas: true, sharedUri: shared });
-      } catch (err) {
-        message = (err as Error).message;
+    it('refuses a missing or malformed URI and never prints the URI it refuses', () => {
+      expect(() => assertSafeTestUri(undefined, noFlag)).toThrow(
+        'no test database URI',
+      );
+      expect(() => assertSafeTestUri('postgres://x/y', noFlag)).toThrow(
+        'not a mongodb:// or mongodb+srv:// URI',
+      );
+      const messages: string[] = [];
+      for (const [uri, options] of [
+        [shared, withFlag],
+        [sameClusterOtherDb, noFlag],
+      ] as const) {
+        try {
+          assertSafeTestUri(uri, options);
+        } catch (err) {
+          messages.push((err as Error).message);
+        }
       }
-      expect(message).not.toContain('secret');
-      expect(message).not.toContain('cluster0');
+      expect(messages).toHaveLength(2);
+      for (const m of messages) {
+        expect(m).not.toContain('secret');
+        expect(m).not.toContain('abc12');
+      }
     });
 
     it('accepts the in-memory database this run uses', () => {
-      expect(process.env.E2E_MONGODB_URI).toMatch(/^mongodb:\/\//);
+      expect(process.env.E2E_MONGODB_URI).toMatch(
+        /^mongodb:\/\/127\.0\.0\.1:\d+\//,
+      );
       expect(() =>
-        assertSafeTestUri(process.env.E2E_MONGODB_URI, {
-          allowAtlas: false,
-          sharedUri: shared,
-        }),
+        assertSafeTestUri(process.env.E2E_MONGODB_URI, noFlag),
       ).not.toThrow();
     });
   });
