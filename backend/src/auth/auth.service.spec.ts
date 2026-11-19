@@ -1,10 +1,17 @@
-import { HttpException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  HttpException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import type { Request, Response } from 'express';
 import { AccountStatus, Role } from '../common/enums/role.enum';
-import { AuthService } from './auth.service';
+import {
+  AuthService,
+  UPCOMING_BOOKINGS_BLOCK_DEACTIVATION,
+} from './auth.service';
 
 const SECRET = 'unit-test-secret-unit-test-secret-1234';
 
@@ -55,8 +62,17 @@ function makeService(env: Record<string, string> = {}) {
     signOptions: { expiresIn: '15m' },
   });
   const config = { get: (key: string) => env[key] } as unknown as ConfigService;
-  const service = new AuthService(userModel as any, jwt, config);
-  return { service, userModel, jwt };
+  // ACC-12: no upcoming bookings unless a test says otherwise.
+  const flightBookings = { hasUpcomingConfirmed: jest.fn(async () => false) };
+  const hotelBookings = { hasUpcomingConfirmed: jest.fn(async () => false) };
+  const service = new AuthService(
+    userModel as any,
+    jwt,
+    config,
+    flightBookings as any,
+    hotelBookings as any,
+  );
+  return { service, userModel, jwt, flightBookings, hotelBookings };
 }
 
 const withSelect = (value: unknown) => ({
@@ -310,6 +326,42 @@ describe('AuthService', () => {
       expect(user.sessionVersion).toBe(3);
       expect(user.save).toHaveBeenCalled();
       expect((jwt.decode(cookies.access_token.value) as any).sv).toBe(3);
+    });
+  });
+
+  describe('deactivate (ACC-12)', () => {
+    const USER_ID = '64b000000000000000000001';
+
+    it('deactivates the account and ends every session when nothing is upcoming', async () => {
+      const { service, userModel, flightBookings, hotelBookings } =
+        makeService();
+
+      await expect(service.deactivate(USER_ID)).resolves.toEqual({
+        message: 'Account deactivated',
+      });
+      expect(flightBookings.hasUpcomingConfirmed).toHaveBeenCalledWith(USER_ID);
+      expect(hotelBookings.hasUpcomingConfirmed).toHaveBeenCalledWith(USER_ID);
+      expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith(USER_ID, {
+        $set: { status: AccountStatus.DEACTIVATED, refreshTokenHash: null },
+        $inc: { sessionVersion: 1 },
+      });
+    });
+
+    it.each([
+      ['an upcoming Confirmed flight', true, false],
+      ['an upcoming or ongoing Confirmed hotel stay', false, true],
+      ['both', true, true],
+    ])('refuses with 409 while the user has %s', async (_l, flight, hotel) => {
+      const { service, userModel, flightBookings, hotelBookings } =
+        makeService();
+      flightBookings.hasUpcomingConfirmed.mockResolvedValue(flight);
+      hotelBookings.hasUpcomingConfirmed.mockResolvedValue(hotel);
+
+      const err = await service.deactivate(USER_ID).catch((e) => e);
+      expect(err).toBeInstanceOf(ConflictException);
+      expect(err.message).toBe(UPCOMING_BOOKINGS_BLOCK_DEACTIVATION);
+      // Nothing changed: still active, sessions untouched.
+      expect(userModel.findByIdAndUpdate).not.toHaveBeenCalled();
     });
   });
 });
