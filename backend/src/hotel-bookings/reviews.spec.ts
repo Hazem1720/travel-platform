@@ -6,7 +6,11 @@ import { BookingStatus } from '../common/enums/booking-status.enum';
 import { Role } from '../common/enums/role.enum';
 import { AuthUser } from '../common/types/auth-user.type';
 import { CreateReviewDto, UpdateReviewDto } from './dto/review.dto';
-import { HotelStayCompletionJob } from './hotel-stay-completion.job';
+import { localDate } from '../common/helpers/time-zone';
+import {
+  HotelStayCompletionJob,
+  latestToday,
+} from './hotel-stay-completion.job';
 import {
   REVIEW_ALREADY_EXISTS,
   REVIEW_NOT_COMPLETED,
@@ -325,24 +329,119 @@ describe('Hotel reviews (HTL-23, HTL-24)', () => {
   });
 
   describe('HotelStayCompletionJob (HTL-23)', () => {
-    it('marks Confirmed stays whose check-out date has passed as Completed', async () => {
+    const NY_HOTEL = new Types.ObjectId('6735a1f4c1a2b3c4d5e6f811');
+    const TOKYO_HOTEL = new Types.ObjectId('6735a1f4c1a2b3c4d5e6f812');
+    const GONE_HOTEL = new Types.ObjectId('6735a1f4c1a2b3c4d5e6f813');
+    const ZONES: Record<string, string> = {
+      new_york: 'America/New_York',
+      tokyo: 'Asia/Tokyo',
+    };
+    const stay = (n: number, hotelId: Types.ObjectId, checkOut: string) => ({
+      _id: new Types.ObjectId(
+        `6736f0a1c1a2b3c4d5e6fb${String(n).padStart(2, '0')}`,
+      ),
+      hotelId,
+      checkOut,
+    });
+
+    function setup(candidates: unknown[]) {
       const bookings = {
-        updateMany: jest.fn(async () => ({ modifiedCount: 3 })),
+        find: jest.fn(() => lean(candidates)),
+        updateMany: jest.fn(async () => ({ modifiedCount: 1 })),
       };
-      const job = new HotelStayCompletionJob(bookings as any);
-      const now = new Date('2026-12-05T09:30:00.000Z');
-      expect(await job.completeStays(now)).toBe(3);
+      const hotels = {
+        find: jest.fn(() =>
+          lean([
+            { _id: NY_HOTEL, cityId: 'new_york' },
+            { _id: TOKYO_HOTEL, cityId: 'tokyo' },
+          ]),
+        ),
+      };
+      // HotelSearchService.today: the date in the city's time zone.
+      const search = {
+        today: jest.fn(async ({ cityId }: { cityId: string }, now: Date) =>
+          localDate(now, ZONES[cityId]),
+        ),
+      };
+      const job = new HotelStayCompletionJob(
+        bookings as any,
+        hotels as any,
+        search as any,
+      );
+      return { job, bookings, search };
+    }
+
+    const completedIds = (bookings: { updateMany: jest.Mock }) =>
+      (bookings.updateMany.mock.calls[0]?.[0] as any)?._id.$in.map(String);
+
+    it("completes a stay once its check-out date has passed in the hotel's city, not in UTC", async () => {
+      // 6 Dec 2026 01:00 UTC: 5 Dec 20:00 in New York, 6 Dec 10:00 in Tokyo.
+      const now = new Date('2026-12-06T01:00:00.000Z');
+      const ny = stay(1, NY_HOTEL, '2026-12-05');
+      const tokyo = stay(2, TOKYO_HOTEL, '2026-12-05');
+      const { job, bookings } = setup([ny, tokyo]);
+      await job.completeStays(now);
+      // New York is still on its check-out day: stays Confirmed.
+      expect(completedIds(bookings)).toEqual([String(tokyo._id)]);
       expect(bookings.updateMany).toHaveBeenCalledWith(
-        // On the check-out day (2026-12-05) the stay stays Confirmed.
-        { status: BookingStatus.CONFIRMED, checkOut: { $lt: '2026-12-05' } },
+        { _id: { $in: [tokyo._id] }, status: BookingStatus.CONFIRMED },
         { $set: { status: BookingStatus.COMPLETED, completedAt: now } },
       );
     });
 
+    it("completes Tokyo stays before UTC midnight, when Tokyo's date has moved on", async () => {
+      // 5 Dec 2026 16:00 UTC is already 6 Dec 01:00 in Tokyo.
+      const now = new Date('2026-12-05T16:00:00.000Z');
+      const tokyo = stay(3, TOKYO_HOTEL, '2026-12-05');
+      const { job, bookings } = setup([tokyo]);
+      await job.completeStays(now);
+      expect(completedIds(bookings)).toEqual([String(tokyo._id)]);
+    });
+
+    it('only reads Confirmed stays that may be over somewhere (UTC+14)', async () => {
+      const now = new Date('2026-12-05T09:30:00.000Z');
+      expect(latestToday(now)).toBe('2026-12-05');
+      expect(latestToday(new Date('2026-12-05T10:00:00.000Z'))).toBe(
+        '2026-12-06',
+      );
+      const { job, bookings } = setup([]);
+      await expect(job.completeStays(now)).resolves.toBe(0);
+      expect(bookings.find).toHaveBeenCalledWith(
+        { status: BookingStatus.CONFIRMED, checkOut: { $lt: '2026-12-05' } },
+        { hotelId: 1, checkOut: 1 },
+      );
+      expect(bookings.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('asks each city for its date once', async () => {
+      const now = new Date('2026-12-06T01:00:00.000Z');
+      const { job, search } = setup([
+        stay(4, TOKYO_HOTEL, '2026-12-05'),
+        stay(5, TOKYO_HOTEL, '2026-12-04'),
+        stay(6, NY_HOTEL, '2026-12-04'),
+      ]);
+      await job.completeStays(now);
+      expect(search.today).toHaveBeenCalledTimes(2);
+    });
+
+    it('a stay whose hotel no longer exists uses the UTC date', async () => {
+      const now = new Date('2026-12-06T01:00:00.000Z');
+      const gone = stay(7, GONE_HOTEL, '2026-12-05');
+      const { job, bookings } = setup([gone]);
+      await job.completeStays(now);
+      expect(completedIds(bookings)).toEqual([String(gone._id)]);
+    });
+
     it('a database error is logged, not thrown', async () => {
-      const job = new HotelStayCompletionJob({
-        updateMany: async () => Promise.reject(new Error('db down')),
-      } as any);
+      const job = new HotelStayCompletionJob(
+        {
+          find: () => ({
+            lean: async () => Promise.reject(new Error('db down')),
+          }),
+        } as any,
+        {} as any,
+        {} as any,
+      );
       await expect(job.completeStays()).resolves.toBe(0);
     });
   });
