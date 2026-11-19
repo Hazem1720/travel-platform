@@ -12,6 +12,10 @@ import { Model } from 'mongoose';
 import { SESSION_IDLE_MS } from '../../common/constants/session.constants';
 import { ALLOW_PASSWORD_CHANGE_KEY } from '../../common/decorators/allow-password-change.decorator';
 import { IS_PUBLIC_KEY } from '../../common/decorators/public.decorator';
+import {
+  EMAIL_NOT_VERIFIED,
+  REQUIRE_VERIFIED_EMAIL_KEY,
+} from '../../common/decorators/verified-email.decorator';
 import { AccountStatus } from '../../common/enums/role.enum';
 import { AuthUser } from '../../common/types/auth-user.type';
 import { User, UserDocument } from '../../users/schemas/user.schema';
@@ -82,6 +86,15 @@ export class JwtAuthGuard implements CanActivate {
       throw new ForbiddenException(
         'You must change your temporary password first',
       );
+    }
+
+    // ACC-02 (bonus): no booking until the email address is verified.
+    const needsVerified = this.reflector.getAllAndOverride<boolean>(
+      REQUIRE_VERIFIED_EMAIL_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (needsVerified && user.emailVerified === false) {
+      throw new ForbiddenException(EMAIL_NOT_VERIFIED);
     }
 
     const authUser: AuthUser = {

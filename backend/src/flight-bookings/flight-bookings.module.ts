@@ -23,6 +23,12 @@ import {
   FlightBooking,
   FlightBookingSchema,
 } from './schemas/flight-booking.schema';
+import {
+  SeatAssignment,
+  SeatAssignmentSchema,
+} from './schemas/seat-assignment.schema';
+import { SeatSelectionController } from './seat-selection.controller';
+import { SeatSelectionService } from './seat-selection.service';
 
 // Flight search and bookings (FLT-11 to FLT-23). @Global() so that:
 //  - Hazem's FlightsService gets FLIGHT_BOOKINGS_READER (FLT-05) without
@@ -37,6 +43,8 @@ import {
   imports: [
     MongooseModule.forFeature([
       { name: FlightBooking.name, schema: FlightBookingSchema },
+      // FLT-28 (bonus): seat selection.
+      { name: SeatAssignment.name, schema: SeatAssignmentSchema },
     ]),
     FlightsModule,
     AirlinesModule,
@@ -46,6 +54,7 @@ import {
   controllers: [
     FlightSearchController,
     FlightBookingsController,
+    SeatSelectionController,
     MyFlightBookingsController,
   ],
   providers: [
@@ -61,6 +70,7 @@ import {
       useExisting: FlightBookingsReaderService,
     },
     FlightPaymentHandler,
+    SeatSelectionService,
     MyFlightBookingsService,
   ],
   exports: [

@@ -24,6 +24,10 @@ const PUBLIC_ROUTES = [
   'POST /auth/login',
   'POST /auth/refresh',
   'POST /auth/logout',
+  // ACC-02, ACC-07 (bonus): opened from emailed links, without a session.
+  'GET /auth/verify-email',
+  'POST /auth/forgot-password',
+  'POST /auth/reset-password',
   'GET /airlines/:id',
   'GET /airports',
   // GEN-12: the seeded reference data.
