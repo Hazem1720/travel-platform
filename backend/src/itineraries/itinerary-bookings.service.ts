@@ -123,7 +123,7 @@ export class ItineraryBookingsService {
   private view(
     itinerary: Parameters<typeof presentWithBudget>[0] & {
       _id: unknown;
-      linkedBookings?: { dayId: unknown }[];
+      linkedBookings?: (Record<string, unknown> & { dayId: unknown })[];
     },
   ) {
     const dayNumber = new Map(
