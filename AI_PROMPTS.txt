@@ -901,3 +901,14 @@ TN-26 flight search from an itinerary can u do this and test it then merge it
 How the output was used:
 Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-28 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude added seat selection to Aabsy's flight bookings as the team plan says, in its own files (only the module registration in his module changes): a seat map per cabin derived from its seats (6 a row, 4 in Business and First), GET /api/flight-bookings/:id/seats with free, taken and my seats per flight, and PATCH /api/flight-bookings/:id/seat to choose or change a passenger's seat on a Confirmed booking or one awaiting payment, before departure (infants get none). A seatassignments collection with a unique index on (flight, cabin, seat) decides a race: one passenger gets the seat, the other 409. Seats of Expired or Cancelled bookings count as free without any hook in other people's code. Unit tests, and an HTTP test against a real MongoDB with two passengers choosing the same seat at the same moment.
+================================================
