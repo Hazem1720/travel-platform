@@ -1218,3 +1218,16 @@ Yes, update PDF
 How the output was used:
 Claude extracted the text of both PDFs and diffed them. The edits: the ACC-15 provider routes PATCH /api/admin/providers/:type/:id/deactivate and /reactivate with their rules (hidden from search, cannot be booked, Confirmed bookings stay valid, in-app notification), a sentence that airport IANA time zones are in Airports.csv and the supported currencies are the Countries.csv codes, and corrected requirement labels in the endpoint tables (ACC-01, ACC-19, FLT-02, HTL-09, ITN-25; ACC-03 and BLG-11 removed). It found no code change needed: Hazem's #223 already moved the ACC-15 routes, the seed reads time zones from airports.csv and the currency list matches countries.csv, our Swagger summaries already use the corrected IDs, and all 120 endpoints the new PDF lists exist in our controllers. I kept that result and had Claude replace docs/requirements/Project Description.pdf with the new version (same file name, so the README link still works). It noted one open question for Hazem: ACC-15 notifies only the provider's moderators, not travellers who have Confirmed bookings with it.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-02, GEN-05
+Prompt:
+ok now there are 9 issues that belong to ml2 so i think its better to remove them for now so we have a clean state for now what do u think
+im not even convinced that these are issues and espessialy the ml1 ones as they are not requirments
+Yes, move to M2
+How the output was used:
+Claude advised against deleting or closing the 9 open issues: it checked the official Excel and all 9 (ACC-10, GEN-02 to GEN-05, GEN-14 to GEN-17) are official Mandatory requirements, and they were already in the GitHub milestone "Milestone 2". It agreed that GEN-02 and GEN-05 were tagged M1 only by our tracker, because each had a backend half (the shared "Validation failed" error format and paginated list routes), both merged; what is left is frontend work. I kept that and had Claude change their Milestone from M1 to "M2 only" in requirements-tracker.csv and on the Tracker sheet of the .xlsx (the sync script does not edit Milestone, so it used the script's own cell helpers), then the script's dry run confirmed the .xlsx matches the CSV. Status stays In Progress. Their issues (#104, #107) got the m2-only label instead of milestone-1.
+================================================
