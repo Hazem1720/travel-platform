@@ -69,7 +69,9 @@ Without the Stripe keys the server still starts; only paying answers 503.
 3. Run `stripe listen --print-secret` and put the `whsec_...` it prints in `STRIPE_WEBHOOK_SECRET`. Restart the server.
 4. Keep this running while you test, so Stripe's events reach your server:
 
-        stripe listen --forward-to localhost:3000/api/payments/webhook
+        stripe listen --forward-to localhost:3000/api/payments/webhook --events payment_intent.succeeded,payment_intent.payment_failed,payment_intent.canceled,refund.created,refund.updated,refund.failed,charge.refund.updated
+
+   Recent Stripe CLI versions refuse `stripe listen` without `--events`.
 
 5. Hold a booking, accept its policies, then call `POST /api/bookings/{type}/{id}/pay`. The `clientSecret` it returns starts with the PaymentIntent id (`pi_..._secret_...`). Without a frontend, pay it from the CLI with a test card:
 
@@ -78,6 +80,10 @@ Without the Stripe keys the server still starts; only paying answers 503.
    Use `pm_card_chargeDeclined` to see a declined card. The booking becomes Confirmed only when the webhook arrives.
 
 6. Refunds (PAY-03) are made by `PaymentsService.refund()` when a booking is cancelled, and their status arrives through the same webhook. Pay with `pm_card_refundFail` to see a refund that the bank rejects later (Refunded, then Failed).
+
+### Email notifications (GEN-01-B, optional)
+
+Every in-app notification (GEN-01) and every new moderator invitation (ACC-13) is also sent by email when `SMTP_HOST` is set in `backend/.env` (see `.env.example`: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`). Use a test inbox in development, for example a free Mailtrap or Ethereal inbox: copy its SMTP host, port, user and password. Leave `SMTP_HOST` empty to turn email off. If the mail server is down, the in-app notification is still created and the error is only logged. The invitation never contains the temporary password.
 
 ## Git workflow
 
