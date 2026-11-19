@@ -30,6 +30,7 @@ import { AuthUser } from '../common/types/auth-user.type';
 import { IMAGE_LIMITS, UploadedImage } from '../uploads/image-file';
 import { ImageUpload } from '../uploads/image-upload.decorator';
 import { BlogService } from './blog.service';
+import { AttachItineraryDto } from './dto/attach-itinerary.dto';
 import { CreatePostDto } from './dto/create-post.dto';
 import { PostListQueryDto } from './dto/post-list-query.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -155,6 +156,52 @@ export class BlogController {
     @Body() dto: UpdatePostDto,
   ) {
     return this.blogService.update(user, id, dto);
+  }
+
+  @Patch(':id/itinerary')
+  @Roles(Role.USER)
+  @ApiCookieAuth('access_token')
+  @ApiParam(POST_ID)
+  @ApiOperation({
+    summary: 'Attach one of your public itineraries to your post (BLG-13)',
+    description:
+      'Send itineraryId: null to detach it. The post page shows the ' +
+      'itinerary while it stays public and visible.',
+  })
+  @ApiOkResponse({
+    description: 'The post with its attached itinerary',
+    schema: {
+      example: {
+        _id: '6736e5f4c1a2b3c4d5e6fa01',
+        itineraryId: '6736a1f4c1a2b3c4d5e6f301',
+        itinerary: {
+          id: '6736a1f4c1a2b3c4d5e6f301',
+          title: 'A week in Egypt',
+          countries: ['EG'],
+          startDate: '2026-12-01T00:00:00.000Z',
+          dayCount: 7,
+        },
+      },
+    },
+  })
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'You can attach only one of your own public itineraries',
+      details: {
+        itineraryId: ['You can attach only one of your own public itineraries'],
+      },
+    },
+    UNAUTHENTICATED,
+    FORBIDDEN,
+    NOT_FOUND,
+  )
+  attachItinerary(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Body() dto: AttachItineraryDto,
+  ) {
+    return this.blogService.attachItinerary(user, id, dto.itineraryId);
   }
 
   @Delete(':id')
