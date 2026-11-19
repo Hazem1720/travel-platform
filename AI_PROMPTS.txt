@@ -823,3 +823,14 @@ Start PAY-03
 How the output was used:
 Claude followed my chapter of the team plan and the contract Hasan already builds against (PaymentsService.refund(type, bookingId, amount), 0 cents creates nothing). It added a Refund schema (booking, user, payment, Stripe refund id, amount, currency, status Pending/Refunded/Failed); refund() refunds part or all of the booking's succeeded payment through the Stripe Refunds API, never more than what is left, creates the record first so its id is the idempotency key, and records a Stripe error as Failed instead of throwing so a cancellation never half-fails. Stripe's refund webhook events move the status on (never back to Pending; Refunded to Failed when the bank rejects it) and tell the user when it fails. Users get a REFUND_ISSUED notification; GET /api/refunds/:id shows their own refund (404 for others); the booking details list their refunds (my hotel route, and a refunds field in Aabsy's flight controller). PAY-01's full refund for a payment that cannot be confirmed now uses the same path, so it is recorded. Unit tests use the fake Stripe and an in-memory model. Live test (Stripe sandbox, TEST hotel, rooms and users, deleted afterwards), calling the real refund() from the built app as Hasan's cancellations will: 0% -> no record; 50% -> 450.00 USD refund Refunded at Stripe, notification, shown on GET /refunds/:id (another user 404) and on the reservation details; more than what is left -> 409; a card whose refund the bank rejects (pm_card_refundFail) -> Refunded, then the webhook set Failed and told the user. Build, 777 unit tests and the read-only eslint check pass.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-03
+Prompt:
+merge (PR #190) ... Yes, open it (a tracker PR marking PAY-03 Done)
+How the output was used:
+After #190 was merged and issue #75 closed, Claude set PAY-03 to Done in requirements-tracker.csv and .xlsx (Tracker sheet, my sheet, Summary) with the same checked script as before: only the Status cell changed, the CSV and the Tracker sheet match row for row, the other parts of the xlsx are unchanged, and the Summary recount changed only my row (12 of 12 mandatory done) and the Total.
+================================================
