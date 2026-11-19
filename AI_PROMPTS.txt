@@ -1278,3 +1278,15 @@ Approved, with one change: refuse every host of the backend/.env cluster, whatev
 How the output was used:
 Claude replaced the guard's same-database check with a same-cluster check (sameCluster in test/e2e/uri-guard.ts): a URI is refused, with or without the flag, if any host:port matches a host of the .env URI (default port 27017; localhost and 127.0.0.1 count as one), or if both are on Atlas under the same cluster domain, which also links the mongodb+srv and standard forms. It matched by host and port rather than hostname so that a teammate whose .env points at a local mongod is not blocked from the in-memory server. Self-tests cover the .env database, another database, no database, other credentials and host order, a single host, the srv form, and a local .env. Plan line and README updated; the refusal shown through npm run test:e2e:full.
 ================================================
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-13, ACC-11, GEN-10, ITN-20 (e2e access-control suite; also names ACC-01, ACC-13, BLG-01, BLG-02, BLG-03, BLG-05, BLG-09, BLG-12, ITN-01, ITN-21, HTL-24)
+Prompt:
+delete branch and then
+Keep the domain rule; the throwaway cluster will be in a separate Atlas project. #234 is merged.
+Start checkpoint 3: create test/e2e-access-control from the latest develop and build the access-control suite as the plan describes. Open the PR to develop, fill in the section 5 summary including the mutation check, then stop for my style review.
+How the output was used:
+Claude deleted the merged test/e2e-harness branch, branched from develop and wrote backend/test/e2e/access-control.e2e-spec.ts over real HTTP: a guard sweep (401 on every non-public route, 403 to another role on every role-restricted route) driven by a reviewed access table of all 150 routes (test/e2e/access-table.ts); an ACC-11 table of every owner-only booking and itinerary route (50 requests), where user B must get exactly 404, identical to a missing id, with nothing changed, and the owner reaches every read route; public lists and pages that must show only published, public and not hidden content to guests and other users; and body checks (no route accepts role, assignedProviderId, status, userId, ownerId or authorId unless its DTO declares it on purpose; MongoDB operators refused in login and search). The first mutation check showed that a removed @Roles() went unnoticed because the sweep trusted the app's own decorators; Claude added the reviewed access table so it fails. Four mutations (role guard, ownership check, hidden filter, unknown-field rejection) each fail the suite. Exclusions updated (13 requirements, 35 routes), tracker Test evidence for 15 IDs, plan section 3 corrected. No backend/src change.
+================================================

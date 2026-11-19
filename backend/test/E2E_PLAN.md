@@ -78,9 +78,10 @@ A script, `test/e2e/check-coverage.ts`, is run by `run.ts` after Jest. It reads 
 ## 3. Suites (each `it()` title names its REQ-IDs)
 **P0**
 1. **`access-control`**
-   - Guard sweep over the router list:
+   - Guard sweep over a **reviewed access table** (`test/e2e/access-table.ts`: every route is public, any logged-in account, or one role), not over the app's own decorators, so a removed `@Roles()` is caught:
+     - every route the app serves has the access rule of the table;
      - every non-public route answers 401;
-     - every `@Roles` route answers 403 to a traveler.
+     - every role-restricted route answers 403 to another role: a traveler for admin and moderator routes, an admin for `@Roles(user)` routes (69 of them), which a traveler may call.
      - Guards run before pipes, so dummy IDs are enough.
    - **Public routes show nothing private.** A guest and another user each see:
      - published posts, but never drafts or hidden posts;
