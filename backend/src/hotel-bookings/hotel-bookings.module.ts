@@ -7,6 +7,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { PaymentsService } from '../payments/payments.service';
 import { HotelAvailabilityService } from './hotel-availability.service';
 import { HotelBookingJobs } from './hotel-booking.jobs';
+import { HotelBookingsReaderService } from './hotel-bookings.reader.service';
 import { HotelBookingsController } from './hotel-bookings.controller';
 import { HotelConfirmationService } from './hotel-confirmation.service';
 import { HotelHoldService } from './hotel-hold.service';
@@ -59,6 +60,7 @@ import { RoomLock, RoomLockSchema } from './schemas/room-lock.schema';
     HotelRoomsService,
     HotelHoldService,
     HotelConfirmationService,
+    HotelBookingsReaderService,
     HotelPaymentHandler,
     HotelBookingJobs,
     MyHotelBookingsService,
@@ -67,6 +69,7 @@ import { RoomLock, RoomLockSchema } from './schemas/room-lock.schema';
     HotelAvailabilityService,
     HotelSearchService,
     HotelHoldService,
+    HotelBookingsReaderService,
     MongooseModule,
   ],
 })
