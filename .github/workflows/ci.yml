@@ -14,6 +14,13 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
+      mailpit:
+        image: axllent/mailpit
+        ports: ['1025:1025', '8025:8025']
     defaults:
       run:
         working-directory: backend
@@ -34,3 +41,29 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      - name: Lint changed modules (TEMP)
+        if: ${{ !cancelled() }}
+        run: npx eslint "src/email/**/*.ts" "src/auth/**/*.ts" "src/itinerary-pdf/**/*.ts" "src/blog/**/*.ts" "src/flight-bookings/**/*.ts" "src/itineraries/**/*.ts" src/users/schemas/user.schema.ts src/common/decorators/verified-email.decorator.ts src/config/env.validation.ts src/hotel-bookings/hotel-bookings.controller.ts src/payments/payments.controller.ts
+
+      - name: Lint everything (TEMP, informational)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: npx eslint "src/**/*.ts"
+
+      - name: Seed reference data (TEMP)
+        if: ${{ !cancelled() }}
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/e2e
+          JWT_SECRET: e2e-test-secret-e2e-test-secret-123456
+          FRONTEND_URL: http://localhost:3001
+        run: npm run seed:reference
+
+      - name: E2E with a real database (TEMP)
+        if: ${{ !cancelled() }}
+        env:
+          E2E_MONGODB_URI: mongodb://127.0.0.1:27017/e2e
+          SMTP_HOST: 127.0.0.1
+          SMTP_PORT: '1025'
+          MAILPIT_API: http://127.0.0.1:8025
+        run: npm run test:e2e -- --runInBand
