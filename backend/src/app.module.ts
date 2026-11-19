@@ -17,6 +17,7 @@ import { ReportsModule } from './reports/reports.module';
 import { validateEnv } from './config/env.validation';
 import { FlightBookingsModule } from './flight-bookings/flight-bookings.module';
 import { FlightBookingCancellationModule } from './flight-bookings/flight-booking-cancellation.module';
+import { FlightChangeModule } from './flight-bookings/flight-change.module';
 import { EmailModule } from './email/email.module';
 import { FlightPassengersModule } from './flight-bookings/flight-passengers.module';
 import { FavouritesModule } from './favourites/favourites.module';
@@ -55,6 +56,8 @@ import { UploadsModule } from './uploads/uploads.module';
     FlightPassengersModule,
     // FLT-26: GET /flight-bookings/:id/cancellation and POST .../cancel.
     FlightBookingCancellationModule,
+    // FLT-27 (bonus): change a confirmed flight booking.
+    FlightChangeModule,
     UploadsModule,
     NotificationsModule,
     EmailModule,

@@ -84,7 +84,9 @@ export class BookingSegment {
   @Prop({ type: Number, required: true })
   subtotal: number;
 }
-const BookingSegmentSchema = SchemaFactory.createForClass(BookingSegment);
+// Exported for FLT-27 (flight changes store the new segments).
+export const BookingSegmentSchema =
+  SchemaFactory.createForClass(BookingSegment);
 
 @Schema({ timestamps: true, collection: 'flightbookings' })
 export class FlightBooking {
