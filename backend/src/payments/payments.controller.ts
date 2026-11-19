@@ -20,6 +20,7 @@ import {
 } from '@nestjs/swagger';
 import { Request } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { RequireVerifiedEmail } from '../common/decorators/verified-email.decorator';
 import { Public } from '../common/decorators/public.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
@@ -60,6 +61,8 @@ export class PaymentsController {
   constructor(private readonly payments: PaymentsService) {}
 
   @Post(':type/:id/pay')
+  // ACC-02 (bonus): 403 until the account's email is verified.
+  @RequireVerifiedEmail()
   @ApiParam({
     name: 'type',
     enum: PaymentBookingType,
