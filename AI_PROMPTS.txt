@@ -845,3 +845,14 @@ can i work on some of the bonus right now without waiting for the rest of the wo
 How the output was used:
 Claude checked the team plan (my bonus items may start once my own mandatory work is merged, which it is) and the project description (mandatory requirements come first; bonus never replaces them), listed which of my bonus items do not depend on Hasan or Hafez, and suggested BON-02 as the smallest while I talk to Hasan about his mandatory items. It built a new src/favourites module as my chapter suggests: POST /api/favourites saves an active hotel or a public itinerary (Moharm's findPublic decides what is public), GET /api/favourites lists them with the shared pagination (an entry that is no longer available stays listed without details), DELETE /api/favourites/:id removes my own. Unit tests cover the plan's checks. Live check with TEST hotels, itineraries and users (deleted afterwards): hotel and public itinerary saved and listed; private itinerary 404; same hotel twice 409; inactive hotel 404; bad type, sort or page size 400; itinerary made private shows available:false without details; another user's delete 404; 401 without a session. Build, 784 unit tests and the read-only eslint check pass.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-01-B
+Prompt:
+do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
+How the output was used:
+My chapter says GEN-01-B extends Aabsy's NotificationsService and to agree the hook point with him. Claude kept the change in his code to one optional hook: a new global src/email module (nodemailer, SMTP settings only in .env, off without SMTP_HOST) is called from NotificationsService.create() after the notification is saved, not awaited and never throwing; a second optional hook in Hazem's createModerator() sends the moderator invitation, deliberately without the temporary password. Unit tests use a fake SMTP transport. Live check with a local SMTP test inbox (no outside account) and the Stripe sandbox, TEST data deleted afterwards: a hotel booking confirmation produced the email "Your booking is confirmed" with the reservation details; with the inbox stopped, the next booking was still confirmed and its in-app notification created, and the server only logged ECONNREFUSED. The run also found that recent Stripe CLI versions refuse stripe listen without --events, so the README command and the webhook's Swagger text were fixed, and it showed PAY-01's hold expiry confirming a booking whose payment had succeeded but whose webhook was missed. Build, 791 unit tests and the read-only eslint check pass.
+================================================
