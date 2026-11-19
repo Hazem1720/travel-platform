@@ -56,6 +56,18 @@ export class Review {
   @Prop({ type: String, trim: true, default: '', maxlength: MAX_REVIEW_TEXT })
   text: string;
 
+  // HTL-26 (bonus): the hotel moderator's one reply, or null.
+  @Prop({
+    type: {
+      text: { type: String, required: true },
+      moderatorId: { type: MongooseSchema.Types.ObjectId, ref: 'User' },
+      createdAt: { type: Date },
+    },
+    default: null,
+    _id: false,
+  })
+  reply: { text: string; moderatorId: Types.ObjectId; createdAt: Date } | null;
+
   // GEN-10: set by an admin (directly or when resolving a report).
   @Prop({ type: Boolean, default: false })
   hidden: boolean;

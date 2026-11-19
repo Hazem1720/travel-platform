@@ -8,6 +8,8 @@ import {
   HotelBooking,
   HotelBookingSchema,
 } from '../hotel-bookings/schemas/hotel-booking.schema';
+import { AdminAnalyticsController } from './admin-analytics.controller';
+import { AdminAnalyticsService } from './admin-analytics.service';
 import { AdminBookingsController } from './admin-bookings.controller';
 import { AdminBookingsService } from './admin-bookings.service';
 
@@ -21,7 +23,8 @@ import { AdminBookingsService } from './admin-bookings.service';
       { name: HotelBooking.name, schema: HotelBookingSchema },
     ]),
   ],
-  controllers: [AdminBookingsController],
-  providers: [AdminBookingsService],
+  // BON-01 (bonus): GET /admin/analytics.
+  controllers: [AdminBookingsController, AdminAnalyticsController],
+  providers: [AdminBookingsService, AdminAnalyticsService],
 })
 export class AdminBookingsModule {}

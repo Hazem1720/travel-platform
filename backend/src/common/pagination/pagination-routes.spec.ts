@@ -59,6 +59,7 @@ const ONE_RECORD = 'one record, not a list';
 const FILE = 'a file download';
 const NOT_LISTS: Record<string, { reason: string; openPr?: number }> = {
   'GET /': { reason: 'health check text' },
+  'GET /admin/analytics': { reason: 'totals per provider (BON-01)' },
   'GET /admin/content/:type/:id': { reason: 'one reported item' },
   'GET /airlines/:id': { reason: ONE_RECORD },
   'GET /auth/me': { reason: 'the logged-in user' },

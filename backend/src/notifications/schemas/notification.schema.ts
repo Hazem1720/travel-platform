@@ -9,6 +9,10 @@ export enum NotificationType {
   FLIGHT_SCHEDULE_CHANGED = 'FLIGHT_SCHEDULE_CHANGED',
   ACCOUNT_SUSPENDED = 'ACCOUNT_SUSPENDED',
   PROVIDER_SUSPENDED = 'PROVIDER_SUSPENDED',
+  // HTL-26 (bonus): the hotel replied to your review.
+  REVIEW_REPLIED = 'REVIEW_REPLIED',
+  // FLT-27 (bonus): your flight booking was changed.
+  BOOKING_CHANGED = 'BOOKING_CHANGED',
 }
 
 // Only createdAt: a notification never changes except readAt.
