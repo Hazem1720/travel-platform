@@ -1195,3 +1195,14 @@ Yes, open the PR
 How the output was used:
 Claude changed HotelStayCompletionJob (HTL-23) to decide that a stay is over with the date in the hotel's city (HotelSearchService.today, the same rule as HTL-15 and HTL-21) instead of the UTC date: each minute it only loads Confirmed stays whose check-out date is before the latest date anywhere on Earth (UTC+14), looks up each hotel's city once, and completes the ones whose check-out date has passed there, still conditional on Confirmed so a cancel in between wins. HTL-20's Upcoming and Past tabs and ACC-12's "Confirmed stay ahead" check now follow the status (Confirmed = upcoming, Completed = past) with no UTC date, so a stay in New York or Tokyo no longer sits in the wrong tab for hours around midnight. These are Hasan's files; the PR says so. New unit tests cover a New York and a Tokyo hotel on either side of local midnight and a deleted hotel (UTC fallback). Claude fast-forwarded the branch to the latest develop, then ran build, the read-only eslint check and all 1081 unit tests, which pass.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-27, HTL-26, BON-01, HTL-23
+Prompt:
+Yes, sync tracker
+How the output was used:
+Claude marked my three bonus items Done in requirements-tracker.csv: FLT-27 (#229), HTL-26 (#227) and BON-01 (#228), all merged on 19/11 and built by Hazem, with each PR link, its spec file and the live HTTP check on the temporary CI branch #225 as test evidence. Their issues (#122, #124, #129) were already closed by those PRs. It also noted on HTL-23's row the local-date follow-up merged in #230. Only the team columns changed. It then ran scripts/sync-tracker-xlsx.py --apply, which wrote the same values to the Tracker sheet, my sheet and the Summary counts (my bonus done 8 -> 11), and a second dry run reported the .xlsx matches the CSV.
+================================================
