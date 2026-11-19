@@ -75,6 +75,9 @@ import { SeatSelectionService } from './seat-selection.service';
   ],
   exports: [
     FlightSearchService,
+    // FLT-27 (bonus): a flight change is priced and held the same way.
+    FlightQuoteService,
+    FlightHoldService,
     FlightBookingsReaderService,
     FLIGHT_BOOKINGS_READER,
     MongooseModule,

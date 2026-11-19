@@ -8,7 +8,16 @@ import { BookingStatus } from '../common/enums/booking-status.enum';
 export enum PaymentBookingType {
   FLIGHT = 'flight',
   HOTEL = 'hotel',
+  // FLT-27 (bonus): the fare difference of a flight change. Its "booking"
+  // is the change request (flightchanges); the payment and its refunds also
+  // belong to the flight booking (parentBookingId).
+  FLIGHT_CHANGE = 'flight-change',
 }
+
+// The booking type a FLIGHT_CHANGE payment belongs to.
+export const PARENT_BOOKING_TYPE: Partial<
+  Record<PaymentBookingType, PaymentBookingType>
+> = { [PaymentBookingType.FLIGHT_CHANGE]: PaymentBookingType.FLIGHT };
 
 // conventions.md, "Payments and refunds".
 export enum PaymentStatus {
@@ -41,6 +50,8 @@ export interface PayableBooking {
   policiesAcceptedAt: Date | null;
   // Short text for the Stripe dashboard, e.g. "Flight MS777 CAI-LHR".
   description?: string;
+  // FLT-27: a change payment's flight booking (see FLIGHT_CHANGE).
+  parentBookingId?: string;
 }
 
 // PAY-02: the provider's policies the user accepts before paying. The owner
@@ -120,4 +131,7 @@ export interface RefundResult {
   amount: number;
   currency: string;
   status: RefundStatus;
+  // FLT-27: a refund split over the booking's payment and the payments of
+  // its flight changes; refundId is then the first part's.
+  parts?: RefundResult[];
 }
