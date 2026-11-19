@@ -17,6 +17,8 @@ import { FlightPaymentHandler } from './flight-payment.handler';
 import { FlightQuoteService } from './flight-quote.service';
 import { FlightSearchController } from './flight-search.controller';
 import { FlightSearchService } from './flight-search.service';
+import { MyFlightBookingsController } from './my-flight-bookings.controller';
+import { MyFlightBookingsService } from './my-flight-bookings.service';
 import {
   FlightBooking,
   FlightBookingSchema,
@@ -53,6 +55,7 @@ import { SeatSelectionService } from './seat-selection.service';
     FlightSearchController,
     FlightBookingsController,
     SeatSelectionController,
+    MyFlightBookingsController,
   ],
   providers: [
     FlightSearchService,
@@ -68,6 +71,7 @@ import { SeatSelectionService } from './seat-selection.service';
     },
     FlightPaymentHandler,
     SeatSelectionService,
+    MyFlightBookingsService,
   ],
   exports: [
     FlightSearchService,

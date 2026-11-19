@@ -19,6 +19,8 @@ import { Model } from 'mongoose';
 import { SESSION_IDLE_MS } from '../common/constants/session.constants';
 import { AccountStatus, Role } from '../common/enums/role.enum';
 import { EmailService } from '../email/email.service';
+import { FlightBookingsReaderService } from '../flight-bookings/flight-bookings.reader.service';
+import { HotelBookingsReaderService } from '../hotel-bookings/hotel-bookings.reader.service';
 import { UpdateProfileDto } from '../users/dto/update-profile.dto';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -40,6 +42,11 @@ export const INVALID_RESET_LINK =
 export const INVALID_VERIFY_LINK =
   'This verification link is invalid or has expired';
 
+// ACC-12: deactivation waits until no Confirmed booking is still ahead.
+export const UPCOMING_BOOKINGS_BLOCK_DEACTIVATION =
+  'You have upcoming confirmed bookings. Cancel them, or wait until they are ' +
+  'completed, before deactivating your account';
+
 // MI-1: compared against when the email is unknown, so a missing account
 // takes as long as a wrong password and the timing reveals nothing.
 const DUMMY_PASSWORD_HASH = bcrypt.hashSync(
@@ -59,6 +66,8 @@ export class AuthService {
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private readonly flightBookings: FlightBookingsReaderService,
+    private readonly hotelBookings: HotelBookingsReaderService,
     // GEN-01-B: emails for ACC-02 and ACC-07. Optional, so tests without it
     // work as before; without SMTP it is off.
     @Optional() private readonly email?: EmailService,
@@ -463,8 +472,15 @@ export class AuthService {
   }
 
   async deactivate(userId: string) {
-    // ACC-12: blocked while the user has upcoming Confirmed bookings.
-    // TODO: add that check once the booking modules exist.
+    // ACC-12: blocked while the user has upcoming Confirmed bookings: a
+    // flight not departed yet, or a hotel stay not over yet (409).
+    const [flight, hotel] = await Promise.all([
+      this.flightBookings.hasUpcomingConfirmed(userId),
+      this.hotelBookings.hasUpcomingConfirmed(userId),
+    ]);
+    if (flight || hotel) {
+      throw new ConflictException(UPCOMING_BOOKINGS_BLOCK_DEACTIVATION);
+    }
     await this.userModel.findByIdAndUpdate(userId, {
       $set: { status: AccountStatus.DEACTIVATED, refreshTokenHash: null },
       $inc: { sessionVersion: 1 },

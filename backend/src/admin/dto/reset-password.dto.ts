@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, Matches } from 'class-validator';
 import { PASSWORD_MESSAGE, PASSWORD_REGEX } from '../../auth/dto/register.dto';
 
-// ACC-07a: POST /admin/accounts/:id/reset-password. The temporary password
+// ACC-07a: POST /admin/users/:id/reset-password. The temporary password
 // follows the same rule as every password (conventions.md).
 export class ResetPasswordDto {
   @ApiProperty({
