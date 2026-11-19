@@ -1,4 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -15,13 +23,13 @@ import {
   UNAUTHENTICATED,
 } from '../common/swagger/api-error.decorator';
 import { AuthUser } from '../common/types/auth-user.type';
-import { LinkBookingDto } from './dto/link-booking.dto';
+import { LinkBookingDto, LinkedBookingsQueryDto } from './dto/link-booking.dto';
 import { ID_PARAM, NOT_A_USER, NOT_FOUND } from './itineraries.controller';
 import { ItineraryBookingsService } from './itinerary-bookings.service';
 
 const EXAMPLE = {
   itineraryId: '6736a1f4c1a2b3c4d5e6f301',
-  linkedBookings: [
+  data: [
     {
       _id: '6736a1f4c1a2b3c4d5e6f3a1',
       type: 'hotel',
@@ -34,6 +42,7 @@ const EXAMPLE = {
       currency: 'USD',
     },
   ],
+  meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
   budget: {
     total: { USD: 450 },
     byCategory: { accommodation: { USD: 450 } },
@@ -52,11 +61,27 @@ export class ItineraryBookingsController {
   @ApiParam(ID_PARAM)
   @ApiOperation({
     summary: 'Bookings linked to my itinerary, with the budget (ITN-27)',
+    description:
+      'Paginated, 10 per page, in the order they were linked (GEN-05). ' +
+      'The budget always counts every linked booking, not only this page.',
   })
   @ApiOkResponse({ schema: { example: EXAMPLE } })
-  @ApiErrors(UNAUTHENTICATED, NOT_A_USER, NOT_FOUND)
-  list(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.links.list(user, id);
+  @ApiErrors(
+    {
+      status: 400,
+      message: 'Validation failed',
+      details: { limit: ['limit must not be greater than 10'] },
+    },
+    UNAUTHENTICATED,
+    NOT_A_USER,
+    NOT_FOUND,
+  )
+  list(
+    @CurrentUser() user: AuthUser,
+    @Param('id') id: string,
+    @Query() query: LinkedBookingsQueryDto,
+  ) {
+    return this.links.list(user, id, query);
   }
 
   @Post(':id/bookings')
@@ -67,7 +92,7 @@ export class ItineraryBookingsController {
       'Your own Confirmed or Completed flight or hotel booking. Its total ' +
       'counts on that day: hotels under Accommodation, flights under ' +
       'Intercity transport. Linked bookings never show on the public ' +
-      'itinerary and are not cloned.',
+      'itinerary and are not cloned. Answers with the first page of links.',
   })
   @ApiCreatedResponse({ schema: { example: EXAMPLE } })
   @ApiErrors(
@@ -101,7 +126,16 @@ export class ItineraryBookingsController {
   @ApiParam(ID_PARAM)
   @ApiParam({ name: 'linkId', example: '6736a1f4c1a2b3c4d5e6f3a1' })
   @ApiOperation({ summary: 'Unlink a booking from my itinerary (ITN-27)' })
-  @ApiOkResponse({ schema: { example: { ...EXAMPLE, linkedBookings: [] } } })
+  @ApiOkResponse({
+    schema: {
+      example: {
+        ...EXAMPLE,
+        data: [],
+        meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+        budget: { total: {}, byCategory: {} },
+      },
+    },
+  })
   @ApiErrors(UNAUTHENTICATED, NOT_A_USER, {
     status: 404,
     message: 'Linked booking not found',

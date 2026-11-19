@@ -91,6 +91,9 @@ function setup(emailOn = true) {
     users as any,
     new JwtService({ secret: 'x'.repeat(40) }),
     config,
+    // ACC-12's booking readers; not used by these tests.
+    { hasUpcomingConfirmed: async () => false } as any,
+    { hasUpcomingConfirmed: async () => false } as any,
     email as any,
   );
   return { service, users, sent, email };
