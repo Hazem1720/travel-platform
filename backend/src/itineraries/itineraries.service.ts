@@ -4,8 +4,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import { assertOwner } from '../common/helpers/ownership';
+import { Model } from 'mongoose';
+import { assertOwner, idInAnyForm } from '../common/helpers/ownership';
 import { buildSort, paginated } from '../common/pagination/pagination.helper';
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
 import { AuthUser } from '../common/types/auth-user.type';
@@ -93,7 +93,9 @@ export class ItinerariesService {
   // ITN-03: the user's own itineraries, most recently updated first, with
   // the number of days instead of the days themselves.
   async listMine(user: AuthUser, { page, limit, sort }: PaginationQueryDto) {
-    const filter = { ownerId: new Types.ObjectId(user.id) };
+    // ownerId is stored as the id string; the aggregation does not cast, so
+    // match either form.
+    const filter = { ownerId: idInAnyForm(user.id) };
     const [data, total] = await Promise.all([
       this.itineraries.aggregate([
         { $match: filter },

@@ -6,6 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage, Types } from 'mongoose';
 import { AccountStatus } from '../common/enums/role.enum';
+import { idsInAnyForm } from '../common/helpers/ownership';
 import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
 import {
@@ -122,7 +123,8 @@ export class PublicItinerariesService {
   // ITN-21: the read-only view with author, days, activities and budget (in
   // the entries' own currencies).
   async view(id: string): Promise<PublicItineraryView> {
-    const itinerary = await this.findPublic(id);
+    // ITN-27: the owner's linked bookings stay private, out of the budget too.
+    const itinerary = { ...(await this.findPublic(id)), linkedBookings: [] };
     const names = await this.authorNames([itinerary.ownerId]);
     return {
       ...presentWithBudget(itinerary),
@@ -211,7 +213,10 @@ export class PublicItinerariesService {
     return {
       visibility: ItineraryVisibility.PUBLIC,
       hidden: { $ne: true },
-      ...(deactivated.length ? { ownerId: { $nin: deactivated } } : {}),
+      // ownerId is stored as the id string: exclude either form (ACC-12).
+      ...(deactivated.length
+        ? { ownerId: { $nin: idsInAnyForm(deactivated) } }
+        : {}),
     };
   }
 
