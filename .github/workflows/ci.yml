@@ -19,4 +19,4 @@ jobs:
           cache-dependency-path: backend/package-lock.json
       - run: npm ci
       - name: Run Part 9
-        run: npx jest --config ./test/jest-e2e.json --runInBand test/part9-blog.e2e-spec.ts
+        run: npx jest --config ./test/jest-e2e.json --runInBand test/debug-guard.e2e-spec.ts
