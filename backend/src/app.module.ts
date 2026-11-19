@@ -15,6 +15,7 @@ import { CommentsModule } from './comments/comments.module';
 import { ReportsModule } from './reports/reports.module';
 import { validateEnv } from './config/env.validation';
 import { FlightBookingsModule } from './flight-bookings/flight-bookings.module';
+import { FlightPassengersModule } from './flight-bookings/flight-passengers.module';
 import { FavouritesModule } from './favourites/favourites.module';
 import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
@@ -43,6 +44,8 @@ import { UploadsModule } from './uploads/uploads.module';
     // before any GET /flights/:id.
     FlightBookingsModule,
     FlightsModule,
+    // FLT-29: GET /flights/:id/bookings and /passengers/export.
+    FlightPassengersModule,
     UploadsModule,
     NotificationsModule,
     AuditModule,
