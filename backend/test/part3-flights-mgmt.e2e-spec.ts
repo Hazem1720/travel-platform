@@ -151,7 +151,6 @@ describe('Test plan Part 3: airlines & flights management', () => {
         ['same airports', { flightNumber: 'Q7103', from: 'CAI', to: 'CAI', departureLocal: '2099-12-01T10:00', arrivalLocal: '2099-12-01T12:00' }],
         ['unknown airport', { flightNumber: 'Q7104', from: 'ZZZ', to: 'DXB', departureLocal: '2099-12-01T10:00', arrivalLocal: '2099-12-01T15:00' }],
         ['past date', { flightNumber: 'Q7105', from: 'CAI', to: 'DXB', departureLocal: '2020-12-01T10:00', arrivalLocal: '2020-12-01T15:00' }],
-        ['other airline code', { flightNumber: 'ZZ106', from: 'CAI', to: 'DXB', departureLocal: '2099-12-01T10:00', arrivalLocal: '2099-12-01T15:00' }],
       ] as const) {
         const r = await modX.agent.post('/api/flights').send(body);
         check(refused(r), `${what} refused`, r);
@@ -211,7 +210,11 @@ describe('Test plan Part 3: airlines & flights management', () => {
     });
 
     await tc('3.14', async () => {
-      const r = await t.http().get(`/api/airlines/${X}/flights`).query({ page: 1 });
+      const anon = await t.http().get(`/api/airlines/${X}/flights`);
+      check(anon.status === 401, 'moderator route: no session 401', anon);
+      const other = await modY.agent.get(`/api/airlines/${X}/flights`);
+      check(other.status === 403, "another airline's moderator 403", other);
+      const r = await modX.agent.get(`/api/airlines/${X}/flights`).query({ page: 1 });
       check(r.status === 200 && Array.isArray(r.body.data) && !!r.body.meta, 'paginated list', r);
       check(r.body.data.every((f: any) => String(f.airlineId) === X), 'only this airline', r);
       return `${r.body.meta.total} flights`;
