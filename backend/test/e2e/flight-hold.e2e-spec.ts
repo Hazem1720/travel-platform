@@ -1,48 +1,34 @@
 import { ConflictException } from '@nestjs/common';
-import { Connection, createConnection, Model, Types } from 'mongoose';
-import { Airline, AirlineSchema } from '../src/airlines/schemas/airline.schema';
-import { BookingStatus } from '../src/common/enums/booking-status.enum';
-import { FlightQuoteDto } from '../src/flight-bookings/dto/flight-quote.dto';
-import { PassengerType } from '../src/flight-bookings/flight-booking.rules';
-import { renderETicket } from '../src/flight-bookings/e-ticket.pdf';
-import { FlightBookingJobs } from '../src/flight-bookings/flight-booking.jobs';
-import { FlightConfirmationService } from '../src/flight-bookings/flight-confirmation.service';
-import { FlightPaymentHandler } from '../src/flight-bookings/flight-payment.handler';
-import { NotificationsService } from '../src/notifications/notifications.service';
-import {
-  Notification,
-  NotificationSchema,
-} from '../src/notifications/schemas/notification.schema';
-import { PaymentBookingType } from '../src/payments/payment-handler';
-import { PaymentsService } from '../src/payments/payments.service';
-import { Payment, PaymentSchema } from '../src/payments/schemas/payment.schema';
-import { Refund, RefundSchema } from '../src/payments/schemas/refund.schema';
-import { FlightBookingsReaderService } from '../src/flight-bookings/flight-bookings.reader.service';
-import { FlightHoldService } from '../src/flight-bookings/flight-hold.service';
-import { FlightQuoteService } from '../src/flight-bookings/flight-quote.service';
-import {
-  FlightBooking,
-  FlightBookingSchema,
-} from '../src/flight-bookings/schemas/flight-booking.schema';
-import { FlightsService } from '../src/flights/flights.service';
+import { Model, Types } from 'mongoose';
+import { Airline } from '../../src/airlines/schemas/airline.schema';
+import { BookingStatus } from '../../src/common/enums/booking-status.enum';
+import { FlightQuoteDto } from '../../src/flight-bookings/dto/flight-quote.dto';
+import { PassengerType } from '../../src/flight-bookings/flight-booking.rules';
+import { renderETicket } from '../../src/flight-bookings/e-ticket.pdf';
+import { FlightBookingJobs } from '../../src/flight-bookings/flight-booking.jobs';
+import { FlightConfirmationService } from '../../src/flight-bookings/flight-confirmation.service';
+import { Notification } from '../../src/notifications/schemas/notification.schema';
+import { PaymentBookingType } from '../../src/payments/payment-handler';
+import { PaymentsService } from '../../src/payments/payments.service';
+import { FlightBookingsReaderService } from '../../src/flight-bookings/flight-bookings.reader.service';
+import { FlightHoldService } from '../../src/flight-bookings/flight-hold.service';
+import { FlightBooking } from '../../src/flight-bookings/schemas/flight-booking.schema';
 import {
   CabinCategory,
   Flight,
-  FlightSchema,
   FlightStatus,
-} from '../src/flights/schemas/flight.schema';
-import {
-  Airport,
-  AirportSchema,
-} from '../src/reference/schemas/reference.schemas';
+} from '../../src/flights/schemas/flight.schema';
+import { createTestApp, TestApp } from './app';
+import { CAIRO, createAirports, DUBAI } from './fixtures';
 
 // FLT-22 against a real MongoDB: the atomic hold, the race for the last
-// seat, the round-trip undo and expiry. Runs only with E2E_MONGODB_URI (a
-// throwaway database; it is dropped at the end), like the auth flow test.
-const withDatabase = process.env.E2E_MONGODB_URI ? describe : describe.skip;
-
-withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
-  let conn: Connection;
+// seat, the round-trip undo and expiry. Moved from test/flight-hold.e2e-spec.ts
+// onto the harness: the services now come from the real app (app.get)
+// instead of being built by hand, so the real wiring is tested too.
+// This file stays a service-level test (plan 1, "HTTP rule"); the
+// flight-booking suite repeats the key cases over HTTP.
+describe('flight seat hold (FLT-22)', () => {
+  let t: TestApp;
   let flights: Model<any>;
   let bookings: Model<any>;
   let hold: FlightHoldService;
@@ -50,71 +36,22 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
   const USER = String(new Types.ObjectId());
 
   beforeAll(async () => {
-    conn = await createConnection(
-      process.env.E2E_MONGODB_URI!.replace(
-        /\/[^/?]*(\?|$)/,
-        '/flight-hold-e2e$1',
-      ),
-    ).asPromise();
-    flights = conn.model(Flight.name, FlightSchema);
-    bookings = conn.model(FlightBooking.name, FlightBookingSchema);
-    const airlines = conn.model(Airline.name, AirlineSchema);
-    const airports = conn.model(Airport.name, AirportSchema);
-    await Promise.all([flights.init(), bookings.init()]);
-
-    await airports.create([
-      {
-        _id: 'CAI',
-        name: 'Cairo',
-        cityId: 'cairo',
-        countryCode: 'EG',
-        timeZone: 'Africa/Cairo',
-      },
-      {
-        _id: 'DXB',
-        name: 'Dubai',
-        cityId: 'dubai',
-        countryCode: 'AE',
-        timeZone: 'Asia/Dubai',
-      },
-    ]);
+    t = await createTestApp('flight-hold');
+    flights = t.model(Flight.name);
+    bookings = t.model(FlightBooking.name);
+    await createAirports(t, [CAIRO, DUBAI]);
     airlineId = (
-      await airlines.create({
+      await t.model(Airline.name).create({
         name: 'TEST Nile Air',
         code: 'NP',
         extraBagPrice: 5000,
         maxExtraBags: 2,
       })
     )._id;
-
-    const views = new FlightsService(
-      flights as any,
-      airports as any,
-      {} as any,
-      {} as any,
-      {} as any,
-    );
-    const quotes = new FlightQuoteService(
-      flights as any,
-      airlines as any,
-      views,
-    );
-    // PaymentsService.releaseInventory() calls the flight handler's expire().
-    const payments = {
-      releaseInventory: (_type: string, id: string) => hold.expire(id),
-    };
-    hold = new FlightHoldService(
-      bookings as any,
-      flights as any,
-      quotes,
-      payments as any,
-    );
+    hold = t.app.get(FlightHoldService);
   });
 
-  afterAll(async () => {
-    await conn?.dropDatabase();
-    await conn?.close();
-  });
+  afterAll(async () => t?.close());
 
   let n = 0;
   async function newFlight(
@@ -228,9 +165,10 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
       { $set: { 'cabins.0.bookedSeats': 1 } },
     );
     // The quote already sees 0 seats; make it pass so the atomic step decides.
-    const realQuote = (hold as any).quotes.quote.bind((hold as any).quotes);
+    const quotes = (hold as any).quotes;
+    const realQuote = quotes.quote.bind(quotes);
     jest
-      .spyOn((hold as any).quotes, 'quote')
+      .spyOn(quotes, 'quote')
       .mockImplementationOnce(async (dto: FlightQuoteDto) => {
         await flights.updateOne(
           { _id: back._id },
@@ -300,7 +238,7 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
   });
 
   it('Completed job: only bookings whose last segment has landed (GEN-11)', async () => {
-    const jobs = new FlightBookingJobs(bookings as any, hold);
+    const jobs = t.app.get(FlightBookingJobs);
     const seg = (arrivalAt: Date) => ({
       flightId: new Types.ObjectId(),
       airlineId,
@@ -344,7 +282,7 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
   });
 
   it("reader: answers Hazem's and Hasan's questions (FLT-05, ACC-12)", async () => {
-    const reader = new FlightBookingsReaderService(bookings as any);
+    const reader = t.app.get(FlightBookingsReaderService);
     const f = await newFlight(5);
     const other = await newFlight(5);
     const alice = String(new Types.ObjectId());
@@ -385,32 +323,11 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
     let notifications: Model<any>;
 
     beforeAll(() => {
-      notifications = conn.model(Notification.name, NotificationSchema);
-      confirmations = new FlightConfirmationService(
-        bookings as any,
-        flights as any,
-        conn.model(Airport.name) as any,
-        new NotificationsService(notifications as any),
-      );
-      // Memo's real PaymentsService with the real flight handler, as the
-      // Stripe webhook will use them.
-      // No PaymentIntents here, so releaseInventory never calls Stripe.
-      payments = new PaymentsService(
-        conn.model(Payment.name, PaymentSchema) as any,
-        {} as any,
-        conn.model(Refund.name, RefundSchema) as any,
-        new NotificationsService(notifications as any),
-      );
-      payments.registerHandler(
-        PaymentBookingType.FLIGHT,
-        new FlightPaymentHandler(
-          bookings as any,
-          hold,
-          confirmations,
-          flights as any,
-          conn.model(Airline.name) as any,
-        ),
-      );
+      notifications = t.model(Notification.name);
+      confirmations = t.app.get(FlightConfirmationService);
+      // The app's real PaymentsService, with the flight handler that
+      // FlightBookingsModule registered, as the Stripe webhook uses them.
+      payments = t.app.get(PaymentsService);
     });
 
     it('Confirmed, FL- reference, held -> booked, notification, e-ticket', async () => {
@@ -489,14 +406,31 @@ withDatabase('flight seat hold (FLT-22, database: E2E_MONGODB_URI)', () => {
       ]);
       const saved = await bookings.findById(b._id).lean<any>();
       const cabin = await cabinOf(f._id);
-      if (saved.status === BookingStatus.CONFIRMED) {
-        expect(c.status).toBe('fulfilled');
-        expect(cabin).toMatchObject({ heldSeats: 0, bookedSeats: 1 });
-      } else {
-        expect(saved.status).toBe(BookingStatus.EXPIRED);
-        expect(cabin).toMatchObject({ heldSeats: 0, bookedSeats: 0 });
-      }
-      expect(e.status).toBe('fulfilled');
+      // Exactly one of the two outcomes, checked as one expression so the
+      // test never depends on which one won.
+      const outcome = {
+        status: saved.status,
+        confirm: c.status,
+        expire: e.status,
+        heldSeats: cabin.heldSeats,
+        bookedSeats: cabin.bookedSeats,
+      };
+      expect([
+        {
+          status: BookingStatus.CONFIRMED,
+          confirm: 'fulfilled',
+          expire: 'fulfilled',
+          heldSeats: 0,
+          bookedSeats: 1,
+        },
+        {
+          status: BookingStatus.EXPIRED,
+          confirm: c.status,
+          expire: 'fulfilled',
+          heldSeats: 0,
+          bookedSeats: 0,
+        },
+      ]).toContainEqual(outcome);
     });
 
     it('e-ticket of a PendingPayment booking: 400; another user: 404', async () => {

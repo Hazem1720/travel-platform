@@ -2,7 +2,8 @@ name: CI
 
 # Builds and tests the backend on every pull request and on pushes to the
 # main branches. Needs no secrets: unit tests use placeholder settings and
-# never connect to a database.
+# never connect to a database; the e2e tests start their own in-memory
+# MongoDB and fake Stripe's API, SMTP and FXRatesAPI (backend/test/E2E_PLAN.md).
 on:
   pull_request:
   push:
@@ -34,3 +35,29 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      # Read-only (no --fix). Includes the e2e rules: no .skip/.only, every
+      # test asserts something, no expect.anything() / expect.any(Object).
+      - name: Lint
+        run: npx eslint "{src,test}/**/*.ts"
+
+      # The mongod binary that mongodb-memory-server downloads on first use.
+      # The key changes when the pinned version in global-setup.ts changes.
+      - name: Cache MongoDB binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('backend/test/e2e/global-setup.ts') }}
+
+      # The whole e2e suite on a real (in-memory) MongoDB, then the coverage
+      # gates: requirements, routes and sensitive keys.
+      - name: E2E tests and coverage gates
+        run: npm run test:e2e:full
+
+      - name: Upload e2e coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-coverage
+          path: backend/coverage/e2e-coverage.md
+          if-no-files-found: ignore

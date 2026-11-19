@@ -9,7 +9,8 @@ Milestone 1 backend for the Travel Planning and Booking Platform. For setup (Nod
 | `npm run start:dev` | Start with reload. Swagger UI at http://localhost:3000/api/docs |
 | `npm run build` | Compile to `dist/` |
 | `npm test` | Unit tests. They need no database and no `.env` |
-| `npm run test:e2e` | HTTP tests through the real app setup. The database flow runs only when `E2E_MONGODB_URI` is set (see below) |
+| `npm run test:e2e:full` | The whole e2e suite on an in-memory MongoDB, then the coverage gates (see below). This is what CI runs |
+| `npm run test:e2e` | The e2e tests only, without the gates; add a file name to run one suite |
 | `npm run seed:reference` | Load the official countries, cities, airports, attractions and the supported currencies from `seed-data/` (the server also does this when it starts) |
 | `npm run seed:admin` | Create the admin from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` |
 | `npx eslint "{src,test}/**/*.ts"` | Lint without changing files |
@@ -42,15 +43,23 @@ test/                     e2e tests and Jest setup files
 
 The team conventions, including open proposals, are in [`docs/api/conventions.md`](../docs/api/conventions.md).
 
-## End-to-end tests with a database
+## End-to-end tests
 
-The e2e database flow registers a user, logs in, logs out and checks that the old token is rejected. It writes to the database, so it runs only against a database you name in `E2E_MONGODB_URI`, never against `MONGODB_URI`:
+The plan is in [`test/E2E_PLAN.md`](test/E2E_PLAN.md). The tests boot the real `AppModule` and call it over HTTP, on a real MongoDB that `mongodb-memory-server` starts for each run (the first run downloads the `mongod` binary once). Every test app gets its own `e2e-...` database and drops it at the end. Stripe's API, SMTP and FXRatesAPI are faked; every other network call is blocked. No `.env` is needed.
+
+`npm run test:e2e:full` then runs the coverage gates and writes `coverage/e2e-coverage.md`:
+
+- every M1 requirement in the tracker is named in a passing test, or listed in `test/e2e/requirement-exclusions.ts` with a reason;
+- every route has a 2xx response, a 401 unless it is public, a 403 if it has `@Roles`, and a Swagger entry, or is listed in `test/e2e/route-exclusions.ts`;
+- no response body contains a password hash, token or card field.
+
+An exclusion that is no longer needed also fails, so remove the IDs and routes your tests cover.
+
+To use another database instead, set `E2E_MONGODB_URI` in the shell (not in `.env`). The tests refuse the shared database from `backend/.env`, and refuse any `mongodb+srv` (Atlas) address unless `E2E_ALLOW_ATLAS=1` is also set, for a separate throwaway Atlas database:
 
 ```bash
-E2E_MONGODB_URI=mongodb://127.0.0.1:27017/travel_platform_e2e npm run test:e2e
+E2E_MONGODB_URI=mongodb://127.0.0.1:27017/travel_platform_e2e npm run test:e2e:full
 ```
-
-Use a local MongoDB or a separate Atlas database, **never the shared team database**. The test deletes the user it creates.
 
 ## Seeding
 
