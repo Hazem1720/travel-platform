@@ -1211,6 +1211,18 @@ Claude marked my three bonus items Done in requirements-tracker.csv: FLT-27 (#22
 Date: 2026-11-19
 Student: Mohamad Amr Khallaf
 Tool: Claude Code
+Related Requirement: ACC-15, GEN-12 (project description update)
+Prompt:
+ok something happend they sent us a new project description with small edits i want u to to check if these edits will affect our implenetaiton if yes fix them i sent u old and new version assuming u dont have them
+Yes, update PDF
+How the output was used:
+Claude extracted the text of both PDFs and diffed them. The edits: the ACC-15 provider routes PATCH /api/admin/providers/:type/:id/deactivate and /reactivate with their rules (hidden from search, cannot be booked, Confirmed bookings stay valid, in-app notification), a sentence that airport IANA time zones are in Airports.csv and the supported currencies are the Countries.csv codes, and corrected requirement labels in the endpoint tables (ACC-01, ACC-19, FLT-02, HTL-09, ITN-25; ACC-03 and BLG-11 removed). It found no code change needed: Hazem's #223 already moved the ACC-15 routes, the seed reads time zones from airports.csv and the currency list matches countries.csv, our Swagger summaries already use the corrected IDs, and all 120 endpoints the new PDF lists exist in our controllers. I kept that result and had Claude replace docs/requirements/Project Description.pdf with the new version (same file name, so the README link still works). It noted one open question for Hazem: ACC-15 notifies only the provider's moderators, not travellers who have Confirmed bookings with it.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
 Related Requirement: GEN-02, GEN-05
 Prompt:
 ok now there are 9 issues that belong to ml2 so i think its better to remove them for now so we have a clean state for now what do u think
