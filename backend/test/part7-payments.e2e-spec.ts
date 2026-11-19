@@ -163,15 +163,16 @@ describe('Test plan Part 7: payments & refunds', () => {
     await tc('7.8', async () => {
       const b2 = await hold(V);
       await V.agent.post('/api/payments').send({ bookingType: 'flight', bookingId: b2 }).expect(201);
+      // Built without touching the fake gateway: the intent stays unpaid.
       const intent = t.stripe.lastIntent()!;
-      const ev = event('payment_intent.succeeded', intent.id, 'succeed');
+      const ev = paymentIntentEvent('payment_intent.succeeded', { ...intent, status: 'succeeded', amountReceived: intent.amount });
       const forged = await send(ev, 't=1,v1=deadbeef');
       check(forged.status === 400, 'bad signature 400', forged);
       const none = await t.http().post('/api/payments/webhook').set('Content-Type', 'application/json').send(JSON.stringify(ev));
       check(none.status === 400, 'no signature 400', none);
       check((await doc(b2)).status === 'PendingPayment', 'nothing changed');
       (global as any).__b2 = b2;
-      (global as any).__ev2 = ev;
+      (global as any).__pi2 = intent.id;
     });
 
     await tc('7.10', async () => {
@@ -180,7 +181,8 @@ describe('Test plan Part 7: payments & refunds', () => {
       await t.app.get(FlightBookingJobs).expireHolds();
       check((await doc(b2)).status === 'Expired', 'hold Expired');
       const refundsBefore = t.stripe.calls.filter((c) => c.method === 'createRefund').length;
-      const r = await send((global as any).__ev2);
+      // The card is paid only now, after the hold has expired.
+      const r = await send(event('payment_intent.succeeded', (global as any).__pi2, 'succeed'));
       check(r.status === 200, 'late success webhook 200', r);
       check((await doc(b2)).status === 'Expired', 'booking stays Expired');
       const refunds = t.stripe.calls.filter((c) => c.method === 'createRefund');
