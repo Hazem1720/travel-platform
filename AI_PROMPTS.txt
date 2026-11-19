@@ -1138,3 +1138,14 @@ there are 12 open pull requests i want you to check them and merge them ... leav
 How the output was used:
 Claude reviewed Hasan's ten feature PRs (#200, #201, #207, #209 to #214, #216) and Rawda's #215 against conventions.md: role guards, assertOwner / assertOwnsProvider, pagination, conditional updates, refunds through PAY-03, Swagger errors. It found no blocker. One at a time it merged the latest develop into each branch (AI_PROMPTS.txt rebuilt with every entry whole; app.module.ts kept both sides' module registrations), ran build, all unit tests and the read-only eslint check, pushed, waited for CI on that commit and merged with --match-head-commit. For #215 it also ran a live HTTP check against the shared database with TEST data (two TEST hotels, a TEST moderator, one Confirmed reservation), 39/39 passing for HTL-05, HTL-06, HTL-08 and HTL-02, and deleted everything afterwards. It then started the merged develop once to check the module wiring. In this tracker PR it marked the 15 requirements Done (Hasan's team columns from this PR, Rawda's test evidence added) and ran scripts/sync-tracker-xlsx.py --apply. Two follow-ups noted, not blocking: HTL-20's tabs, the HTL-23 Completed job and the ACC-12 hotel check use the UTC date rather than the hotel city's date, and FLT-06 does not free the chosen seats (FLT-28) of a cancelled round trip's other flight.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-29 (fix to Hasan's merged code, as team leader)
+Prompt:
+now iwant u to check all the review and there is no any conflict and test them then merge
+How the output was used:
+Claude's live test of the merged PRs found that the Swagger check (app e2e: a 401 example on every protected route) failed for GET /api/flights/:id/passengers/export: @ApiProduces('text/csv') moved the error responses off application/json. Claude declared the CSV on the 200 response only, as the e-ticket PDF route does; the route itself is unchanged.
+================================================
