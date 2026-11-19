@@ -10,6 +10,7 @@ import { AirlinesModule } from './airlines/airlines.module';
 import { AirportsModule } from './airports/airports.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { BlogModule } from './blog/blog.module';
 import { validateEnv } from './config/env.validation';
 import { FlightBookingsModule } from './flight-bookings/flight-bookings.module';
 import { FavouritesModule } from './favourites/favourites.module';
@@ -21,7 +22,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReferenceModule } from './reference/reference.module';
 import { UploadsModule } from './uploads/uploads.module';
-import { BlogModule } from './blog/blog.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),

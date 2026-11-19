@@ -1,463 +1,347 @@
-
-/// <reference types="jest" />
-import {
-  BadRequestException,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { Role } from '../common/enums/role.enum';
 import { AuthUser } from '../common/types/auth-user.type';
 import { UploadedImage } from '../uploads/image-file';
 import { UploadsService } from '../uploads/uploads.service';
-import { BlogService } from './blog.service';
-import { UpdatePostDto } from './dto/update-post.dto';
+import { BlogService, excerptOf, NO_RESULTS } from './blog.service';
+import { PostStatus } from './schemas/post.schema';
 
 const authorId = new Types.ObjectId().toHexString();
-const otherAuthorId = new Types.ObjectId().toHexString();
 const postId = new Types.ObjectId().toHexString();
-
 const user: AuthUser = {
   id: authorId,
   role: Role.USER,
   assignedProviderId: null,
 };
+const query = { page: 1, limit: 10 };
 
-const imageUrls = [
-  '/api/uploads/image-one.jpg',
-  '/api/uploads/image-two.png',
-];
+const lean = (value: unknown) => ({ lean: async () => value });
 
-function setup(options: {
-  post?: any;
-  postById?: any;
-  updatedPost?: any;
-  searchResults?: any[];
-  matchingAuthors?: any[];
-  postAuthors?: any[];
-} = {}) {
+// A post document as findOne() returns it: fields plus save() and toObject().
+function postDoc(fields: Record<string, unknown> = {}) {
+  const doc: any = {
+    _id: new Types.ObjectId(postId),
+    authorId: new Types.ObjectId(authorId),
+    title: 'Paris',
+    body: 'A trip',
+    tags: [],
+    images: [],
+    status: PostStatus.DRAFT,
+    publishedAt: null,
+    ...fields,
+  };
+  doc.save = jest.fn<any, any[]>(async () => doc);
+  doc.toObject = () => ({ ...doc });
+  return doc;
+}
+
+function setup(
+  opts: {
+    owned?: any;
+    found?: any;
+    deleted?: any;
+    pushed?: any;
+    pulled?: any;
+    page?: any[];
+    total?: number;
+    names?: { _id: unknown; name: string }[];
+    author?: any;
+  } = {},
+) {
   const posts = {
-    findOneAndUpdate: jest.fn(() => ({
-      lean: async () =>
-        options.updatedPost ?? options.post ?? null,
+    create: jest.fn<any, any[]>(async (data: any) => ({
+      toObject: () => data,
     })),
-    findOneAndDelete: jest.fn(async () => options.post ?? null),
-    findById: jest.fn(() => ({
-      lean: async () =>
-        options.postById ?? options.post ?? null,
-    })),
-    updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
-    find: jest.fn(() => ({
-      lean: async () => options.searchResults ?? [],
-    })),
-  };
-
-  const users = {
-    find: jest.fn()
-      .mockImplementationOnce(() => ({
-        select: () => ({
-          lean: async () => options.matchingAuthors ?? [],
-        }),
-      }))
-      .mockImplementationOnce(() => ({
-        lean: async () => options.postAuthors ?? [],
-      })),
-  };
-
-  const uploadsService = {
-    save: jest.fn(async () => [
-      '/api/uploads/new-image.jpg',
+    findOne: jest.fn<any, any[]>((filter: any) =>
+      filter.status === PostStatus.PUBLISHED
+        ? lean(opts.found ?? null)
+        : (opts.owned ?? null),
+    ),
+    findOneAndDelete: jest.fn<any, any[]>(async () => opts.deleted ?? null),
+    findOneAndUpdate: jest.fn<any, any[]>((_f: any, update: any) =>
+      update.$push ? lean(opts.pushed ?? null) : (opts.pulled ?? null),
+    ),
+    aggregate: jest.fn<any, any[]>(async () => [
+      {
+        data: opts.page ?? [],
+        total: opts.total === undefined ? [] : [{ n: opts.total }],
+      },
     ]),
-    remove: jest.fn(async () => undefined),
   };
-
+  const users = {
+    distinct: jest.fn<any, any[]>(async () => []),
+    find: jest.fn<any, any[]>(() => lean(opts.names ?? [])),
+    findOne: jest.fn<any, any[]>(() => ({
+      select: () => lean(opts.author ?? null),
+    })),
+  };
+  const uploads = {
+    save: jest.fn<any, any[]>(async () => ['/api/uploads/new.jpg']),
+    remove: jest.fn<any, any[]>(async () => undefined),
+  };
   const service = new BlogService(
     posts as any,
     users as any,
-    uploadsService as unknown as UploadsService,
+    uploads as unknown as UploadsService,
   );
-
-  return { service, posts, users, uploadsService };
+  return { service, posts, users, uploads };
 }
 
-describe('BLG-04: Update and Delete Posts', () => {
-  describe('update', () => {
-    it('updates a post owned by the current user', async () => {
-      const updatedPost = {
-        _id: postId,
-        authorId,
-        title: 'Updated travel post',
-        body: 'Updated body',
-      };
-
-      const { service, posts } = setup({ post: updatedPost });
-
-      const dto = {
-        title: 'Updated travel post',
-        body: 'Updated body',
-      } as UpdatePostDto;
-
-      const result = await service.update(user, postId, dto);
-
-      expect(result).toEqual(updatedPost);
-      expect(posts.findOneAndUpdate).toHaveBeenCalledWith(
-        { _id: postId, authorId: user.id },
-        { $set: dto },
-        { new: true, runValidators: true },
-      );
+describe('BLG-01: create a post', () => {
+  it('saves a Draft by default, without publishedAt', async () => {
+    const { service, posts } = setup();
+    await service.create(user, { title: 'T', body: 'B' });
+    const saved = posts.create.mock.calls[0][0];
+    expect(saved).toMatchObject({
+      title: 'T',
+      body: 'B',
+      tags: [],
+      status: PostStatus.DRAFT,
+      publishedAt: null,
     });
-
-    it('returns 404 if the post does not exist or belong to the user', async () => {
-      const { service } = setup();
-
-      await expect(
-        service.update(user, postId, {} as UpdatePostDto),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
+    expect(String(saved.authorId)).toBe(authorId);
   });
 
-  describe('remove', () => {
-    it('deletes the post and all its uploaded images', async () => {
-      const post = {
-        _id: postId,
-        authorId,
-        images: imageUrls,
-      };
-
-      const { service, posts, uploadsService } = setup({ post });
-
-      const result = await service.remove(user, postId);
-
-      expect(result).toEqual({ message: 'Post deleted' });
-      expect(posts.findOneAndDelete).toHaveBeenCalledWith({
-        _id: postId,
-        authorId: user.id,
-      });
-
-      expect(uploadsService.remove).toHaveBeenCalledTimes(2);
-      expect(uploadsService.remove).toHaveBeenCalledWith(imageUrls[0]);
-      expect(uploadsService.remove).toHaveBeenCalledWith(imageUrls[1]);
+  it('sets publishedAt when created as Published', async () => {
+    const { service, posts } = setup();
+    await service.create(user, {
+      title: 'T',
+      body: 'B',
+      tags: ['paris'],
+      status: PostStatus.PUBLISHED,
     });
-
-    it('deletes a post that has no images', async () => {
-      const post = {
-        _id: postId,
-        authorId,
-        images: [],
-      };
-
-      const { service, uploadsService } = setup({ post });
-
-      await expect(service.remove(user, postId)).resolves.toEqual({
-        message: 'Post deleted',
-      });
-
-      expect(uploadsService.remove).not.toHaveBeenCalled();
-    });
-
-    it('returns 404 if the post does not exist or belong to the user', async () => {
-      const { service, uploadsService } = setup();
-
-      await expect(
-        service.remove(user, postId),
-      ).rejects.toBeInstanceOf(NotFoundException);
-
-      expect(uploadsService.remove).not.toHaveBeenCalled();
-    });
+    expect(posts.create.mock.calls[0][0].publishedAt).toBeInstanceOf(Date);
   });
 });
 
-describe('BLG-09: Search Blog Posts', () => {
-  const query = { page: 1, limit: 10 } as any;
-
-  it('searches posts by title', async () => {
-    const posts = [{
+describe('BLG-02 / BLG-08: browse published posts', () => {
+  it('lists only published, visible posts newest first, with author names', async () => {
+    const row = {
       _id: new Types.ObjectId(),
-      authorId,
-      title: 'Paris Travel Guide',
-      body: 'Explore Paris',
-      tags: [],
-      likeCount: 5,
-      commentCount: 2,
-      publishedAt: new Date(),
-    }];
-
-    const { service } = setup({
-      searchResults: posts,
-      matchingAuthors: [],
-      postAuthors: [{ _id: authorId, name: 'Travel Author' }],
-    });
-
-    const result = await service.searchPosts('Paris', query);
-
-    expect(result.data).toHaveLength(1);
-    expect(result.data[0].title).toBe('Paris Travel Guide');
-  });
-
-  it('searches posts by tags', async () => {
-    const posts = [{
-      _id: new Types.ObjectId(),
-      authorId,
-      title: 'My Holiday',
-      body: 'A great holiday',
+      authorId: new Types.ObjectId(authorId),
+      title: 'Paris',
+      body: 'Body',
       tags: ['paris'],
-      likeCount: 1,
-      commentCount: 0,
+      images: [],
       publishedAt: new Date(),
-    }];
-
-    const { service } = setup({
-      searchResults: posts,
-      matchingAuthors: [],
-      postAuthors: [{ _id: authorId, name: 'Travel Author' }],
-    });
-
-    const result = await service.searchPosts('paris', query);
-
-    expect(result.data).toHaveLength(1);
-    expect(result.data[0].tags).toContain('paris');
-  });
-
-  it('searches posts by author name', async () => {
-    const posts = [{
-      _id: new Types.ObjectId(),
-      authorId,
-      title: 'My Journey',
-      body: 'A journey around the world',
-      tags: [],
       likeCount: 2,
       commentCount: 1,
-      publishedAt: new Date(),
-    }];
-
-    const { service } = setup({
-      searchResults: posts,
-      matchingAuthors: [{ _id: new Types.ObjectId(authorId) }],
-      postAuthors: [{ _id: authorId, name: 'Travel Author' }],
+    };
+    const { service, posts } = setup({
+      page: [row],
+      total: 1,
+      names: [{ _id: row.authorId, name: 'Sara' }],
     });
-
-    const result = await service.searchPosts('Travel Author', query);
-
-    expect(result.data).toHaveLength(1);
-    expect(result.data[0].author.name).toBe('Travel Author');
+    const res = await service.findAll({ ...query, tag: 'paris' });
+    const [match, sort] = posts.aggregate.mock.calls[0][0];
+    expect(match.$match).toMatchObject({
+      status: PostStatus.PUBLISHED,
+      hidden: { $ne: true },
+      tags: 'paris',
+    });
+    expect(sort.$sort).toEqual({ publishedAt: -1, _id: -1 });
+    expect(res.data[0]).toMatchObject({
+      title: 'Paris',
+      excerpt: 'Body',
+      author: { name: 'Sara' },
+      likeCount: 2,
+      commentCount: 1,
+    });
+    expect(res.meta.total).toBe(1);
   });
 
-  it('sorts posts by interaction score, then newest', async () => {
-    const older = new Date('2026-01-01');
-    const newer = new Date('2026-02-01');
-
-    const posts = [
-      {
-        _id: new Types.ObjectId(),
-        authorId,
-        title: 'Low score',
-        body: 'Post one',
-        likeCount: 1,
-        commentCount: 1,
-        publishedAt: newer,
-      },
-      {
-        _id: new Types.ObjectId(),
-        authorId,
-        title: 'High score',
-        body: 'Post two',
-        likeCount: 10,
-        commentCount: 5,
-        publishedAt: older,
-      },
-      {
-        _id: new Types.ObjectId(),
-        authorId,
-        title: 'Same score newer',
-        body: 'Post three',
-        likeCount: 1,
-        commentCount: 1,
-        publishedAt: newer,
-      },
-    ];
-
-    const { service } = setup({
-      searchResults: posts,
-      matchingAuthors: [],
-      postAuthors: [{ _id: authorId, name: 'Travel Author' }],
+  it('leaves out posts by deactivated authors (ACC-12)', async () => {
+    const gone = new Types.ObjectId();
+    const { service, posts, users } = setup();
+    users.distinct.mockResolvedValueOnce([gone] as never);
+    await service.findAll(query);
+    expect(posts.aggregate.mock.calls[0][0][0].$match.authorId).toEqual({
+      $nin: [gone],
     });
-
-    const result = await service.searchPosts('Post', query);
-
-    expect(result.data.map((post: any) => post.title)).toEqual([
-      'High score',
-      'Low score',
-      'Same score newer',
-    ]);
   });
 
-  it('returns a maximum 200-character excerpt followed by ellipsis for long bodies', async () => {
-    const longBody = 'A'.repeat(250);
+  it('a tag page lowercases the tag (BLG-08)', async () => {
+    const { service, posts } = setup();
+    await service.findByTag(' Paris ', query);
+    expect(posts.aggregate.mock.calls[0][0][0].$match.tags).toBe('paris');
+  });
 
-    const posts = [{
-      _id: new Types.ObjectId(),
-      authorId,
-      title: 'Long article',
-      body: longBody,
-      likeCount: 0,
-      commentCount: 0,
-      publishedAt: new Date(),
-    }];
-
+  it('shows a published post with its author', async () => {
     const { service } = setup({
-      searchResults: posts,
-      matchingAuthors: [],
-      postAuthors: [{ _id: authorId, name: 'Travel Author' }],
+      found: { _id: postId, authorId, title: 'Paris' },
+      author: { name: 'Sara' },
     });
+    const post = await service.findById(postId);
+    expect(post.author).toEqual({ id: authorId, name: 'Sara' });
+  });
 
-    const result = await service.searchPosts('Long', query);
-
-    expect(result.data[0].excerpt).toBe(`${'A'.repeat(200)}...`);
+  it('is 404 for an invalid id, a draft, a hidden post or a deactivated author', async () => {
+    await expect(setup().service.findById('nope')).rejects.toThrow(
+      NotFoundException,
+    );
+    await expect(setup().service.findById(postId)).rejects.toThrow(
+      NotFoundException,
+    );
+    const { service } = setup({ found: { _id: postId, authorId } });
+    await expect(service.findById(postId)).rejects.toThrow(NotFoundException);
   });
 });
 
-describe('BLG-10: Post Image Management', () => {
-  const uploadedFiles = [
-    { originalname: 'photo.jpg', buffer: Buffer.from('image') },
-  ] as UploadedImage[];
+describe('BLG-09: search posts', () => {
+  it('matches title, tags or author name and orders by likes + comments, then newest', async () => {
+    const matchingAuthor = new Types.ObjectId();
+    const { service, posts, users } = setup({ total: 1 });
+    users.distinct
+      .mockResolvedValueOnce([matchingAuthor] as never)
+      .mockResolvedValueOnce([] as never);
+    await service.findAll({ ...query, search: 'Par(is' });
 
-  describe('addImages', () => {
-    it('allows the author to upload images to their post', async () => {
-      const post = {
-        _id: postId,
-        authorId,
-        images: [],
-      };
-
-      const updatedPost = {
-        ...post,
-        images: ['/api/uploads/new-image.jpg'],
-      };
-
-      const { service, uploadsService, posts } = setup({
-        postById: post,
-        updatedPost,
-      });
-
-      const result = await service.addImages(
-        user,
-        postId,
-        uploadedFiles,
-      );
-
-      expect(uploadsService.save).toHaveBeenCalledWith(uploadedFiles);
-      expect(posts.findOneAndUpdate).toHaveBeenCalled();
-      expect(result.images).toContain('/api/uploads/new-image.jpg');
-    });
-
-    it('rejects uploads from users who do not own the post', async () => {
-      const post = {
-        _id: postId,
-        authorId: otherAuthorId,
-        images: [],
-      };
-
-      const { service, uploadsService } = setup({ postById: post });
-
-      await expect(
-        service.addImages(user, postId, uploadedFiles),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-
-      expect(uploadsService.save).not.toHaveBeenCalled();
-    });
-
-    it('rejects uploads when the post would exceed 5 images', async () => {
-      const post = {
-        _id: postId,
-        authorId,
-        images: [
-          'one.jpg',
-          'two.jpg',
-          'three.jpg',
-          'four.jpg',
-          'five.jpg',
-        ],
-      };
-
-      const { service, uploadsService } = setup({ postById: post });
-
-      await expect(
-        service.addImages(user, postId, uploadedFiles),
-      ).rejects.toBeInstanceOf(BadRequestException);
-
-      expect(uploadsService.save).not.toHaveBeenCalled();
-    });
-
-    it('returns 404 when the post does not exist', async () => {
-      const { service, uploadsService } = setup();
-
-      await expect(
-        service.addImages(user, postId, uploadedFiles),
-      ).rejects.toBeInstanceOf(NotFoundException);
-
-      expect(uploadsService.save).not.toHaveBeenCalled();
-    });
+    const pipeline = posts.aggregate.mock.calls[0][0];
+    const { $or } = pipeline[0].$match;
+    expect($or[0].title).toEqual(/Par\(is/i);
+    expect($or[1].tags).toEqual(/Par\(is/i);
+    expect($or[2]).toEqual({ authorId: { $in: [matchingAuthor] } });
+    expect(pipeline[1].$addFields.score).toBeDefined();
+    expect(pipeline[2].$sort).toEqual({ score: -1, publishedAt: -1, _id: -1 });
   });
 
-  describe('removeImage', () => {
-    it('allows the author to delete an image from their post', async () => {
-      const post = {
-        _id: postId,
-        authorId,
-        images: imageUrls,
-      };
+  it('says "No results found" when nothing matches', async () => {
+    const { service } = setup({ total: 0 });
+    const res = await service.searchPosts({ ...query, search: 'zzz' });
+    expect(res).toMatchObject({ data: [], message: NO_RESULTS });
+  });
 
-      const { service, uploadsService, posts } = setup({
-        postById: post,
-        updatedPost: {
-          ...post,
-          images: [imageUrls[1]],
-        },
-      });
+  it('cuts the excerpt at 200 characters followed by an ellipsis', () => {
+    expect(excerptOf('A'.repeat(250))).toBe(`${'A'.repeat(200)}...`);
+    expect(excerptOf('short')).toBe('short');
+  });
+});
 
-      const result = await service.removeImage(
-        user,
-        postId,
-        'image-one.jpg',
-      );
+describe('BLG-03: my posts', () => {
+  it('lists every post of the current user, drafts included', async () => {
+    const find = jest.fn<any, any[]>(() => ({
+      sort: () => ({ skip: () => ({ limit: () => lean([{ title: 'D' }]) }) }),
+    }));
+    const posts = { find, countDocuments: jest.fn<any, any[]>(async () => 1) };
+    const service = new BlogService(posts as any, {} as any, {} as any);
+    const res = await service.findMine(user, query);
+    expect(String((find.mock.calls[0] as any[])[0].authorId)).toBe(authorId);
+    expect(res.data).toEqual([{ title: 'D' }]);
+  });
+});
 
-      expect(result).toEqual({
-        message: 'Image deleted successfully',
-      });
-      expect(posts.findOneAndUpdate).toHaveBeenCalled();
-      expect(uploadsService.remove).toHaveBeenCalledWith(imageUrls[0]);
+describe('BLG-04 / BLG-08: update and delete', () => {
+  it('updates title, body and tags of my post', async () => {
+    const doc = postDoc();
+    const { service, posts } = setup({ owned: doc });
+    await service.update(user, postId, {
+      title: 'New',
+      body: 'Text',
+      tags: ['nile'],
     });
+    const filter = (posts.findOne.mock.calls[0] as any[])[0];
+    expect(filter._id).toBe(postId);
+    expect(String(filter.authorId)).toBe(authorId);
+    expect(doc).toMatchObject({ title: 'New', body: 'Text', tags: ['nile'] });
+    expect(doc.save).toHaveBeenCalled();
+  });
 
-    it('rejects image deletion by a non-author', async () => {
-      const post = {
-        _id: postId,
-        authorId: otherAuthorId,
-        images: imageUrls,
-      };
+  it('sets publishedAt the first time a draft is published', async () => {
+    const doc = postDoc();
+    const { service } = setup({ owned: doc });
+    await service.update(user, postId, { status: PostStatus.PUBLISHED });
+    expect(doc.publishedAt).toBeInstanceOf(Date);
 
-      const { service, uploadsService } = setup({ postById: post });
-
-      await expect(
-        service.removeImage(user, postId, 'image-one.jpg'),
-      ).rejects.toBeInstanceOf(ForbiddenException);
-
-      expect(uploadsService.remove).not.toHaveBeenCalled();
+    const first = new Date('2026-01-01');
+    const again = postDoc({ publishedAt: first });
+    await setup({ owned: again }).service.update(user, postId, {
+      status: PostStatus.PUBLISHED,
     });
+    expect(again.publishedAt).toBe(first);
+  });
 
-    it('returns 404 when the image does not exist', async () => {
-      const post = {
+  it("is 404 for someone else's post or an invalid id", async () => {
+    await expect(
+      setup().service.update(user, postId, { title: 'x' }),
+    ).rejects.toThrow(NotFoundException);
+    await expect(
+      setup().service.update(user, 'bad', { title: 'x' }),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('deletes my post and its uploaded images', async () => {
+    const { service, uploads } = setup({
+      deleted: {
         _id: postId,
-        authorId,
-        images: imageUrls,
-      };
-
-      const { service, uploadsService } = setup({ postById: post });
-
-      await expect(
-        service.removeImage(user, postId, 'missing.jpg'),
-      ).rejects.toBeInstanceOf(NotFoundException);
-
-      expect(uploadsService.remove).not.toHaveBeenCalled();
+        images: ['/api/uploads/a.jpg', '/api/uploads/b.png'],
+      },
     });
+    await expect(service.remove(user, postId)).resolves.toEqual({
+      message: 'Post deleted',
+    });
+    expect(uploads.remove).toHaveBeenCalledTimes(2);
+  });
+
+  it("is 404 when deleting someone else's post", async () => {
+    await expect(setup().service.remove(user, postId)).rejects.toThrow(
+      NotFoundException,
+    );
+  });
+});
+
+describe('BLG-10: post images', () => {
+  const files = [{ originalname: 'a.jpg' }] as UploadedImage[];
+
+  it('uploads images to my post', async () => {
+    const { service, uploads } = setup({
+      owned: postDoc(),
+      pushed: { images: ['/api/uploads/new.jpg'] },
+    });
+    const res = await service.addImages(user, postId, files);
+    expect(uploads.save).toHaveBeenCalledWith(files);
+    expect(res.images).toEqual(['/api/uploads/new.jpg']);
+  });
+
+  it('refuses more than 5 images in total, before saving anything', async () => {
+    const { service, uploads } = setup({
+      owned: postDoc({ images: ['1', '2', '3', '4', '5'] }),
+    });
+    await expect(service.addImages(user, postId, files)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(uploads.save).not.toHaveBeenCalled();
+  });
+
+  it('removes the saved files when the atomic re-check fails', async () => {
+    const { service, uploads } = setup({ owned: postDoc(), pushed: null });
+    await expect(service.addImages(user, postId, files)).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(uploads.remove).toHaveBeenCalledWith('/api/uploads/new.jpg');
+  });
+
+  it("is 404 for someone else's post", async () => {
+    await expect(
+      setup().service.addImages(user, postId, files),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('removes an image by its file name', async () => {
+    const { service, uploads } = setup({
+      owned: postDoc({ images: ['/api/uploads/a.jpg'] }),
+      pulled: { images: [] },
+    });
+    await expect(service.removeImage(user, postId, 'a.jpg')).resolves.toEqual({
+      message: 'Image deleted successfully',
+    });
+    expect(uploads.remove).toHaveBeenCalledWith('/api/uploads/a.jpg');
+  });
+
+  it('is 404 for an unknown image', async () => {
+    const { service } = setup({ owned: postDoc() });
+    await expect(service.removeImage(user, postId, 'x.jpg')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

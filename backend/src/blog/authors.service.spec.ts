@@ -1,136 +1,114 @@
-
 import { NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
-import { AccountStatus } from '../common/enums/role.enum';
-import { PublicItinerariesService } from '../itineraries/public-itineraries.service';
-import { AuthorsService } from './authors.service';
+import { ItineraryVisibility } from '../itineraries/schemas/itinerary.schema';
+import { AUTHOR_NOT_FOUND, AuthorsService } from './authors.service';
+import { PostStatus } from './schemas/post.schema';
 
-describe('BLG-12: Author Profiles', () => {
-  const authorId = new Types.ObjectId().toHexString();
-  const query = { page: 1, limit: 10 } as any;
+const authorId = new Types.ObjectId();
+const query = { page: 1, limit: 10 };
+const lean = (value: unknown) => ({ lean: async () => value });
+const chain = (rows: unknown[]) => ({
+  sort: () => ({ skip: () => ({ limit: () => lean(rows) }) }),
+});
 
-  const author = {
-    _id: new Types.ObjectId(authorId),
-    name: 'Travel Author',
-    createdAt: new Date('2026-01-01'),
+function setup(author: unknown) {
+  const users = {
+    findOne: jest.fn(() => ({ select: () => lean(author) })),
   };
-
-  const postsData = [
-    {
-      _id: new Types.ObjectId(),
-      title: 'My Paris Trip',
-      status: 'Published',
-      authorId: author._id,
-    },
-  ];
-
-  const itinerariesData = {
-    data: [{ title: 'European Adventure' }],
-    meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+  const posts = {
+    find: jest.fn(() =>
+      chain([
+        {
+          _id: new Types.ObjectId(),
+          title: 'Nile cruise',
+          body: 'B'.repeat(250),
+          tags: ['egypt'],
+          publishedAt: new Date(),
+          likeCount: 3,
+          commentCount: 1,
+        },
+      ]),
+    ),
+    countDocuments: jest.fn(async () => 1),
   };
+  const itineraries = {
+    find: jest.fn(() =>
+      chain([
+        {
+          _id: new Types.ObjectId(),
+          title: 'Week in Egypt',
+          countries: ['EG'],
+          startDate: new Date(),
+          days: [{}, {}],
+        },
+      ]),
+    ),
+    countDocuments: jest.fn(async () => 1),
+  };
+  const service = new AuthorsService(
+    users as any,
+    posts as any,
+    itineraries as any,
+  );
+  return { service, users, posts, itineraries };
+}
 
-  function setup(authorResult: any = author) {
-    const users = {
-      findOne: jest.fn(() => ({
-        select: jest.fn(() => ({
-          lean: jest.fn().mockResolvedValue(authorResult),
-        })),
-      })),
-    };
+describe('BLG-12: public author page', () => {
+  const joined = new Date('2026-01-05');
 
-    const posts = {
-      find: jest.fn(() => ({
-        sort: jest.fn(() => ({
-          skip: jest.fn(() => ({
-            limit: jest.fn(() => ({
-              lean: jest.fn().mockResolvedValue(postsData),
-            })),
-          })),
-        })),
-      })),
-      countDocuments: jest.fn().mockResolvedValue(1),
-    };
-
-    const publicItinerariesService = {
-      findByAuthor: jest.fn().mockResolvedValue(itinerariesData),
-    };
-
-    const service = new AuthorsService(
-      users as any,
-      posts as any,
-      publicItinerariesService as unknown as PublicItinerariesService,
-    );
-
-    return {
-      service,
-      users,
-      posts,
-      publicItinerariesService,
-    };
-  }
-
-  it('returns an author profile with published posts and public itineraries', async () => {
-    const { service } = setup();
-
-    const result = await service.findProfile(authorId, query);
-
-    expect(result.author.name).toBe('Travel Author');
-    expect(result.author.joinedAt).toEqual(author.createdAt);
-    expect(result.posts.data).toEqual(postsData);
-    expect(result.itineraries).toEqual(itinerariesData);
-  });
-
-  it('only retrieves published and non-hidden posts', async () => {
-    const { service, posts } = setup();
-
-    await service.findProfile(authorId, query);
-
-    expect(posts.find).toHaveBeenCalledWith({
-      authorId: author._id,
-      status: 'Published',
-      hidden: false,
-    });
-  });
-
-  it('requests the author itineraries with pagination', async () => {
-    const { service, publicItinerariesService } = setup();
-
-    await service.findProfile(authorId, query);
-
-    expect(
-      publicItinerariesService.findByAuthor,
-    ).toHaveBeenCalledWith(authorId, 1, 10);
-  });
-
-  it('returns 404 when the author does not exist', async () => {
-    const { service, posts, publicItinerariesService } = setup(null);
-
-    await expect(
-      service.findProfile(authorId, query),
-    ).rejects.toBeInstanceOf(NotFoundException);
-
-    expect(posts.find).not.toHaveBeenCalled();
-    expect(publicItinerariesService.findByAuthor).not.toHaveBeenCalled();
-  });
-
-  it('returns 404 for a deactivated author', async () => {
-    const { service, users } = setup();
-
-    await service.findProfile(authorId, query);
-
-    expect(users.findOne).toHaveBeenCalledWith({
+  it('shows name, join date, published posts and public itineraries', async () => {
+    const { service } = setup({
       _id: authorId,
-      status: { $ne: AccountStatus.DEACTIVATED },
+      name: 'Sara',
+      createdAt: joined,
+    });
+    const page = await service.findProfile(String(authorId), query);
+
+    expect(page.author).toEqual({
+      id: authorId,
+      name: 'Sara',
+      joinedAt: joined,
+    });
+    expect(page.posts.data[0]).toMatchObject({
+      title: 'Nile cruise',
+      excerpt: `${'B'.repeat(200)}...`,
+      likeCount: 3,
+    });
+    expect(page.posts.meta.total).toBe(1);
+    expect(page.itineraries.data[0]).toMatchObject({
+      title: 'Week in Egypt',
+      dayCount: 2,
     });
   });
 
-  it('returns 404 for an invalid author ID', async () => {
-    const { service, users } = setup();
+  it('lists only published, visible posts and public, visible itineraries', async () => {
+    const { service, posts, itineraries } = setup({ _id: authorId, name: 'S' });
+    await service.findProfile(String(authorId), query);
+    expect((posts.find.mock.calls[0] as any[])[0]).toEqual({
+      authorId,
+      status: PostStatus.PUBLISHED,
+      hidden: { $ne: true },
+    });
+    expect((itineraries.find.mock.calls[0] as any[])[0]).toEqual({
+      ownerId: authorId,
+      visibility: ItineraryVisibility.PUBLIC,
+      hidden: { $ne: true },
+    });
+  });
 
-    await expect(
-      service.findProfile('invalid-id', query),
-    ).rejects.toBeInstanceOf(NotFoundException);
+  it('is 404 for an unknown or deactivated author (ACC-12)', async () => {
+    const { service, users } = setup(null);
+    await expect(service.findProfile(String(authorId), query)).rejects.toThrow(
+      AUTHOR_NOT_FOUND,
+    );
+    expect((users.findOne.mock.calls[0] as any[])[0].status).toEqual({
+      $ne: 'deactivated',
+    });
+  });
 
-    expect(users.findOne).not.toHaveBeenCalled();
+  it('is 404 for an invalid id', async () => {
+    await expect(setup(null).service.findProfile('bad', query)).rejects.toThrow(
+      NotFoundException,
+    );
   });
 });

@@ -1,6 +1,8 @@
-
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, Types } from 'mongoose';
+import { HydratedDocument, Schema as MongooseSchema, Types } from 'mongoose';
+
+export const MAX_POST_TAGS = 5;
+export const MAX_TAG_LENGTH = 30;
 
 // BLG-01: A post can be saved as a draft or published.
 export enum PostStatus {
@@ -13,7 +15,12 @@ export type PostDocument = HydratedDocument<Post>;
 @Schema({ timestamps: true, collection: 'posts' })
 export class Post {
   // The user who created this post.
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
+  @Prop({
+    type: MongooseSchema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+    index: true,
+  })
   authorId: Types.ObjectId;
 
   // The post title.
@@ -31,14 +38,17 @@ export class Post {
     validate: {
       validator: (tags: string[]) =>
         Array.isArray(tags) &&
-        tags.length <= 5 &&
-        tags.every((tag) => typeof tag === 'string' && tag.trim().length <= 30),
+        tags.length <= MAX_POST_TAGS &&
+        tags.every(
+          (tag) =>
+            typeof tag === 'string' && tag.trim().length <= MAX_TAG_LENGTH,
+        ),
       message: 'A post can have at most 5 tags, each up to 30 characters',
     },
   })
   tags: string[];
 
-  // BLG-01 / BLG-10: Up to 5 image URLs.
+  // BLG-10: Up to 5 image URLs, added only through the upload route (GEN-08).
   @Prop({
     type: [String],
     default: [],
@@ -59,19 +69,19 @@ export class Post {
   })
   status: PostStatus;
 
-  // Records when the post was published.
+  // Records when the post was first published.
   @Prop({ type: Date, default: null, index: true })
   publishedAt: Date | null;
 
-  // Number of likes on the post.
+  // Number of likes on the post (BLG-06 keeps it up to date).
   @Prop({ type: Number, default: 0, min: 0 })
   likeCount: number;
 
-  // Number of comments on the post.
+  // Number of comments on the post (BLG-05 keeps it up to date).
   @Prop({ type: Number, default: 0, min: 0 })
   commentCount: number;
 
-  // Hidden posts are excluded from public queries.
+  // GEN-10: hidden posts are visible only to their author and admins.
   @Prop({ type: Boolean, default: false, index: true })
   hidden: boolean;
 
@@ -80,3 +90,6 @@ export class Post {
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);
+// BLG-02 and BLG-08: published, visible posts, newest first; tag lookups.
+PostSchema.index({ status: 1, hidden: 1, publishedAt: -1 });
+PostSchema.index({ tags: 1 });

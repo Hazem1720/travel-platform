@@ -1,14 +1,8 @@
-
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import {
   ApiOkResponse,
   ApiOperation,
-  ApiQuery,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { Public } from '../common/decorators/public.decorator';
@@ -16,20 +10,19 @@ import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
 import { ApiErrors } from '../common/swagger/api-error.decorator';
 import { AuthorsService } from './authors.service';
 
-@ApiTags('Authors')
+@ApiTags('Blog')
 @Controller('authors')
 export class AuthorsController {
-  constructor(
-    private readonly authorsService: AuthorsService,
-  ) {}
+  constructor(private readonly authorsService: AuthorsService) {}
 
   // BLG-12: Get a public author profile.
   @Get(':id')
   @Public()
   @ApiOperation({
-    summary: 'Get an author profile with published posts and public itineraries (BLG-12)',
+    summary:
+      'Get an author profile with published posts and public itineraries (BLG-12)',
   })
-  @ApiQuery({ type: PaginationQueryDto })
+  @ApiParam({ name: 'id', example: '6736e5f4c1a2b3c4d5e6f001' })
   @ApiOkResponse({
     description: 'Author profile with paginated posts and itineraries',
     schema: {
@@ -64,10 +57,7 @@ export class AuthorsController {
     status: 404,
     message: 'Author not found',
   })
-  findProfile(
-    @Param('id') id: string,
-    @Query() query: PaginationQueryDto,
-  ) {
+  findProfile(@Param('id') id: string, @Query() query: PaginationQueryDto) {
     return this.authorsService.findProfile(id, query);
   }
 }
