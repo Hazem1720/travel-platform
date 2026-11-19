@@ -901,3 +901,14 @@ TN-26 flight search from an itinerary can u do this and test it then merge it
 How the output was used:
 Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-03, ITN-21, ACC-12, BLG-12 (bug fix found while testing the bonus items)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+A live test against a real MongoDB showed that itineraries store ownerId as the user id string (their schema type does not cast it), while three queries looked for an ObjectId: GET /api/itineraries (ITN-03, my itineraries) always answered 0, public itinerary search did not leave out deactivated authors (ACC-12, ITN-21), and the author page (BLG-12) never listed the author's itineraries. Claude added idInAnyForm()/idsInAnyForm() to the ownership helpers and used them in those three queries, so they match both the stored strings and ObjectIds, with no data migration; the other itinerary queries already used the string and were left unchanged. Tests updated, and checked live on the temporary CI branch.
+================================================

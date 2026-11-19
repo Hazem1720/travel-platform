@@ -63,7 +63,13 @@ describe('PublicItinerariesService (ITN-21)', () => {
     expect(match).toMatchObject({
       visibility: ItineraryVisibility.PUBLIC,
       hidden: { $ne: true },
-      ownerId: { $nin: [DEACTIVATED_ID] },
+      // Stored as the id string: both forms are excluded (ACC-12).
+      ownerId: {
+        $nin: [
+          String(DEACTIVATED_ID),
+          new Types.ObjectId(String(DEACTIVATED_ID)),
+        ],
+      },
     });
     expect(match.$and[0].$or).toContainEqual({
       'days.cityId': { $in: ['luxor'] },
