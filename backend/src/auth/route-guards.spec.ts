@@ -37,6 +37,8 @@ const PUBLIC_ROUTES = [
   'GET /hotels/search',
   'GET /hotels/:id',
   'GET /hotels/:id/rooms/available',
+  // HTL-24: guests read a hotel's rating and reviews.
+  'GET /hotels/:id/reviews',
   'GET /itineraries/public/search',
   'GET /itineraries/public/:id',
   // BLG-02, BLG-08, BLG-09, BLG-12: guests read the blog.
