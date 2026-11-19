@@ -1231,3 +1231,14 @@ Yes, move to M2
 How the output was used:
 Claude advised against deleting or closing the 9 open issues: it checked the official Excel and all 9 (ACC-10, GEN-02 to GEN-05, GEN-14 to GEN-17) are official Mandatory requirements, and they were already in the GitHub milestone "Milestone 2". It agreed that GEN-02 and GEN-05 were tagged M1 only by our tracker, because each had a backend half (the shared "Validation failed" error format and paginated list routes), both merged; what is left is frontend work. I kept that and had Claude change their Milestone from M1 to "M2 only" in requirements-tracker.csv and on the Tracker sheet of the .xlsx (the sync script does not edit Milestone, so it used the script's own cell helpers), then the script's dry run confirmed the .xlsx matches the CSV. Status stays In Progress. Their issues (#104, #107) got the m2-only label instead of milestone-1.
 ================================================
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: Backend e2e test plan (all M1 backend requirements)
+Prompt:
+i need a test plan for the whole backend real tests ho wwould u do it
+(then several rounds of review comments from ChatGPT pasted back, each with "check it, dont just accept", and finally: put the plan in the repo as backend/test/E2E_PLAN.md on a new branch test/e2e-harness)
+How the output was used:
+Claude read the test setup (113 mocked unit specs, 2 database tests that CI never runs) and proposed real HTTP + real MongoDB e2e tests with an in-memory database, faked Stripe/SMTP/FXRatesAPI and generated route and requirement coverage gates. Each review round was checked against the code before being accepted. Rejected with evidence: a replica set (the code uses no Mongo transactions; auth.service.ts startSession is the cookie session) and an injectable Clock (idle expiry uses lastActivityAt in the database, jwt-auth.guard.ts:65-76). Added from review: requirement gate from the tracker, res.on('finish') recorder, scheduler off, network blocked, URI guard, the payment timing races (payments.service.ts:393-399), rounding (cancellation-tiers.ts:120), agent guardrails. In the saved file Claude kept 3 corrections to my final text: merge instead of rebase for stacked PRs (rebasing needs a force-push, which CLAUDE.md forbids), the webhook is not hidden from Swagger (payments.controller.ts:213-261), and the xlsx is synced with the existing scripts/sync-tracker-xlsx.py. Plan only; no code yet.
+================================================
