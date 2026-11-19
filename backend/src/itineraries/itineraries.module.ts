@@ -17,6 +17,8 @@ import { DaysController } from './days.controller';
 import { DaysService } from './days.service';
 import { ItinerariesController } from './itineraries.controller';
 import { ItinerariesService } from './itineraries.service';
+import { ItineraryBookingsController } from './itinerary-bookings.controller';
+import { ItineraryBookingsService } from './itinerary-bookings.service';
 import { ItineraryFlightsService } from './itinerary-flights.service';
 import { ItineraryHotelsService } from './itinerary-hotels.service';
 import { PublicItinerariesController } from './public-itineraries.controller';
@@ -54,6 +56,8 @@ import { TransportCostsService } from './transport-costs.service';
     ActivitiesController,
     TransportCostsController,
     BudgetsController,
+    // ITN-27 (bonus).
+    ItineraryBookingsController,
   ],
   providers: [
     ItinerariesService,
@@ -65,6 +69,7 @@ import { TransportCostsService } from './transport-costs.service';
     PublicItinerariesService,
     ItineraryHotelsService,
     ItineraryFlightsService,
+    ItineraryBookingsService,
   ],
   exports: [ItinerariesService, PublicItinerariesService, MongooseModule],
 })

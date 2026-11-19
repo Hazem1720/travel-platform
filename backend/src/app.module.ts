@@ -22,6 +22,7 @@ import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from './hotels/hotels.module';
 import { ItinerariesModule } from './itineraries/itineraries.module';
+import { ItineraryPdfModule } from './itinerary-pdf/itinerary-pdf.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { ReferenceModule } from './reference/reference.module';
@@ -57,6 +58,7 @@ import { UploadsModule } from './uploads/uploads.module';
     HotelsModule,
     PaymentsModule,
     ItinerariesModule,
+    ItineraryPdfModule,
     FavouritesModule,
     BlogModule,
     AdminAccountsModule,

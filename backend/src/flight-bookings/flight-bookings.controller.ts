@@ -18,6 +18,7 @@ import {
 } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { RequireVerifiedEmail } from '../common/decorators/verified-email.decorator';
 import { Role } from '../common/enums/role.enum';
 import { AuthUser } from '../common/types/auth-user.type';
 import {
@@ -108,6 +109,8 @@ export class FlightBookingsController {
   }
 
   @Post('hold')
+  // ACC-02 (bonus): 403 until the account's email is verified.
+  @RequireVerifiedEmail()
   @ApiOperation({
     summary: 'Hold the seats for 10 minutes before payment (FLT-22)',
     description:

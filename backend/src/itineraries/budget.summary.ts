@@ -38,10 +38,19 @@ interface SummaryItinerary {
   startDate: Date;
   days: SummaryDay[];
   transportCosts?: { dayId: unknown; amount: number; currency: string }[];
+  // ITN-27 (bonus): linked bookings.
+  linkedBookings?: {
+    dayId: unknown;
+    type: string;
+    amount: number;
+    currency: string;
+  }[];
 }
 
 // Every amount that counts in the budget: the budget entries, the activity
-// costs (under Activities) and the intercity transport costs (own line).
+// costs (under Activities), the intercity transport costs (own line) and,
+// ITN-27, the linked bookings (hotels under Accommodation, flights under
+// Intercity transport).
 export function budgetLines(itinerary: SummaryItinerary): BudgetLine[] {
   const lines: BudgetLine[] = [];
   const indexOf = new Map(
@@ -65,6 +74,19 @@ export function budgetLines(itinerary: SummaryItinerary): BudgetLine[] {
     const dayIndex = indexOf.get(String(t.dayId));
     if (dayIndex !== undefined) {
       lines.push({ dayIndex, line: INTERCITY_TRANSPORT, ...money(t) });
+    }
+  }
+  for (const b of itinerary.linkedBookings ?? []) {
+    const dayIndex = indexOf.get(String(b.dayId));
+    if (dayIndex !== undefined) {
+      lines.push({
+        dayIndex,
+        line:
+          b.type === 'hotel'
+            ? BudgetCategory.ACCOMMODATION
+            : INTERCITY_TRANSPORT,
+        ...money(b),
+      });
     }
   }
   return lines;

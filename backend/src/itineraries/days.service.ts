@@ -101,6 +101,8 @@ export class DaysService {
           $pull: {
             days: { _id: new Types.ObjectId(dayId) },
             transportCosts: { dayId: new Types.ObjectId(dayId) },
+            // ITN-27: links to the day go with it.
+            linkedBookings: { dayId: new Types.ObjectId(dayId) },
           },
         },
         { new: true },
