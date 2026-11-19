@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, PipelineStage, Types } from 'mongoose';
-import { AccountStatus } from '../common/enums/role.enum';
+import { AccountStatus, Role } from '../common/enums/role.enum';
 import {
   PAGE_SIZE,
   PaginationQueryDto,
@@ -159,15 +159,21 @@ export class BlogService {
   // BLG-02: a published, visible post with its author, like and comment
   // counts and the first page of comments (oldest first, BLG-05). More
   // comments: GET /api/posts/:id/comments?page=2.
-  async findById(id: string): Promise<PostDetails> {
+  // GEN-10: hidden posts stay visible to their author and admins; BLG-03:
+  // the author may also open their own draft. Everyone else sees only
+  // published, visible posts.
+  async findById(id: string, viewer?: AuthUser): Promise<PostDetails> {
     if (!isValidObjectId(id)) throw new NotFoundException(POST_NOT_FOUND);
-    const post = await this.posts
-      .findOne({
-        _id: id,
-        status: PostStatus.PUBLISHED,
-        hidden: { $ne: true },
-      })
-      .lean();
+    const visible = { status: PostStatus.PUBLISHED, hidden: { $ne: true } };
+    const filter: Record<string, unknown> = { _id: id };
+    if (viewer?.role === Role.ADMIN) {
+      filter.status = PostStatus.PUBLISHED;
+    } else if (viewer) {
+      filter.$or = [visible, { authorId: idInAnyForm(viewer.id) }];
+    } else {
+      Object.assign(filter, visible);
+    }
+    const post = await this.posts.findOne(filter).lean();
     if (!post) throw new NotFoundException(POST_NOT_FOUND);
 
     const author = await this.users
@@ -179,10 +185,12 @@ export class BlogService {
       .lean();
     if (!author) throw new NotFoundException(POST_NOT_FOUND);
 
-    const comments = await this.comments.listForPost(id, {
-      page: 1,
-      limit: PAGE_SIZE,
-    });
+    // Comments are public only on a published, visible post; the author's
+    // draft or hidden post shows none (the comment list itself is public).
+    const isPublic = post.status !== PostStatus.DRAFT && !post.hidden;
+    const comments = isPublic
+      ? await this.comments.listForPost(id, { page: 1, limit: PAGE_SIZE })
+      : paginated([], 0, 1, PAGE_SIZE);
     return {
       ...post,
       author: { id: post.authorId, name: author.name },

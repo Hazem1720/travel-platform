@@ -34,7 +34,15 @@ export class JwtAuthGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (isPublic) return true;
+    if (isPublic) {
+      // GEN-10: a public route still learns who is asking when a valid
+      // session is present (the author of hidden content, an admin), and
+      // never refuses the request because of the cookie.
+      await this.attachIfLoggedIn(context.switchToHttp().getRequest()).catch(
+        () => undefined,
+      );
+      return true;
+    }
 
     const req = context.switchToHttp().getRequest();
     const token = req.cookies?.['access_token'];
@@ -106,5 +114,33 @@ export class JwtAuthGuard implements CanActivate {
     };
     req.user = authUser;
     return true;
+  }
+
+  // For @Public() routes: sets req.user only for a valid, current, active,
+  // non-idle session with no pending temporary password; otherwise leaves
+  // the request anonymous. Does not count as activity (ACC-06).
+  private async attachIfLoggedIn(req: {
+    cookies?: Record<string, unknown>;
+    user?: AuthUser;
+  }): Promise<void> {
+    const token = req.cookies?.['access_token'];
+    if (typeof token !== 'string' || !token) return;
+    const payload = await this.jwt.verifyAsync<{ sub: string; sv?: number }>(
+      token,
+    );
+    const user = await this.userModel.findById(payload.sub).lean();
+    if (!user || payload.sv !== (user.sessionVersion ?? 0)) return;
+    if (user.status !== AccountStatus.ACTIVE || user.mustChangePassword) return;
+    const last = user.lastActivityAt
+      ? new Date(user.lastActivityAt).getTime()
+      : null;
+    if (last !== null && Date.now() - last > SESSION_IDLE_MS) return;
+    req.user = {
+      id: String(user._id),
+      role: user.role,
+      assignedProviderId: user.assignedProviderId
+        ? String(user.assignedProviderId)
+        : null,
+    };
   }
 }
