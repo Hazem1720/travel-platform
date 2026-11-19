@@ -8,6 +8,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { RequireVerifiedEmail } from '../common/decorators/verified-email.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '../common/enums/role.enum';
 import {
@@ -49,6 +50,8 @@ export class HotelBookingsController {
 
   @Post()
   @Roles(Role.USER)
+  // ACC-02 (bonus): 403 until the account's email is verified.
+  @RequireVerifiedEmail()
   @ApiOperation({
     summary: 'Book and hold rooms for payment (HTL-16, HTL-18)',
     description:

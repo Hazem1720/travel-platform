@@ -102,6 +102,53 @@ export class EmailService {
     }
   }
 
+  // ACC-02 (bonus): the verification link after registration.
+  async sendEmailVerification(
+    to: string,
+    name: string,
+    link: string,
+  ): Promise<SentEmail | null> {
+    if (!this.enabled) return null;
+    try {
+      return await this.send(
+        to,
+        `Verify your email address for ${APP}`,
+        `Hello ${name},\n\nWelcome to ${APP}. Open this link to verify ` +
+          `your email address; you can book once it is verified:\n\n${link}\n\n` +
+          `The link works once and expires in 24 hours. If you did not ` +
+          `register, ignore this email.\n`,
+      );
+    } catch (err) {
+      this.logger.error(`Verification email failed: ${(err as Error).message}`);
+      return null;
+    }
+  }
+
+  // ACC-07 (bonus): the password-reset link.
+  async sendPasswordReset(
+    to: string,
+    name: string,
+    link: string,
+  ): Promise<SentEmail | null> {
+    if (!this.enabled) return null;
+    try {
+      return await this.send(
+        to,
+        `Reset your ${APP} password`,
+        `Hello ${name},\n\nSomeone asked to reset the password of your ` +
+          `${APP} account. Open this link to choose a new one:\n\n${link}\n\n` +
+          `The link works once and expires in 30 minutes; asking again ` +
+          `replaces it. If it was not you, ignore this email: your password ` +
+          `has not changed.\n`,
+      );
+    } catch (err) {
+      this.logger.error(
+        `Password reset email failed: ${(err as Error).message}`,
+      );
+      return null;
+    }
+  }
+
   private async send(
     to: string,
     subject: string,

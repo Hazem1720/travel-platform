@@ -906,6 +906,12 @@ Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight sear
 Date: 2026-11-19
 Student: Hazem Ahmed
 Tool: Claude Code
+Related Requirement: ITN-27 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude added linked bookings to Moharm's itineraries as the team plan says: GET, POST /api/itineraries/:id/bookings and DELETE /api/itineraries/:id/bookings/:linkId. The user links their own Confirmed or Completed flight or hotel booking to a day; its total (cents / 100, a snapshot) feeds the budget through Moharm's budgetLines(): hotels under Accommodation, flights under Intercity transport, so every summary (by day, category, city group, converted, the PDF) includes it. Another user's booking or itinerary is 404, a PendingPayment one 400, linking the same booking twice 409. Deleting the day removes its links; the public itinerary view leaves linked bookings out (also from its budget), and cloning never copies them. Unit tests and an HTTP test against a real MongoDB with real bookings.
+
 Related Requirement: FLT-28 (bonus, Memo's item, built at my request as team leader)
 Prompt:
 can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
@@ -933,6 +939,17 @@ Prompt:
 can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
 How the output was used:
 A live test against a real MongoDB showed that itineraries store ownerId as the user id string (their schema type does not cast it), while three queries looked for an ObjectId: GET /api/itineraries (ITN-03, my itineraries) always answered 0, public itinerary search did not leave out deactivated authors (ACC-12, ITN-21), and the author page (BLG-12) never listed the author's itineraries. Claude added idInAnyForm()/idsInAnyForm() to the ownership helpers and used them in those three queries, so they match both the stored strings and ObjectIds, with no data migration; the other itinerary queries already used the string and were left unchanged. Tests updated, and checked live on the temporary CI branch.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-02, ACC-07 (bonus, Memo's items, built at my request as team leader on Memo's GEN-01-B email module)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude built both on Memo's EmailService (two new email types) in my auth module. ACC-02: a new account is unverified and gets a single-use verification link (24 hours; only its SHA-256 hash is stored); GET /api/auth/verify-email?token= verifies it (reuse or expiry: 400), POST /api/auth/resend-verification replaces it, and holding or paying for a flight or hotel booking answers 403 until verified (a @RequireVerifiedEmail() check in the global guard). Accounts from before ACC-02, admins and moderators count as verified; with email off (no SMTP) new accounts start verified, so nothing breaks without a test inbox. ACC-07: POST /api/auth/forgot-password always gives the same answer; for an existing account it emails a link to FRONTEND_URL/reset-password that expires after 30 minutes and is replaced by a newer request; POST /api/auth/reset-password sets the new password once (a used, older or expired link is 400), signs out every session and clears a lockout. Unit tests, and an HTTP test against a real MongoDB with a real SMTP test inbox (Mailpit) on a temporary CI branch.
 ================================================
 
 ================================================

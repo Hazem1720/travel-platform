@@ -123,7 +123,8 @@ export class PublicItinerariesService {
   // ITN-21: the read-only view with author, days, activities and budget (in
   // the entries' own currencies).
   async view(id: string): Promise<PublicItineraryView> {
-    const itinerary = await this.findPublic(id);
+    // ITN-27: the owner's linked bookings stay private, out of the budget too.
+    const itinerary = { ...(await this.findPublic(id)), linkedBookings: [] };
     const names = await this.authorNames([itinerary.ownerId]);
     return {
       ...presentWithBudget(itinerary),
