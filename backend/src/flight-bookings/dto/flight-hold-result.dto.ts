@@ -2,6 +2,7 @@ import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { BookingStatus } from '../../common/enums/booking-status.enum';
 import { ZonedTimeDto } from '../../flights/dto/flight.dto';
 import { CabinCategory } from '../../flights/schemas/flight.schema';
+import { RefundDto } from '../../payments/dto/refund.dto';
 import { PassengerDto } from './flight-quote.dto';
 
 // Response of POST /api/flight-bookings/hold (FLT-22), for Swagger only.
@@ -97,4 +98,10 @@ export class FlightBookingViewDto extends OmitType(FlightHoldResultDto, [
     description: 'When the payment confirmed it',
   })
   confirmedAt: string | null;
+
+  @ApiProperty({
+    type: [RefundDto],
+    description: 'Refunds after a cancellation (PAY-03), oldest first',
+  })
+  refunds: RefundDto[];
 }

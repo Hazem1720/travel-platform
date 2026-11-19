@@ -77,6 +77,8 @@ Without the Stripe keys the server still starts; only paying answers 503.
 
    Use `pm_card_chargeDeclined` to see a declined card. The booking becomes Confirmed only when the webhook arrives.
 
+6. Refunds (PAY-03) are made by `PaymentsService.refund()` when a booking is cancelled, and their status arrives through the same webhook. Pay with `pm_card_refundFail` to see a refund that the bank rejects later (Refunded, then Failed).
+
 ## Git workflow
 
 - `main`: stable milestone versions. `develop`: integration branch.

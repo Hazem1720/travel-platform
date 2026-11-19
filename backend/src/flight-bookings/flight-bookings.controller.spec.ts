@@ -3,6 +3,7 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { configureApp } from '../app.setup';
 import { FlightBookingsController } from './flight-bookings.controller';
+import { PaymentsService } from '../payments/payments.service';
 import { FlightConfirmationService } from './flight-confirmation.service';
 import { FlightHoldService } from './flight-hold.service';
 import { FlightQuoteService } from './flight-quote.service';
@@ -41,6 +42,8 @@ describe('POST /api/flight-bookings (FLT-19, FLT-21)', () => {
     totalAmount: 20000,
   };
   const getForOwner = jest.fn(async () => view);
+  const refund = { _id: 'r1', amount: 12000, status: 'Refunded' };
+  const refundsFor = jest.fn(async () => [refund]);
   const getTicketData = jest.fn(async () => view);
 
   beforeAll(async () => {
@@ -53,6 +56,7 @@ describe('POST /api/flight-bookings (FLT-19, FLT-21)', () => {
           provide: FlightConfirmationService,
           useValue: { getForOwner, getTicketData },
         },
+        { provide: PaymentsService, useValue: { refundsFor } },
       ],
     }).compile();
     app = moduleRef.createNestApplication({ logger: false });
@@ -127,6 +131,12 @@ describe('POST /api/flight-bookings (FLT-19, FLT-21)', () => {
     expect(res.body.reference).toBe('FL-ABCD1234');
     expect(getForOwner).toHaveBeenCalledWith(
       'user-1',
+      '6737b2f4c1a2b3c4d5e6f201',
+    );
+    // PAY-03: the booking's refunds.
+    expect(res.body.refunds).toEqual([refund]);
+    expect(refundsFor).toHaveBeenCalledWith(
+      'flight',
       '6737b2f4c1a2b3c4d5e6f201',
     );
   });

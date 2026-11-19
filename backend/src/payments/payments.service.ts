@@ -18,13 +18,29 @@ import {
   PaymentHandler,
   PaymentStatus,
   RefundResult,
+  RefundStatus,
 } from './payment-handler';
 import {
   LeanPayment,
   Payment,
   PaymentDocument,
 } from './schemas/payment.schema';
-import { StripeGateway, StripeIntent } from './stripe.gateway';
+import { LeanRefund, Refund, RefundDocument } from './schemas/refund.schema';
+import { StripeGateway, StripeIntent, StripeRefund } from './stripe.gateway';
+import { assertOwner } from '../common/helpers/ownership';
+import { AuthUser } from '../common/types/auth-user.type';
+import { NotificationType } from '../notifications/schemas/notification.schema';
+import { NotificationsService } from '../notifications/notifications.service';
+
+export const NOTHING_TO_REFUND =
+  'This booking has no successful payment to refund';
+export const REFUND_NOT_FOUND = 'Refund not found';
+const REFUND_EVENTS = new Set([
+  'refund.created',
+  'refund.updated',
+  'refund.failed',
+  'charge.refund.updated',
+]);
 
 export const BOOKING_NOT_FOUND = 'Booking not found';
 export const HOLD_EXPIRED = 'The hold has expired; please book again';
@@ -32,9 +48,8 @@ export const NOT_PENDING_PAYMENT = 'This booking is not waiting for payment';
 export const POLICIES_NOT_ACCEPTED =
   'Accept the cancellation and booking policies before paying';
 
-// PAY-01 and PAY-03. createPayment, the Stripe webhook (handleStripeEvent)
-// and releaseInventory talk to Stripe through StripeGateway; refund with a
-// positive amount answers 501 until PAY-03.
+// PAY-01 and PAY-03. createPayment, the Stripe webhook (handleStripeEvent),
+// releaseInventory and refund talk to Stripe through StripeGateway.
 //
 // A booking module registers its handler once at startup:
 //
@@ -55,6 +70,9 @@ export class PaymentsService {
     @InjectModel(Payment.name)
     private readonly payments: Model<PaymentDocument>,
     private readonly stripe: StripeGateway,
+    @InjectModel(Refund.name)
+    private readonly refunds: Model<RefundDocument>,
+    private readonly notifications: NotificationsService,
   ) {}
 
   registerHandler(type: PaymentBookingType, handler: PaymentHandler): void {
@@ -272,7 +290,12 @@ export class PaymentsService {
   // "payment_intent.succeeded", never from anything the browser sends.
   // Stripe may send an event twice or out of order; every step is safe to
   // repeat. An error (500) makes Stripe send the event again later.
-  async handleStripeEvent(type: string, intent: StripeIntent | null) {
+  async handleStripeEvent(
+    type: string,
+    intent: StripeIntent | null,
+    refund: StripeRefund | null = null,
+  ) {
+    if (refund && REFUND_EVENTS.has(type)) return this.onRefundEvent(refund);
     if (!intent) return;
     const payment = await this.payments
       .findOne({ stripePaymentIntentId: intent.id })
@@ -325,16 +348,19 @@ export class PaymentsService {
     } catch (err) {
       if (!(err instanceof ConflictException)) throw err;
       // The booking expired or was cancelled before the money arrived:
-      // give it all back. (Hold expiry cancels the PaymentIntent first, so
-      // this only happens in a race.) PAY-03 will record the refund.
-      const refundId = await this.stripe.refundIntent(
-        intent.id,
-        `refund-unconfirmed-${intent.id}`,
-      );
+      // give it all back, recorded like any refund (PAY-03). (Hold expiry
+      // cancels the PaymentIntent first, so this only happens in a race.)
+      // A repeated event finds nothing left to refund.
+      const fresh = await this.payments
+        .findById(payment._id)
+        .lean<LeanPayment>();
+      const left = fresh!.amount - (await this.refunded(fresh!._id));
+      if (left <= 0) return;
+      const result = await this.issueRefund(fresh!, left);
       this.logger.warn(
         `Payment ${intent.id} arrived for ${payment.bookingType} booking ` +
           `${String(payment.bookingId)} that cannot be confirmed ` +
-          `(${err.message}); refunded in full (${refundId})`,
+          `(${err.message}); refund ${result.refundId}: ${result.status}`,
       );
     }
   }
@@ -413,23 +439,217 @@ export class PaymentsService {
     await handler.expire(bookingId);
   }
 
-  // PAY-03 (stub): refunds `amount` cents of the booking's payment through
-  // the Stripe Refunds API, records it and notifies the user. Used by Hasan
-  // for every cancellation (FLT-06 at 100%, FLT-26, HTL-21) with the amount
-  // from refundAmount() in common/helpers/cancellation-tiers.ts.
-  // An amount of 0 creates no refund and returns null (works today).
+  // PAY-03: refunds `amount` cents of the booking's succeeded payment
+  // through the Stripe Refunds API, records it and notifies the user. Used
+  // by Hasan for every cancellation (FLT-06 at 100%, FLT-26, HTL-21) with
+  // the amount from refundAmount() in common/helpers/cancellation-tiers.ts.
+  // An amount of 0 creates nothing and returns null. Never more than what
+  // is left of the payment (409). If Stripe fails, the refund is recorded
+  // as Failed and returned, not thrown, so a cancellation never half-fails.
   async refund(
     type: PaymentBookingType,
     bookingId: string,
     amount: number,
   ): Promise<RefundResult | null> {
-    this.handler(type);
+    const handler = this.handler(type);
     if (!isCents(amount)) {
       throw new Error(`Refund amount must be whole cents, got ${amount}`);
     }
     if (amount === 0) return null;
-    throw new NotImplementedException(
-      `Stripe refunds are not available yet (PAY-03), booking ${bookingId}`,
-    );
+    const payment = isValidObjectId(bookingId)
+      ? await this.payments
+          .findOne({
+            bookingType: type,
+            bookingId: new Types.ObjectId(bookingId),
+            status: PaymentStatus.SUCCEEDED,
+          })
+          .lean<LeanPayment>()
+      : null;
+    if (!payment) throw new ConflictException(NOTHING_TO_REFUND);
+    const booking = await handler.getPayable(bookingId);
+    return this.issueRefund(payment, amount, booking?.description);
   }
+
+  // Records the refund first, so its id is the Stripe idempotency key and
+  // a retry can never refund twice; then asks Stripe and stores the answer.
+  private async issueRefund(
+    payment: LeanPayment,
+    amount: number,
+    description?: string,
+  ): Promise<RefundResult> {
+    const left = payment.amount - (await this.refunded(payment._id));
+    if (amount > left) {
+      throw new ConflictException(
+        `Only ${left} cents of this payment can still be refunded`,
+      );
+    }
+    const record = await this.refunds.create({
+      bookingType: payment.bookingType,
+      bookingId: payment.bookingId,
+      userId: payment.userId,
+      paymentId: payment._id,
+      amount,
+      currency: payment.currency,
+      status: RefundStatus.PENDING,
+    });
+    const refundId = String(record._id);
+
+    let status = RefundStatus.FAILED;
+    try {
+      const stripeRefund = await this.stripe.createRefund(
+        payment.stripePaymentIntentId,
+        amount,
+        {
+          refundId,
+          bookingType: payment.bookingType,
+          bookingId: String(payment.bookingId),
+        },
+        `refund-${refundId}`,
+      );
+      status = toRefundStatus(stripeRefund.status);
+      await this.refunds.updateOne(
+        { _id: record._id },
+        { $set: { stripeRefundId: stripeRefund.id } },
+      );
+    } catch (err) {
+      this.logger.error(
+        `Refund ${refundId} of ${amount} cents for ${payment.bookingType} ` +
+          `booking ${String(payment.bookingId)} failed: ${(err as Error).message}`,
+      );
+    }
+    // The webhook may already have moved it on; never step back.
+    await this.refunds.updateOne(
+      { _id: record._id, status: RefundStatus.PENDING },
+      { $set: { status } },
+    );
+
+    await this.notifyRefund(payment, amount, status, description);
+    return { refundId, amount, currency: payment.currency, status };
+  }
+
+  // Cents already refunded or on their way (Failed refunds give nothing).
+  private async refunded(paymentId: Types.ObjectId): Promise<number> {
+    const refunds = await this.refunds
+      .find({ paymentId, status: { $ne: RefundStatus.FAILED } }, { amount: 1 })
+      .lean<{ amount: number }[]>();
+    return refunds.reduce((sum, r) => sum + r.amount, 0);
+  }
+
+  // PAY-03 webhook: Stripe's refund events (refund.created, refund.updated,
+  // refund.failed, charge.refund.updated). Pending -> Refunded or Failed;
+  // Refunded -> Failed happens when a bank rejects it later. A refund that
+  // fails tells the user.
+  private async onRefundEvent(refund: StripeRefund): Promise<void> {
+    const status = toRefundStatus(refund.status);
+    if (status === RefundStatus.PENDING) return;
+    const from =
+      status === RefundStatus.REFUNDED
+        ? [RefundStatus.PENDING]
+        : [RefundStatus.PENDING, RefundStatus.REFUNDED];
+    const match = isValidObjectId(refund.metadata.refundId)
+      ? {
+          $or: [
+            { stripeRefundId: refund.id },
+            { _id: new Types.ObjectId(refund.metadata.refundId) },
+          ],
+        }
+      : { stripeRefundId: refund.id };
+    const updated = await this.refunds
+      .findOneAndUpdate(
+        { ...match, status: { $in: from } },
+        { $set: { status, stripeRefundId: refund.id } },
+        { new: true },
+      )
+      .lean<LeanRefund>();
+    if (updated && status === RefundStatus.FAILED) {
+      const payment = await this.payments
+        .findById(updated.paymentId)
+        .lean<LeanPayment>();
+      if (payment) await this.notifyRefund(payment, updated.amount, status);
+    }
+  }
+
+  // GEN-01: REFUND_ISSUED with the amount and its status. A failed
+  // notification never undoes the refund.
+  private async notifyRefund(
+    payment: LeanPayment,
+    amount: number,
+    status: RefundStatus,
+    description?: string,
+  ): Promise<void> {
+    const money = `${(amount / 100).toFixed(2)} ${payment.currency}`;
+    const what = description ?? `${payment.bookingType} booking`;
+    const text = {
+      [RefundStatus.REFUNDED]: `A refund of ${money} for your ${what} has been issued`,
+      [RefundStatus.PENDING]: `A refund of ${money} for your ${what} is being processed`,
+      [RefundStatus.FAILED]: `The refund of ${money} for your ${what} could not be completed; please contact support`,
+    }[status];
+    await this.notifications
+      .create(payment.userId, NotificationType.REFUND_ISSUED, text, {
+        bookingType: payment.bookingType,
+        bookingId: String(payment.bookingId),
+        amount,
+        currency: payment.currency,
+        status,
+      })
+      .catch((err: Error) =>
+        this.logger.error(`Refund notification failed: ${err.message}`),
+      );
+  }
+
+  // PAY-03: the refunds of one booking, oldest first, for the booking
+  // details pages (GET /flight-bookings/:id, GET /hotel-bookings/:id).
+  async refundsFor(
+    type: PaymentBookingType,
+    bookingId: string,
+  ): Promise<RefundView[]> {
+    if (!isValidObjectId(bookingId)) return [];
+    const refunds = await this.refunds
+      .find({ bookingType: type, bookingId: new Types.ObjectId(bookingId) })
+      .sort({ createdAt: 1 })
+      .lean<LeanRefund[]>();
+    return refunds.map(toRefundView);
+  }
+
+  // PAY-03: GET /refunds/:id, the user's own refund (404 for anyone else).
+  async getRefundFor(user: AuthUser, id: string): Promise<RefundView> {
+    const refund = isValidObjectId(id)
+      ? await this.refunds.findById(id).lean<LeanRefund>()
+      : null;
+    assertOwner(refund?.userId, user, REFUND_NOT_FOUND);
+    return toRefundView(refund!);
+  }
+}
+
+export interface RefundView {
+  _id: string;
+  bookingType: PaymentBookingType;
+  bookingId: string;
+  amount: number;
+  currency: string;
+  status: RefundStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+function toRefundView(r: LeanRefund): RefundView {
+  return {
+    _id: String(r._id),
+    bookingType: r.bookingType,
+    bookingId: String(r.bookingId),
+    amount: r.amount,
+    currency: r.currency,
+    status: r.status,
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  };
+}
+
+// Stripe's refund status as one of ours (conventions.md).
+export function toRefundStatus(stripeStatus: string): RefundStatus {
+  if (stripeStatus === 'succeeded') return RefundStatus.REFUNDED;
+  if (stripeStatus === 'failed' || stripeStatus === 'canceled') {
+    return RefundStatus.FAILED;
+  }
+  return RefundStatus.PENDING;
 }

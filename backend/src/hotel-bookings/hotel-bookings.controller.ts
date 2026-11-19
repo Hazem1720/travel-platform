@@ -30,6 +30,8 @@ import {
 } from './hotel-confirmation.service';
 import { HotelHoldService } from './hotel-hold.service';
 import { HOTEL_NOT_FOUND } from './hotel-rooms.service';
+import { PaymentBookingType } from '../payments/payment-handler';
+import { PaymentsService } from '../payments/payments.service';
 
 // Memo's hotel reservations: HTL-16 and HTL-18 (book and hold) and HTL-17
 // (GET /hotel-bookings/:id, the confirmation page; Hasan's HTL-20 reuses
@@ -42,6 +44,7 @@ export class HotelBookingsController {
   constructor(
     private readonly holds: HotelHoldService,
     private readonly confirmations: HotelConfirmationService,
+    private readonly payments: PaymentsService,
   ) {}
 
   @Post()
@@ -123,7 +126,13 @@ export class HotelBookingsController {
       description: "No such reservation, or another user's reservation",
     },
   )
-  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.confirmations.getForOwner(user, id);
+  async findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const reservation = await this.confirmations.getForOwner(user, id);
+    // PAY-03: its refunds and their status.
+    const refunds = await this.payments.refundsFor(
+      PaymentBookingType.HOTEL,
+      id,
+    );
+    return { ...reservation, refunds };
   }
 }

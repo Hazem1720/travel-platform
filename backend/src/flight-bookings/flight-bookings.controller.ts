@@ -39,6 +39,8 @@ import {
 import { FlightQuoteResultDto } from './dto/flight-quote-result.dto';
 import { FlightHoldService } from './flight-hold.service';
 import { FlightQuoteService } from './flight-quote.service';
+import { PaymentBookingType } from '../payments/payment-handler';
+import { PaymentsService } from '../payments/payments.service';
 
 // Flight bookings for registered users: the quote (FLT-19, FLT-21) here,
 // then the hold (FLT-22) and the confirmation routes (FLT-23).
@@ -51,6 +53,7 @@ export class FlightBookingsController {
     private readonly quotes: FlightQuoteService,
     private readonly holds: FlightHoldService,
     private readonly confirmations: FlightConfirmationService,
+    private readonly payments: PaymentsService,
   ) {}
 
   @Post()
@@ -173,8 +176,14 @@ export class FlightBookingsController {
       description: "Unknown id, or another user's booking",
     },
   )
-  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
-    return this.confirmations.getForOwner(user.id, id);
+  async findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const booking = await this.confirmations.getForOwner(user.id, id);
+    // PAY-03 (added by Memo): the booking's refunds and their status.
+    const refunds = await this.payments.refundsFor(
+      PaymentBookingType.FLIGHT,
+      id,
+    );
+    return { ...booking, refunds };
   }
 
   @Get(':id/e-ticket')

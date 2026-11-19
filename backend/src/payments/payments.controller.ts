@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   Headers,
   HttpCode,
   Param,
@@ -31,6 +32,7 @@ import {
   CreatedPaymentDto,
   WebhookReceivedDto,
 } from './dto/created-payment.dto';
+import { RefundDto } from './dto/refund.dto';
 import { PaymentBookingType } from './payment-handler';
 import {
   BOOKING_NOT_FOUND,
@@ -38,6 +40,7 @@ import {
   NOT_PENDING_PAYMENT,
   PaymentsService,
   POLICIES_NOT_ACCEPTED,
+  REFUND_NOT_FOUND,
 } from './payments.service';
 import {
   INVALID_SIGNATURE,
@@ -141,7 +144,9 @@ export class StripeWebhookController {
       'payment_intent.succeeded confirms the booking (FLT-23, HTL-17); ' +
       'payment_intent.payment_failed marks the payment Failed (the user may ' +
       'retry until the hold ends); payment_intent.canceled marks it ' +
-      'Expired. Other events are acknowledged and ignored. Locally, run ' +
+      'Expired. refund.created, refund.updated, refund.failed and ' +
+      'charge.refund.updated update the refund status (PAY-03). Other ' +
+      'events are acknowledged and ignored. Locally, run ' +
       '`stripe listen --forward-to localhost:3000/api/payments/webhook`.',
   })
   @ApiOkResponse({ type: WebhookReceivedDto })
@@ -163,7 +168,48 @@ export class StripeWebhookController {
     @Headers('stripe-signature') signature: string,
   ) {
     const event = this.stripe.verifyEvent(req.rawBody, signature);
-    await this.payments.handleStripeEvent(event.type, event.intent);
+    await this.payments.handleStripeEvent(
+      event.type,
+      event.intent,
+      event.refund,
+    );
     return { received: true };
+  }
+}
+
+// PAY-03 (Memo): a user's own refund. The booking details
+// (GET /flight-bookings/:id, GET /hotel-bookings/:id) list them too.
+@ApiTags('Payments')
+@ApiCookieAuth('access_token')
+@Roles(Role.USER)
+@Controller('refunds')
+export class RefundsController {
+  constructor(private readonly payments: PaymentsService) {}
+
+  @Get(':id')
+  @ApiParam({ name: 'id', example: '6737d1a2c1a2b3c4d5e6fd01' })
+  @ApiOperation({
+    summary: 'Your refund and its status (PAY-03)',
+    description:
+      'A refund made through Stripe when a booking was cancelled with a ' +
+      'positive refund amount: amount in cents and status Pending, ' +
+      "Refunded or Failed. Another user's refund answers 404.",
+  })
+  @ApiOkResponse({ type: RefundDto })
+  @ApiErrors(
+    UNAUTHENTICATED,
+    {
+      status: 403,
+      message: 'You do not have permission for this action',
+      description: 'Not a registered user',
+    },
+    {
+      status: 404,
+      message: REFUND_NOT_FOUND,
+      description: "No such refund, or another user's refund",
+    },
+  )
+  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.payments.getRefundFor(user, id);
   }
 }
