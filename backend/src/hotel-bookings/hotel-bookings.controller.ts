@@ -1,8 +1,10 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -16,22 +18,34 @@ import { AuthUser } from '../common/types/auth-user.type';
 import {
   CreateHotelBookingDto,
   HotelBookingDto,
+  HotelBookingViewDto,
 } from './dto/create-hotel-booking.dto';
 import {
   ROOM_NOT_FOUND,
   ROOMS_NOT_AVAILABLE,
 } from './hotel-availability.service';
+import {
+  HotelConfirmationService,
+  RESERVATION_NOT_FOUND,
+} from './hotel-confirmation.service';
 import { HotelHoldService } from './hotel-hold.service';
 import { HOTEL_NOT_FOUND } from './hotel-rooms.service';
+import { PaymentBookingType } from '../payments/payment-handler';
+import { PaymentsService } from '../payments/payments.service';
 
-// Memo's hotel reservations: HTL-16 and HTL-18 now; GET /hotel-bookings/:id
-// comes with HTL-17. Hasan's routes (HTL-20 to HTL-22) live in his own
-// controller under the same prefix.
+// Memo's hotel reservations: HTL-16 and HTL-18 (book and hold) and HTL-17
+// (GET /hotel-bookings/:id, the confirmation page; Hasan's HTL-20 reuses
+// it). Hasan's routes (HTL-20 to HTL-22) live in his own controller under
+// the same prefix.
 @ApiTags('Hotel bookings')
 @ApiCookieAuth('access_token')
 @Controller('hotel-bookings')
 export class HotelBookingsController {
-  constructor(private readonly holds: HotelHoldService) {}
+  constructor(
+    private readonly holds: HotelHoldService,
+    private readonly confirmations: HotelConfirmationService,
+    private readonly payments: PaymentsService,
+  ) {}
 
   @Post()
   @Roles(Role.USER)
@@ -85,5 +99,40 @@ export class HotelBookingsController {
   )
   create(@CurrentUser() user: AuthUser, @Body() dto: CreateHotelBookingDto) {
     return this.holds.hold(user, dto);
+  }
+
+  @Get(':id')
+  @Roles(Role.USER)
+  @ApiParam({ name: 'id', example: '6736f0a1c1a2b3c4d5e6fa10' })
+  @ApiOperation({
+    summary: 'Your reservation: the confirmation page (HTL-17)',
+    description:
+      'Your own reservation in any status, with its HT- reference once paid, ' +
+      'the rooms and guests, the total, and the hotel address and ' +
+      'check-in/check-out times. After paying, poll this until status is ' +
+      "Confirmed. Another user's reservation answers 404.",
+  })
+  @ApiOkResponse({ type: HotelBookingViewDto })
+  @ApiErrors(
+    UNAUTHENTICATED,
+    {
+      status: 403,
+      message: 'You do not have permission for this action',
+      description: 'Not a registered user',
+    },
+    {
+      status: 404,
+      message: RESERVATION_NOT_FOUND,
+      description: "No such reservation, or another user's reservation",
+    },
+  )
+  async findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    const reservation = await this.confirmations.getForOwner(user, id);
+    // PAY-03: its refunds and their status.
+    const refunds = await this.payments.refundsFor(
+      PaymentBookingType.HOTEL,
+      id,
+    );
+    return { ...reservation, refunds };
   }
 }

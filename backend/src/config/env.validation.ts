@@ -59,6 +59,22 @@ class EnvironmentVariables {
     message: `PLATFORM_CURRENCY must be one of: ${SUPPORTED_CURRENCIES.join(', ')}`,
   })
   PLATFORM_CURRENCY?: string;
+
+  // PAY-01: Stripe in test mode only, so a live key is refused at startup.
+  // Optional: without it the server runs and paying answers 503.
+  @IsOptional()
+  @Matches(/^(sk|rk)_test_\S+$/, {
+    message:
+      'STRIPE_SECRET_KEY must be a Stripe test-mode key (sk_test_...); live keys are not allowed',
+  })
+  STRIPE_SECRET_KEY?: string;
+
+  // From `stripe listen` or the Stripe dashboard's webhook endpoint.
+  @IsOptional()
+  @Matches(/^whsec_\S+$/, {
+    message: 'STRIPE_WEBHOOK_SECRET must start with whsec_',
+  })
+  STRIPE_WEBHOOK_SECRET?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

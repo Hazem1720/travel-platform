@@ -10,10 +10,12 @@ import { AirlinesModule } from './airlines/airlines.module';
 import { AirportsModule } from './airports/airports.module';
 import { AuditModule } from './audit/audit.module';
 import { AuthModule } from './auth/auth.module';
+import { BlogModule } from './blog/blog.module';
 import { CommentsModule } from './comments/comments.module';
 import { ReportsModule } from './reports/reports.module';
 import { validateEnv } from './config/env.validation';
 import { FlightBookingsModule } from './flight-bookings/flight-bookings.module';
+import { FavouritesModule } from './favourites/favourites.module';
 import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from './hotels/hotels.module';
@@ -50,6 +52,8 @@ import { UploadsModule } from './uploads/uploads.module';
     HotelsModule,
     PaymentsModule,
     ItinerariesModule,
+    FavouritesModule,
+    BlogModule,
     AdminAccountsModule,
     AdminModule,
     CommentsModule,

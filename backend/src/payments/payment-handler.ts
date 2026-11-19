@@ -107,6 +107,11 @@ export interface PaymentHandler {
 export interface CreatedPayment {
   paymentId: string;
   clientSecret: string;
+  // What Stripe charges: the booking total in cents of the platform currency.
+  amount: number;
+  currency: string;
+  // Pay before this; the hold (and the PaymentIntent) ends then.
+  expiresAt: Date;
 }
 
 // Returned by PaymentsService.refund for a positive amount.
