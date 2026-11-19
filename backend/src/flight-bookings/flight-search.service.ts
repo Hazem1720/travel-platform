@@ -249,8 +249,9 @@ export function returnsAfter(
   );
 }
 
-// One page of one list (the outbound flights or the flights back).
-function toPage(
+// One page of one list (the outbound flights or the flights back). Also
+// used by ITN-26, which merges the lists of several destination airports.
+export function toPage(
   options: FlightOption[],
   page: number,
   limit: number,
@@ -268,7 +269,7 @@ function toPage(
 
 // FLT-15: price (cheapest listed cabin), duration (arrival minus departure in
 // UTC) or departure time. Ties: earliest departure first.
-function byFlightSort({ field, direction }: FlightSort) {
+export function byFlightSort({ field, direction }: FlightSort) {
   const departure = (o: Omit<FlightOption, 'airline'>) =>
     new Date(o.departure.utc).getTime();
   const key = {

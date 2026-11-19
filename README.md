@@ -51,12 +51,13 @@ GIU Software Project I, Winter 2026.
 
 Some networks block the DNS lookup used by `mongodb+srv://` strings. In MongoDB Atlas, open Connect, then Drivers, switch on **Legacy URI String**, copy that `mongodb://` string into your own `.env`, and add `/travel-platform` before the `?`.
 
-### Seed the database (only needed once for the shared database)
+### Seed the database
 
-        npm run seed:reference
+The server loads the reference data by itself every time it starts (GEN-12): the official countries, cities, airports and attractions in `backend/seed-data`, and the supported currencies. Set `SEED_REFERENCE_ON_START=false` to turn this off. The admin account is created once by hand:
+
         npm run seed:admin
 
-`seed:reference` loads the official datasets in `backend/seed-data` (countries, cities, airports, attractions). It checks every file first and writes nothing if a record is invalid. It is safe to run again. Add `-- --prune` to also delete records that are no longer in the files.
+`npm run seed:reference` does the same reference load on demand and prints what it wrote. It checks every file first and writes nothing if a record is invalid. It is safe to run again. Add `-- --prune` to also delete records that are no longer in the files.
 
 `seed:admin` needs `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `backend/.env`. The password must follow the account rule (at least 8 characters, a letter and a digit). Running it again never changes an existing admin's password unless you add `-- --reset-password`.
 

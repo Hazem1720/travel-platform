@@ -40,6 +40,12 @@ class EnvironmentVariables {
   })
   JWT_EXPIRES_IN?: string;
 
+  // GEN-12: the server seeds the reference data when it starts unless this
+  // is "false".
+  @IsOptional()
+  @IsIn(['true', 'false'])
+  SEED_REFERENCE_ON_START?: string;
+
   // ACC-19: cookies are Secure unless this is "false" (local development only).
   @IsOptional()
   @IsIn(['true', 'false'])
