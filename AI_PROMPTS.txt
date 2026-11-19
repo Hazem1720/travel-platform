@@ -911,7 +911,7 @@ Prompt:
 do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
 How the output was used:
 My chapter says GEN-01-B extends Aabsy's NotificationsService and to agree the hook point with him. Claude kept the change in his code to one optional hook: a new global src/email module (nodemailer, SMTP settings only in .env, off without SMTP_HOST) is called from NotificationsService.create() after the notification is saved, not awaited and never throwing; a second optional hook in Hazem's createModerator() sends the moderator invitation, deliberately without the temporary password. Unit tests use a fake SMTP transport. Live check with a local SMTP test inbox (no outside account) and the Stripe sandbox, TEST data deleted afterwards: a hotel booking confirmation produced the email "Your booking is confirmed" with the reservation details; with the inbox stopped, the next booking was still confirmed and its in-app notification created, and the server only logged ECONNREFUSED. The run also found that recent Stripe CLI versions refuse stripe listen without --events, so the README command and the webhook's Swagger text were fixed, and it showed PAY-01's hold expiry confirming a booking whose payment had succeeded but whose webhook was missed. Build, 791 unit tests and the read-only eslint check pass.
-===========================
+====================
 
 ================================================
 Date: 2026-11-19
@@ -944,4 +944,12 @@ Prompt:
 can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
 How the output was used:
 Claude added seat selection to Aabsy's flight bookings as the team plan says, in its own files (only the module registration in his module changes): a seat map per cabin derived from its seats (6 a row, 4 in Business and First), GET /api/flight-bookings/:id/seats with free, taken and my seats per flight, and PATCH /api/flight-bookings/:id/seat to choose or change a passenger's seat on a Confirmed booking or one awaiting payment, before departure (infants get none). A seatassignments collection with a unique index on (flight, cabin, seat) decides a race: one passenger gets the seat, the other 409. Seats of Expired or Cancelled bookings count as free without any hook in other people's code. Unit tests, and an HTTP test against a real MongoDB with two passengers choosing the same seat at the same moment.
+=======
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-27 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude added linked bookings to Moharm's itineraries as the team plan says: GET, POST /api/itineraries/:id/bookings and DELETE /api/itineraries/:id/bookings/:linkId. The user links their own Confirmed or Completed flight or hotel booking to a day; its total (cents / 100, a snapshot) feeds the budget through Moharm's budgetLines(): hotels under Accommodation, flights under Intercity transport, so every summary (by day, category, city group, converted, the PDF) includes it. Another user's booking or itinerary is 404, a PendingPayment one 400, linking the same booking twice 409. Deleting the day removes its links; the public itinerary view leaves linked bookings out (also from its budget), and cloning never copies them. Unit tests and an HTTP test against a real MongoDB with real bookings.
 ================================================
