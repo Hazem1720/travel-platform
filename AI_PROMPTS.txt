@@ -868,3 +868,14 @@ Implement Emad's assigned comments, likes, reports and content moderation requir
 How the output was used:
 Created the comments and reports modules, DTOs, schemas, controllers, services and unit tests; registered both modules in AppModule. Built the backend, ran all 709 tests successfully, and checked the assigned files with ESLint.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: BLG-05, BLG-06, BLG-07, GEN-09, GEN-10 (review of Emad's PR #183)
+Prompt:
+now hafez and emad make the pull req of their work on phase 2 i want u to check that all correct and no conflict and if their is problem fix it or make it from the begging if need and test them and if all test paseed correctly merge them
+How the output was used:
+As team leader I reviewed Emad's comments, likes and moderation PR with Claude and kept his modules, routes and tests. Claude resolved the AI_PROMPTS.txt and app.module.ts conflicts with develop (Hafez's blog), and added what was missing to connect the two: a public GET /posts/:id/comments (visible comments, oldest first, deactivated authors as "Deleted user"), the first page of comments on the post page, and removal of a post's comments and likes when the post is deleted by its author or an admin (with its images). Moderation now closes every open report on an item it hides or deletes and records the resolution, the admin and the time; deleting a review recalculates the hotel's rating; an admin can read hidden content (GET /admin/content/:type/:id). Roles moved from the class to each route so the public list can exist. Tests were added for each change and the whole flow was run over HTTP against a real MongoDB on a temporary CI branch before merging.
+================================================

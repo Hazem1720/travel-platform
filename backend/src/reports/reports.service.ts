@@ -15,6 +15,7 @@ import {
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
 import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
+import { UploadsService } from '../uploads/uploads.service';
 import { CreateReportDto } from './dto/create-report.dto';
 import { ResolveReportDto } from './dto/resolve-report.dto';
 import {
@@ -39,6 +40,7 @@ export class ReportsService {
     @InjectConnection()
     private readonly connection: Connection,
     private readonly audit: AuditService,
+    private readonly uploads: UploadsService,
   ) {}
 
   async create(user: AuthUser, dto: CreateReportDto) {
@@ -105,6 +107,9 @@ export class ReportsService {
 
     if (dto.action === 'dismiss') {
       report.status = ReportStatus.DISMISSED;
+      report.resolution = 'dismissed';
+      report.resolvedBy = new Types.ObjectId(admin.id);
+      report.resolvedAt = new Date();
       await report.save();
 
       await this.audit.log({
@@ -128,10 +133,10 @@ export class ReportsService {
       dto.action,
     );
 
-    report.status = ReportStatus.RESOLVED;
-    await report.save();
-
-    return report.toObject();
+    // moderateContent() has closed every open report on this item,
+    // this one included.
+    const closed = await this.reports.findById(id).lean();
+    return closed ?? report.toObject();
   }
 
   async moderateContent(
@@ -169,19 +174,18 @@ export class ReportsService {
         _id: objectId,
       });
 
-      // Only update the post count if the comment was deleted.
-      if (
-        result.deletedCount === 1 &&
-        targetType === ReportTargetType.COMMENT &&
-        target.postId
-      ) {
-        await this.decrementCommentCount(target.postId);
-      }
-
       if (result.deletedCount !== 1) {
         throw new NotFoundException('Content not found');
       }
+      await this.afterDelete(targetType, target);
     }
+
+    await this.closeReports(
+      admin,
+      targetType,
+      id,
+      action === 'hide' ? 'hidden' : 'deleted',
+    );
 
     await this.audit.log({
       adminId: admin.id,
@@ -232,6 +236,10 @@ export class ReportsService {
       throw new NotFoundException('Content not found');
     }
 
+    if (hidden) {
+      await this.closeReports(admin, targetType, id, 'hidden');
+    }
+
     // Both hiding and unhiding must be recorded.
     await this.audit.log({
       adminId: admin.id,
@@ -242,6 +250,98 @@ export class ReportsService {
     });
 
     return { success: true, hidden };
+  }
+
+  // GEN-10: an admin can read any post, comment, review or itinerary,
+  // hidden ones included, to decide on a report.
+  async getContent(type: string, id: string) {
+    const targetType = this.parseTargetType(type);
+    if (!isValidObjectId(id)) {
+      throw new BadRequestException('Invalid content id');
+    }
+    const content = await this.connection
+      .collection(COLLECTIONS[targetType])
+      .findOne({ _id: new Types.ObjectId(id) });
+    if (!content) throw new NotFoundException('Content not found');
+    const openReports = await this.reports.countDocuments({
+      targetType,
+      targetId: id,
+      status: ReportStatus.OPEN,
+    });
+    return { targetType, content, openReports };
+  }
+
+  // Hiding or deleting an item settles every open report on it.
+  private async closeReports(
+    admin: AuthUser,
+    targetType: ReportTargetType,
+    targetId: string,
+    resolution: 'hidden' | 'deleted',
+  ) {
+    await this.reports.updateMany(
+      { targetType, targetId, status: ReportStatus.OPEN },
+      {
+        $set: {
+          status: ReportStatus.RESOLVED,
+          resolution,
+          resolvedBy: new Types.ObjectId(admin.id),
+          resolvedAt: new Date(),
+        },
+      },
+    );
+  }
+
+  // What has to change with a deleted item: a comment lowers its post's
+  // comment count; a post takes its comments, likes and images with it; a
+  // review's hotel gets its average rating recalculated (HTL-23).
+  private async afterDelete(
+    targetType: ReportTargetType,
+    target: Record<string, any>,
+  ) {
+    if (targetType === ReportTargetType.COMMENT && target.postId) {
+      await this.decrementCommentCount(target.postId);
+    }
+    if (targetType === ReportTargetType.POST) {
+      await Promise.all([
+        this.connection
+          .collection('comments')
+          .deleteMany({ postId: target._id }),
+        this.connection.collection('likes').deleteMany({ postId: target._id }),
+        ...((target.images ?? []) as string[]).map((url) =>
+          this.uploads.remove(url),
+        ),
+      ]);
+    }
+    if (targetType === ReportTargetType.REVIEW && target.hotelId) {
+      await this.recalculateHotelRating(target.hotelId);
+    }
+  }
+
+  // Average of the hotel's remaining reviews (hidden ones still count, as
+  // in review.schema.ts), rounded to one decimal; 0 with no reviews.
+  private async recalculateHotelRating(hotelId: Types.ObjectId) {
+    const [stats] = await this.connection
+      .collection('reviews')
+      .aggregate([
+        { $match: { hotelId } },
+        {
+          $group: {
+            _id: null,
+            average: { $avg: '$rating' },
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .toArray();
+    await this.connection.collection('hotels').updateOne(
+      { _id: hotelId },
+      {
+        $set: {
+          ratingAverage: stats ? Math.round(stats.average * 10) / 10 : 0,
+          ratingCount: stats?.count ?? 0,
+        },
+      },
+    );
   }
 
   private async decrementCommentCount(postId: Types.ObjectId) {

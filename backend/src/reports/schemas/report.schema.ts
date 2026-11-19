@@ -36,6 +36,17 @@ export class Report {
   })
   status: ReportStatus;
 
+  // GEN-10: how the report was closed (dismissed, hidden or deleted), by
+  // which admin and when.
+  @Prop({ type: String, enum: ['dismissed', 'hidden', 'deleted'] })
+  resolution?: 'dismissed' | 'hidden' | 'deleted';
+
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User' })
+  resolvedBy?: Types.ObjectId;
+
+  @Prop({ type: Date })
+  resolvedAt?: Date;
+
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -47,3 +58,4 @@ ReportSchema.index(
   { unique: true },
 );
 ReportSchema.index({ status: 1, createdAt: -1 });
+ReportSchema.index({ targetType: 1, targetId: 1, status: 1 });

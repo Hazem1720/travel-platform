@@ -7,6 +7,8 @@ import {
 } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/mongoose';
 import { Connection, isValidObjectId, Model, Types } from 'mongoose';
+import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
+import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
 import {
   Comment,
@@ -16,6 +18,8 @@ import {
 import { Like, LikeDocument } from './schemas/like.schema';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
+
+export const DELETED_USER = 'Deleted user';
 
 @Injectable()
 export class CommentsService {
@@ -51,6 +55,57 @@ export class CommentsService {
     }
 
     return comment.toObject();
+  }
+
+  // BLG-02 and BLG-05: the visible comments of a published, visible post,
+  // oldest first. Hidden comments (GEN-10) are left out; a deactivated
+  // author is shown as "Deleted user" (ACC-12).
+  async listForPost(postId: string, query: PaginationQueryDto) {
+    const post = await this.findVisiblePublishedPost(postId, '');
+    const filter = { postId: post._id, hidden: { $ne: true } };
+    const [rows, total] = await Promise.all([
+      this.comments
+        .find(filter)
+        .sort({ createdAt: 1, _id: 1 })
+        .skip((query.page - 1) * query.limit)
+        .limit(query.limit)
+        .lean(),
+      this.comments.countDocuments(filter),
+    ]);
+
+    const authors = await this.connection
+      .collection('users')
+      .find(
+        { _id: { $in: rows.map((c) => c.authorId) } },
+        { projection: { name: 1, status: 1 } },
+      )
+      .toArray();
+    const byId = new Map(authors.map((a) => [String(a._id), a]));
+
+    const data = rows.map((c) => {
+      const author = byId.get(String(c.authorId));
+      const gone = !author || author.status === 'deactivated';
+      return {
+        _id: c._id,
+        postId: c.postId,
+        body: c.body,
+        author: gone
+          ? { id: null, name: DELETED_USER }
+          : { id: c.authorId, name: String(author?.name ?? '') },
+        createdAt: c.createdAt,
+        updatedAt: c.updatedAt,
+      };
+    });
+    return paginated(data, total, query.page, query.limit);
+  }
+
+  // BLG-04 and GEN-10: when a post is deleted, its comments and likes go too.
+  async removeForPost(postId: Types.ObjectId | string) {
+    const id = new Types.ObjectId(String(postId));
+    await Promise.all([
+      this.comments.deleteMany({ postId: id }),
+      this.likes.deleteMany({ postId: id }),
+    ]);
   }
 
   async like(user: AuthUser, postId: string) {

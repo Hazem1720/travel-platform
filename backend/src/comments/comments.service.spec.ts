@@ -360,3 +360,85 @@ describe('CommentsService (BLG-05 to BLG-07)', () => {
     ]);
   });
 });
+
+describe('CommentsService: listing and post removal (BLG-02, BLG-05)', () => {
+  const postId = new Types.ObjectId();
+  const alice = new Types.ObjectId();
+  const gone = new Types.ObjectId();
+
+  function setup(post: unknown) {
+    const rows = [
+      { _id: new Types.ObjectId(), postId, authorId: alice, body: 'First' },
+      { _id: new Types.ObjectId(), postId, authorId: gone, body: 'Second' },
+    ];
+    const find = jest.fn(() => ({
+      sort: () => ({
+        skip: () => ({ limit: () => ({ lean: async () => rows }) }),
+      }),
+    }));
+    const comments: any = {
+      find,
+      countDocuments: jest.fn(async () => 2),
+      deleteMany: jest.fn(async () => ({})),
+    };
+    const likes: any = { deleteMany: jest.fn(async () => ({})) };
+    const collections: Record<string, any> = {
+      posts: { findOne: jest.fn(async () => post) },
+      users: {
+        find: jest.fn(() => ({
+          toArray: async () => [
+            { _id: alice, name: 'Alice', status: 'active' },
+            { _id: gone, name: 'Bob', status: 'deactivated' },
+          ],
+        })),
+      },
+    };
+    const connection: any = { collection: (n: string) => collections[n] };
+    return {
+      service: new CommentsService(comments, likes, connection),
+      comments,
+      likes,
+      find,
+    };
+  }
+
+  it('lists visible comments oldest first, deactivated authors as "Deleted user"', async () => {
+    const { service, find } = setup({
+      _id: postId,
+      status: 'Published',
+      hidden: false,
+    });
+    const res = await service.listForPost(String(postId), {
+      page: 1,
+      limit: 10,
+    });
+    expect((find.mock.calls[0] as any[])[0]).toEqual({
+      postId,
+      hidden: { $ne: true },
+    });
+    expect(res.data.map((c) => c.author.name)).toEqual([
+      'Alice',
+      'Deleted user',
+    ]);
+    expect(res.data[1].author.id).toBeNull();
+    expect(res.meta.total).toBe(2);
+  });
+
+  it('is 404 for a draft or hidden post', async () => {
+    const draft = setup({ _id: postId, status: 'Draft' });
+    await expect(
+      draft.service.listForPost(String(postId), { page: 1, limit: 10 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+    const hidden = setup({ _id: postId, status: 'Published', hidden: true });
+    await expect(
+      hidden.service.listForPost(String(postId), { page: 1, limit: 10 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it("removes a post's comments and likes", async () => {
+    const { service, comments, likes } = setup(null);
+    await service.removeForPost(postId);
+    expect(comments.deleteMany).toHaveBeenCalledWith({ postId });
+    expect(likes.deleteMany).toHaveBeenCalledWith({ postId });
+  });
+});

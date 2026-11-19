@@ -98,7 +98,11 @@ export class AdminReportsController {
   @ApiOkResponse({
     description: 'Report resolved',
     schema: {
-      example: { _id: '6736e5f4c1a2b3c4d5e6fc01', status: 'resolved' },
+      example: {
+        _id: '6736e5f4c1a2b3c4d5e6fc01',
+        status: 'resolved',
+        resolution: 'hidden',
+      },
     },
   })
   @ApiErrors(
@@ -115,7 +119,41 @@ export class AdminReportsController {
     return this.reports.resolve(admin, id, dto);
   }
 
+  @Get('content/:type/:id')
+  @ApiParam({
+    name: 'type',
+    enum: ['post', 'comment', 'review', 'itinerary'],
+  })
+  @ApiParam({ name: 'id', example: '6736e5f4c1a2b3c4d5e6fc02' })
+  @ApiOperation({
+    summary:
+      'Read any post, comment, review or itinerary, hidden ones included, admin only (GEN-10)',
+  })
+  @ApiOkResponse({
+    description: 'The content and how many open reports it has',
+    schema: {
+      example: {
+        targetType: 'post',
+        content: { _id: '6736e5f4c1a2b3c4d5e6fc02', hidden: true },
+        openReports: 0,
+      },
+    },
+  })
+  @ApiErrors(
+    { status: 400, message: 'Unsupported content type' },
+    UNAUTHENTICATED,
+    { status: 403, message: 'You do not have permission for this action' },
+    { status: 404, message: 'Content not found' },
+  )
+  content(@Param('type') type: string, @Param('id') id: string) {
+    return this.reports.getContent(type, id);
+  }
+
   @Delete('content/:type/:id')
+  @ApiParam({
+    name: 'type',
+    enum: ['post', 'comment', 'review', 'itinerary'],
+  })
   @ApiOperation({
     summary: 'Delete a post, comment, review or itinerary directly (GEN-10)',
   })
@@ -145,8 +183,13 @@ export class AdminReportsController {
   }
 
   @Patch('content/:type/:id/hide')
+  @ApiParam({
+    name: 'type',
+    enum: ['post', 'comment', 'review', 'itinerary'],
+  })
   @ApiOperation({
-    summary: 'Hide or unhide content directly (GEN-10; suggested endpoint)',
+    summary:
+      'Hide or unhide a post, comment, review or itinerary directly (GEN-10)',
   })
   @ApiOkResponse({
     description: 'Visibility updated',

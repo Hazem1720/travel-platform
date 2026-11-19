@@ -80,12 +80,20 @@ function setup(
     save: jest.fn<any, any[]>(async () => ['/api/uploads/new.jpg']),
     remove: jest.fn<any, any[]>(async () => undefined),
   };
+  const comments = {
+    listForPost: jest.fn<any, any[]>(async () => ({
+      data: [],
+      meta: { total: 0 },
+    })),
+    removeForPost: jest.fn<any, any[]>(async () => undefined),
+  };
   const service = new BlogService(
     posts as any,
     users as any,
     uploads as unknown as UploadsService,
+    comments as any,
   );
-  return { service, posts, users, uploads };
+  return { service, posts, users, uploads, comments };
 }
 
 describe('BLG-01: create a post', () => {
@@ -167,13 +175,18 @@ describe('BLG-02 / BLG-08: browse published posts', () => {
     expect(posts.aggregate.mock.calls[0][0][0].$match.tags).toBe('paris');
   });
 
-  it('shows a published post with its author', async () => {
-    const { service } = setup({
+  it('shows a published post with its author and first page of comments', async () => {
+    const { service, comments } = setup({
       found: { _id: postId, authorId, title: 'Paris' },
       author: { name: 'Sara' },
     });
     const post = await service.findById(postId);
     expect(post.author).toEqual({ id: authorId, name: 'Sara' });
+    expect(comments.listForPost).toHaveBeenCalledWith(postId, {
+      page: 1,
+      limit: 10,
+    });
+    expect(post.comments).toEqual({ data: [], meta: { total: 0 } });
   });
 
   it('is 404 for an invalid id, a draft, a hidden post or a deactivated author', async () => {
@@ -224,7 +237,12 @@ describe('BLG-03: my posts', () => {
       sort: () => ({ skip: () => ({ limit: () => lean([{ title: 'D' }]) }) }),
     }));
     const posts = { find, countDocuments: jest.fn<any, any[]>(async () => 1) };
-    const service = new BlogService(posts as any, {} as any, {} as any);
+    const service = new BlogService(
+      posts as any,
+      {} as any,
+      {} as any,
+      {} as any,
+    );
     const res = await service.findMine(user, query);
     expect(String((find.mock.calls[0] as any[])[0].authorId)).toBe(authorId);
     expect(res.data).toEqual([{ title: 'D' }]);
@@ -270,8 +288,8 @@ describe('BLG-04 / BLG-08: update and delete', () => {
     ).rejects.toThrow(NotFoundException);
   });
 
-  it('deletes my post and its uploaded images', async () => {
-    const { service, uploads } = setup({
+  it('deletes my post with its uploaded images, comments and likes', async () => {
+    const { service, uploads, comments } = setup({
       deleted: {
         _id: postId,
         images: ['/api/uploads/a.jpg', '/api/uploads/b.png'],
@@ -281,6 +299,7 @@ describe('BLG-04 / BLG-08: update and delete', () => {
       message: 'Post deleted',
     });
     expect(uploads.remove).toHaveBeenCalledTimes(2);
+    expect(comments.removeForPost).toHaveBeenCalledWith(postId);
   });
 
   it("is 404 when deleting someone else's post", async () => {
