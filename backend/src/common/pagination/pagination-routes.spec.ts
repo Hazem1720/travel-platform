@@ -97,6 +97,7 @@ const NOT_LISTS: Record<string, { reason: string; openPr?: number }> = {
     reason: 'one post; its comments are paged at /posts/:id/comments',
   },
   'GET /refunds/:id': { reason: ONE_RECORD },
+  'GET /payments/:id': { reason: ONE_RECORD },
   'GET /uploads/:file': { reason: FILE },
   'GET /users/me': { reason: 'the logged-in user' },
 };
