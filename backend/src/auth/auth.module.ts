@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { MongooseModule } from '@nestjs/mongoose';
+import { FlightBookingsModule } from '../flight-bookings/flight-bookings.module';
+import { HotelBookingsModule } from '../hotel-bookings/hotel-bookings.module';
 import { UsersController } from '../users/users.controller';
 import { User, UserSchema } from '../users/schemas/user.schema';
 import { AuthController } from './auth.controller';
@@ -26,6 +28,9 @@ import { RolesGuard } from './guards/roles.guard';
         },
       }),
     }),
+    // ACC-12: deactivation asks both booking modules for upcoming bookings.
+    FlightBookingsModule,
+    HotelBookingsModule,
   ],
   controllers: [AuthController, UsersController],
   providers: [

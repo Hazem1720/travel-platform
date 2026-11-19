@@ -1,4 +1,11 @@
-import { Body, Controller, Param, Patch, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Param,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   ApiCookieAuth,
   ApiCreatedResponse,
@@ -34,6 +41,17 @@ const NOT_ADMIN = {
 };
 const ID = { name: 'id', example: '6736e5f4c1a2b3c4d5e6fc01' };
 const PROVIDER_ID = { name: 'id', example: '6735a1f4c1a2b3c4d5e6f701' };
+const PROVIDER_TYPE = { name: 'type', enum: ['hotel', 'airline'] };
+
+// :type of the provider routes; anything else is 400.
+export function providerKind(type: string): ProviderKind {
+  if (type === 'hotel' || type === 'airline') return type;
+  throw new BadRequestException({
+    error: 'Bad Request',
+    message: 'type must be hotel or airline',
+    details: { type: ['type must be hotel or airline'] },
+  });
+}
 
 // Hazem's admin routes (team plan, B4): moderators, account suspension and
 // provider deactivation. Memo's admin/accounts list and password reset and
@@ -138,86 +156,56 @@ export class AdminAccountsController {
     return this.admin.reactivate(user, id, dto.reason);
   }
 
-  @Patch('airlines/:id/deactivate')
+  // ACC-15, as section 8.2 of the project description lists it:
+  // PATCH /api/admin/providers/:type/:id/deactivate and .../reactivate,
+  // where :type is hotel or airline.
+  @Patch('providers/:type/:id/deactivate')
+  @ApiParam(PROVIDER_TYPE)
   @ApiParam(PROVIDER_ID)
   @ApiOperation({
-    summary: 'Deactivate an airline (ACC-15)',
+    summary: 'Deactivate a hotel or an airline (ACC-15)',
     description:
-      'Its flights are hidden from search and cannot be booked; Confirmed ' +
-      "bookings stay valid. The airline's moderators are notified.",
+      'Separate from suspending its moderator accounts. Its listings are ' +
+      'hidden from search and cannot be booked; existing Confirmed ' +
+      "bookings stay valid. The provider's moderators get an in-app " +
+      'notification.',
   })
   @ApiOkResponse({ type: ProviderStateDto })
   @ApiErrors(
+    { status: 400, message: 'type must be hotel or airline' },
     UNAUTHENTICATED,
     NOT_ADMIN,
-    { status: 404, message: AIRLINE_NOT_FOUND },
-    { status: 409, message: 'This airline is already deactivated' },
-  )
-  deactivateAirline(
-    @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: ReasonDto,
-  ) {
-    return this.setProvider(user, 'airline', id, false, dto);
-  }
-
-  @Patch('airlines/:id/reactivate')
-  @ApiParam(PROVIDER_ID)
-  @ApiOperation({ summary: 'Reactivate an airline (ACC-15)' })
-  @ApiOkResponse({ type: ProviderStateDto })
-  @ApiErrors(
-    UNAUTHENTICATED,
-    NOT_ADMIN,
-    { status: 404, message: AIRLINE_NOT_FOUND },
-    { status: 409, message: 'This airline is already active' },
-  )
-  reactivateAirline(
-    @CurrentUser() user: AuthUser,
-    @Param('id') id: string,
-    @Body() dto: ReasonDto,
-  ) {
-    return this.setProvider(user, 'airline', id, true, dto);
-  }
-
-  @Patch('hotels/:id/deactivate')
-  @ApiParam({ name: 'id', example: '6735a1f4c1a2b3c4d5e6f801' })
-  @ApiOperation({
-    summary: 'Deactivate a hotel (ACC-15)',
-    description:
-      'It is hidden from search and cannot be booked; Confirmed ' +
-      "reservations stay valid. The hotel's moderators are notified.",
-  })
-  @ApiOkResponse({ type: ProviderStateDto })
-  @ApiErrors(
-    UNAUTHENTICATED,
-    NOT_ADMIN,
-    { status: 404, message: HOTEL_NOT_FOUND },
+    { status: 404, message: `${AIRLINE_NOT_FOUND} / ${HOTEL_NOT_FOUND}` },
     { status: 409, message: 'This hotel is already deactivated' },
   )
-  deactivateHotel(
+  deactivateProvider(
     @CurrentUser() user: AuthUser,
+    @Param('type') type: string,
     @Param('id') id: string,
     @Body() dto: ReasonDto,
   ) {
-    return this.setProvider(user, 'hotel', id, false, dto);
+    return this.setProvider(user, providerKind(type), id, false, dto);
   }
 
-  @Patch('hotels/:id/reactivate')
-  @ApiParam({ name: 'id', example: '6735a1f4c1a2b3c4d5e6f801' })
-  @ApiOperation({ summary: 'Reactivate a hotel (ACC-15)' })
+  @Patch('providers/:type/:id/reactivate')
+  @ApiParam(PROVIDER_TYPE)
+  @ApiParam(PROVIDER_ID)
+  @ApiOperation({ summary: 'Reactivate a hotel or an airline (ACC-15)' })
   @ApiOkResponse({ type: ProviderStateDto })
   @ApiErrors(
+    { status: 400, message: 'type must be hotel or airline' },
     UNAUTHENTICATED,
     NOT_ADMIN,
-    { status: 404, message: HOTEL_NOT_FOUND },
-    { status: 409, message: 'This hotel is already active' },
+    { status: 404, message: `${AIRLINE_NOT_FOUND} / ${HOTEL_NOT_FOUND}` },
+    { status: 409, message: 'This airline is already active' },
   )
-  reactivateHotel(
+  reactivateProvider(
     @CurrentUser() user: AuthUser,
+    @Param('type') type: string,
     @Param('id') id: string,
     @Body() dto: ReasonDto,
   ) {
-    return this.setProvider(user, 'hotel', id, true, dto);
+    return this.setProvider(user, providerKind(type), id, true, dto);
   }
 
   private setProvider(

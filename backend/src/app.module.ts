@@ -15,12 +15,16 @@ import { CommentsModule } from './comments/comments.module';
 import { ReportsModule } from './reports/reports.module';
 import { validateEnv } from './config/env.validation';
 import { FlightBookingsModule } from './flight-bookings/flight-bookings.module';
+import { FlightBookingCancellationModule } from './flight-bookings/flight-booking-cancellation.module';
 import { EmailModule } from './email/email.module';
 import { FlightPassengersModule } from './flight-bookings/flight-passengers.module';
 import { FavouritesModule } from './favourites/favourites.module';
 import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
+import { HotelReservationsModule } from './hotel-bookings/hotel-reservations.module';
+import { HotelCancellationModule } from './hotel-bookings/hotel-cancellation.module';
 import { HotelsModule } from './hotels/hotels.module';
+import { FlightCancellationModule } from './flight-bookings/flight-cancellation.module';
 import { ItinerariesModule } from './itineraries/itineraries.module';
 import { ItineraryPdfModule } from './itinerary-pdf/itinerary-pdf.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -46,6 +50,8 @@ import { UploadsModule } from './uploads/uploads.module';
     // before any GET /flights/:id.
     FlightBookingsModule,
     FlightsModule,
+    // FLT-26: GET /flight-bookings/:id/cancellation and POST .../cancel.
+    FlightBookingCancellationModule,
     // FLT-29: GET /flights/:id/bookings and /passengers/export.
     FlightPassengersModule,
     UploadsModule,
@@ -56,7 +62,13 @@ import { UploadsModule } from './uploads/uploads.module';
     // before GET /hotels/:id.
     HotelBookingsModule,
     HotelsModule,
+    // HTL-22: GET /hotels/:id/reservations.
+    HotelReservationsModule,
+    // HTL-21: GET /hotel-bookings/:id/cancellation and POST .../cancel.
+    HotelCancellationModule,
     PaymentsModule,
+    // FLT-06: POST /flights/:id/cancel.
+    FlightCancellationModule,
     ItinerariesModule,
     ItineraryPdfModule,
     FavouritesModule,
