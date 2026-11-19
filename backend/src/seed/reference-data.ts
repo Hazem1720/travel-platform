@@ -27,11 +27,28 @@ export interface AttractionRow {
   name: string;
   cityId: string;
 }
+export interface CurrencyRow {
+  _id: string;
+  countries: string[];
+}
 export interface ReferenceData {
   countries: CountryRow[];
   cities: CityRow[];
   airports: AirportRow[];
   attractions: AttractionRow[];
+}
+
+// GEN-12: the supported currencies are the currencies of the official
+// countries, each with the countries that use it, sorted by code.
+export function currenciesOf(countries: CountryRow[]): CurrencyRow[] {
+  const byCode = new Map<string, string[]>();
+  for (const c of countries) {
+    if (!c.currency) continue;
+    byCode.set(c.currency, [...(byCode.get(c.currency) ?? []), c._id]);
+  }
+  return [...byCode.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([code, list]) => ({ _id: code, countries: list.sort() }));
 }
 
 // RFC 4180 CSV: quoted cells, escaped quotes, CRLF or LF, optional BOM.
@@ -175,6 +192,13 @@ export function validateReferenceData(data: ReferenceData): string[] {
   for (const a of data.attractions) {
     if (a.cityId && !cityCountry.has(a.cityId)) {
       errors.push(`attraction "${a._id}": unknown city "${a.cityId}"`);
+    }
+  }
+  for (const c of data.countries) {
+    if (c.currency && !/^[A-Z]{3}$/.test(c.currency)) {
+      errors.push(
+        `country "${c._id}": "${c.currency}" is not a 3-letter currency code`,
+      );
     }
   }
   return errors;

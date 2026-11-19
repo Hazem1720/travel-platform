@@ -10,7 +10,7 @@ Milestone 1 backend for the Travel Planning and Booking Platform. For setup (Nod
 | `npm run build` | Compile to `dist/` |
 | `npm test` | Unit tests. They need no database and no `.env` |
 | `npm run test:e2e` | HTTP tests through the real app setup. The database flow runs only when `E2E_MONGODB_URI` is set (see below) |
-| `npm run seed:reference` | Load the official countries, cities, airports and attractions from `seed-data/` |
+| `npm run seed:reference` | Load the official countries, cities, airports, attractions and the supported currencies from `seed-data/` (the server also does this when it starts) |
 | `npm run seed:admin` | Create the admin from `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` |
 | `npx eslint "{src,test}/**/*.ts"` | Lint without changing files |
 | `npm run lint` | Lint **and fix**: this edits files |
@@ -54,4 +54,4 @@ Use a local MongoDB or a separate Atlas database, **never the shared team databa
 
 ## Seeding
 
-`seed-data/*.csv` must stay identical to the official `Mock Data.xlsx`; `npm test` checks the record counts and identifiers. `npm run seed:reference` validates every row (required fields, IANA time zones, city and country links) before writing anything, and is safe to repeat. Add `-- --prune` to delete records that are no longer in the files.
+`seed-data/*.csv` must stay identical to the official `Mock Data.xlsx`; `npm test` checks the record counts and identifiers. `npm run seed:reference` validates every row (required fields, IANA time zones, city and country links) before writing anything, and is safe to repeat. Add `-- --prune` to delete records that are no longer in the files. The server runs the same load when it starts unless `SEED_REFERENCE_ON_START=false`.

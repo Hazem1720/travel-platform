@@ -45,3 +45,13 @@ export class Attraction {
 }
 export const AttractionSchema = SchemaFactory.createForClass(Attraction);
 export type AttractionDocument = HydratedDocument<Attraction>;
+
+// GEN-12, ITN-18: the supported currencies, one per currency of the official
+// countries dataset, with the countries that use it (EUR: DE and FR).
+@Schema({ collection: 'currencies' })
+export class Currency {
+  @Prop({ type: String }) _id: string; // ISO 4217 code, e.g. EGP
+  @Prop({ type: [String], default: [] }) countries: string[];
+}
+export const CurrencySchema = SchemaFactory.createForClass(Currency);
+export type CurrencyDocument = HydratedDocument<Currency>;
