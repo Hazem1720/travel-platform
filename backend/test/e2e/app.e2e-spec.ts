@@ -1,59 +1,35 @@
-import { INestApplication } from '@nestjs/common';
-import { getConnectionToken, getModelToken } from '@nestjs/mongoose';
 import { OpenAPIObject } from '@nestjs/swagger';
-import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
-import { AppModule } from '../src/app.module';
-import { buildSwaggerDocument, configureApp } from '../src/app.setup';
-import { User } from '../src/users/schemas/user.schema';
+import { buildSwaggerDocument } from '../../src/app.setup';
+import { User } from '../../src/users/schemas/user.schema';
+import { createTestApp, TestApp } from './app';
+import { testEmail } from './actors';
 
-// Same pipeline as main.ts: /api prefix, cookies, validation pipe, error filter.
-async function createApp(fakeDatabase: boolean): Promise<INestApplication> {
-  const fakeConnection = {
-    models: {},
-    model: () => ({}),
-    close: async () => undefined,
-  };
-  let builder = Test.createTestingModule({ imports: [AppModule] });
-  if (fakeDatabase) {
-    const override = builder.overrideProvider(getConnectionToken());
-    builder = override.useValue(fakeConnection);
-  }
-  const app = (await builder.compile()).createNestApplication({
-    logger: false,
-  });
-  configureApp(app);
-  await app.init();
-  return app;
-}
+// Moved from test/app.e2e-spec.ts onto the harness. The checks are the same;
+// they now run on the real database instead of a fake connection.
 
 const cookiesOf = (res: request.Response): string[] => {
   const raw = res.headers['set-cookie'] as unknown;
   return Array.isArray(raw) ? raw : raw ? [String(raw)] : [];
 };
 
-describe('HTTP pipeline (no database)', () => {
-  let app: INestApplication;
+describe('HTTP pipeline', () => {
+  let t: TestApp;
   let doc: OpenAPIObject;
 
   beforeAll(async () => {
-    app = await createApp(true);
-    doc = buildSwaggerDocument(app);
+    t = await createTestApp('app-pipeline');
+    doc = buildSwaggerDocument(t.app);
   });
-  afterAll(async () => app?.close());
+  afterAll(async () => t?.close());
 
   it('serves the health check under /api', async () => {
-    await request(app.getHttpServer())
-      .get('/api')
-      .expect(200)
-      .expect('Hello World!');
-    await request(app.getHttpServer()).get('/').expect(404);
+    await t.http().get('/api').expect(200).expect('Hello World!');
+    await t.http().get('/').expect(404);
   });
 
   it('answers protected routes with 401 in the shared error format (GEN-13)', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/api/users/me')
-      .expect(401);
+    const res = await t.http().get('/api/users/me').expect(401);
     expect(res.body).toEqual({
       statusCode: 401,
       error: 'Unauthorized',
@@ -64,7 +40,8 @@ describe('HTTP pipeline (no database)', () => {
   });
 
   it('returns field-keyed validation errors (GEN-02)', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await t
+      .http()
       .post('/api/auth/register')
       .send({
         name: '  ',
@@ -83,11 +60,12 @@ describe('HTTP pipeline (no database)', () => {
   });
 
   it('rejects unknown body fields such as a self-assigned role', async () => {
-    const res = await request(app.getHttpServer())
+    const res = await t
+      .http()
       .post('/api/auth/register')
       .send({
-        name: 'Sara',
-        email: 'sara@example.com',
+        name: 'TEST Sara',
+        email: testEmail('role'),
         password: 'Passw0rd1',
         acceptTerms: true,
         role: 'admin',
@@ -97,9 +75,7 @@ describe('HTTP pipeline (no database)', () => {
   });
 
   it('logout always clears both cookies', async () => {
-    const res = await request(app.getHttpServer())
-      .post('/api/auth/logout')
-      .expect(200);
+    const res = await t.http().post('/api/auth/logout').expect(200);
     const cookies = cookiesOf(res).join(';');
     expect(cookies).toMatch(/access_token=;/);
     expect(cookies).toMatch(/refresh_token=;/);
@@ -153,35 +129,31 @@ describe('HTTP pipeline (no database)', () => {
   });
 });
 
-// Full flow against a real database. Set E2E_MONGODB_URI to a throwaway
-// database to run it, e.g. a local mongod or a separate Atlas database.
-const withDatabase = process.env.E2E_MONGODB_URI ? describe : describe.skip;
-
-withDatabase('auth flow (database: E2E_MONGODB_URI)', () => {
-  let app: INestApplication;
-  const email = `e2e-${Date.now()}@example.com`;
+describe('auth flow', () => {
+  let t: TestApp;
+  const email = testEmail('flow');
 
   beforeAll(async () => {
-    app = await createApp(false);
+    t = await createTestApp('app-auth-flow');
   });
-  afterAll(async () => {
-    await app?.get(getModelToken(User.name)).deleteOne({ email });
-    await app?.close();
-  });
+  afterAll(async () => t?.close());
 
+  // One test: each step needs the one before it (random order, plan 1).
   it('registers, logs in, reads the session and revokes it on logout (ACC-01, ACC-04, ACC-06)', async () => {
-    const http = request(app.getHttpServer());
-    await http
+    await t
+      .http()
       .post('/api/auth/register')
       .send({
-        name: 'E2E User',
+        name: 'TEST E2E User',
         email,
         password: 'Passw0rd1',
         acceptTerms: true,
       })
       .expect(201);
+    expect(await t.model(User.name).countDocuments({ email })).toBe(1);
 
-    const login = await request(app.getHttpServer())
+    const login = await t
+      .http()
       .post('/api/auth/login')
       .send({ email, password: 'Passw0rd1' })
       .expect(200);
@@ -189,20 +161,15 @@ withDatabase('auth flow (database: E2E_MONGODB_URI)', () => {
     expect(cookies.join(';')).toMatch(/access_token=.+HttpOnly/i);
 
     const sessionCookie = cookies.map((c) => c.split(';')[0]).join('; ');
-    await request(app.getHttpServer())
-      .get('/api/auth/me')
-      .set('Cookie', sessionCookie)
-      .expect(200);
+    await t.http().get('/api/auth/me').set('Cookie', sessionCookie).expect(200);
 
-    await request(app.getHttpServer())
+    await t
+      .http()
       .post('/api/auth/logout')
       .set('Cookie', sessionCookie)
       .expect(200);
 
     // The old access token no longer works, even though it has not expired.
-    await request(app.getHttpServer())
-      .get('/api/auth/me')
-      .set('Cookie', sessionCookie)
-      .expect(401);
+    await t.http().get('/api/auth/me').set('Cookie', sessionCookie).expect(401);
   });
 });
