@@ -1,4 +1,4 @@
-import { Injectable, NotImplementedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model } from 'mongoose';
 import { BookingStatus } from '../common/enums/booking-status.enum';
@@ -8,6 +8,7 @@ import {
   PayableBooking,
   PaymentHandler,
 } from '../payments/payment-handler';
+import { HotelConfirmationService } from './hotel-confirmation.service';
 import { HotelHoldService, LeanHotelBooking } from './hotel-hold.service';
 import {
   HotelBooking,
@@ -23,6 +24,7 @@ export class HotelPaymentHandler implements PaymentHandler {
     private readonly bookings: Model<HotelBookingDocument>,
     @InjectModel(Hotel.name) private readonly hotels: Model<HotelDocument>,
     private readonly holds: HotelHoldService,
+    private readonly confirmations: HotelConfirmationService,
   ) {}
 
   // Payments does the checks (owner, PendingPayment, hold, policies).
@@ -42,15 +44,11 @@ export class HotelPaymentHandler implements PaymentHandler {
     };
   }
 
-  // HTL-17 (phase 4): PendingPayment to Confirmed, Held nights to Booked,
-  // HT- reference and notification. Built with PAY-01; until then the
-  // webhook cannot call it, since createPayment answers 501.
+  // HTL-17: after Stripe's webhook verified the payment. PendingPayment to
+  // Confirmed, Held nights to Booked, HT- reference and notification. Safe
+  // to call twice; 409 if it can no longer be confirmed (Payments refunds).
   confirm(bookingId: string): Promise<void> {
-    return Promise.reject(
-      new NotImplementedException(
-        `Hotel confirmation comes with HTL-17 (reservation ${bookingId})`,
-      ),
-    );
+    return this.confirmations.confirm(bookingId);
   }
 
   // HTL-18: the hold ran out, Expired and the rooms released.
