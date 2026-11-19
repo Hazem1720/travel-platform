@@ -951,3 +951,14 @@ can u check memos bonus on review and test them then start the rest that doesnt 
 How the output was used:
 Claude built both on Memo's EmailService (two new email types) in my auth module. ACC-02: a new account is unverified and gets a single-use verification link (24 hours; only its SHA-256 hash is stored); GET /api/auth/verify-email?token= verifies it (reuse or expiry: 400), POST /api/auth/resend-verification replaces it, and holding or paying for a flight or hotel booking answers 403 until verified (a @RequireVerifiedEmail() check in the global guard). Accounts from before ACC-02, admins and moderators count as verified; with email off (no SMTP) new accounts start verified, so nothing breaks without a test inbox. ACC-07: POST /api/auth/forgot-password always gives the same answer; for an existing account it emails a link to FRONTEND_URL/reset-password that expires after 30 minutes and is replaced by a newer request; POST /api/auth/reset-password sets the new password once (a used, older or expired link is 400), signs out every session and clears a lockout. Unit tests, and an HTTP test against a real MongoDB with a real SMTP test inbox (Mailpit) on a temporary CI branch.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-28, GEN-01-B, ACC-02, ACC-07, ITN-27, FLT-28, BLG-13, BON-02
+Prompt:
+Yes, merge both (#194, #195) ... Yes, sync tracker
+How the output was used:
+Before merging, Claude saw that #195's head was a commit it had not tested and found that Hazem had pushed to it; it then found that Hazem had already merged #194 and #195, plus ACC-02/ACC-07 (#206), ITN-27 (#205), FLT-28 (#204) and BLG-13 (#203), so nothing was merged twice. It checked develop (build, 918 unit tests, eslint) and that the email hooks were intact. For the tracker sync its script refused to run because the CSV and the xlsx disagreed on develop: when #194's branch was updated, the binary xlsx kept the other side's version and lost ITN-28 In Review and BON-02 Done, while the CSV merged line by line. Claude aligned the two files and set the eight rows to Done in both, with PR links and test files; Owner stays Memo (a credit question for Hazem and me), and the rows Hazem built say so in Blocker / notes. The Summary now shows 8 of my 11 bonus items done.
+================================================
