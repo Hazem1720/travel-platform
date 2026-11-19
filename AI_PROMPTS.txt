@@ -1171,3 +1171,14 @@ now iwant u to make the 3 remaining bonus iissues and test them then merge
 How the output was used:
 Claude added GET /api/admin/analytics?from=&to= (admin only) next to Hasan's ACC-17 in src/admin, as the team plan says: for the bookings made in the period (UTC days, default the last 30), per airline and per hotel, the Confirmed and Completed bookings, the cancelled ones, what was paid (Succeeded payments, so FLT-27 fare differences count), the refunds (failed ones excluded) and revenue = paid - refunds, in cents, from one aggregation per booking collection with the refunds looked up. A round trip with two airlines counts for both; payments and refunds are shared by segment price. Unit tests and an HTTP test against a real MongoDB with real bookings checked against a hand calculation.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-27 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+now iwant u to make the 3 remaining bonus iissues and test them then merge
+How the output was used:
+Claude added PATCH /api/flight-bookings/:id/change-flight in its own module next to Hasan's FLT-26: the user's Confirmed booking moves to other flights on the same route and cabin with the same passengers, priced like a new booking (an unchanged segment keeps its price). The new seats are held first with FLT-22's atomic hold, so a full flight is a 409 and nothing changes. A lower or equal fare is applied at once and the difference refunded (PAY-03); a higher fare waits 10 minutes for the difference, paid with Stripe as a new payment type "flight-change" (POST /api/payments), and Stripe's webhook applies it; unpaid changes expire and release the seats. Seats chosen with FLT-28 on a changed flight are freed and the user is notified (BOOKING_CHANGED). PaymentsService now links a change payment to its booking and splits a later refund (e.g. FLT-26) over the booking's payments. Unit tests, and an HTTP test against a real MongoDB on a temporary CI branch (Stripe success simulated the way its webhook reports it, since CI has no Stripe key).
+================================================
