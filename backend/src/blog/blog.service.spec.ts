@@ -393,7 +393,9 @@ describe('BLG-13: attach an itinerary to a post', () => {
       String(itineraryId),
     );
     const filter = itineraries.findOne.mock.calls[0][0];
-    expect(String(filter.ownerId)).toBe(authorId);
+    expect(filter.ownerId).toEqual({
+      $in: [authorId, new Types.ObjectId(authorId)],
+    });
     expect(filter).toMatchObject({
       _id: String(itineraryId),
       visibility: 'Public',

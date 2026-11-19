@@ -13,6 +13,7 @@ import {
 import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
 import { CommentsService } from '../comments/comments.service';
+import { idInAnyForm } from '../common/helpers/ownership';
 import {
   Itinerary,
   ItineraryDocument,
@@ -207,7 +208,8 @@ export class BlogService {
             .findOne(
               {
                 _id: itineraryId,
-                ownerId: new Types.ObjectId(user.id),
+                // Itineraries store ownerId as the id string.
+                ownerId: idInAnyForm(user.id),
                 ...PUBLIC_ITINERARY,
               },
               { _id: 1 },
