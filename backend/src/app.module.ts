@@ -20,6 +20,7 @@ import { FavouritesModule } from './favourites/favourites.module';
 import { FlightsModule } from './flights/flights.module';
 import { HotelBookingsModule } from './hotel-bookings/hotel-bookings.module';
 import { HotelsModule } from './hotels/hotels.module';
+import { FlightCancellationModule } from './flight-bookings/flight-cancellation.module';
 import { ItinerariesModule } from './itineraries/itineraries.module';
 import { ItineraryPdfModule } from './itinerary-pdf/itinerary-pdf.module';
 import { NotificationsModule } from './notifications/notifications.module';
@@ -54,6 +55,8 @@ import { UploadsModule } from './uploads/uploads.module';
     HotelBookingsModule,
     HotelsModule,
     PaymentsModule,
+    // FLT-06: POST /flights/:id/cancel.
+    FlightCancellationModule,
     ItinerariesModule,
     ItineraryPdfModule,
     FavouritesModule,
