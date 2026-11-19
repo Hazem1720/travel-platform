@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UploadedFiles,
 } from '@nestjs/common';
 import {
@@ -31,10 +32,12 @@ import { AuthUser } from '../common/types/auth-user.type';
 import { IMAGE_LIMITS, UploadedImage } from '../uploads/image-file';
 import { ImageUpload } from '../uploads/image-upload.decorator';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { HotelDetailsDto, HotelDetailsQueryDto } from './dto/hotel-details.dto';
 import { HotelDto } from './dto/hotel.dto';
 import { HotelPoliciesDto } from './dto/policies.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import {
+  BOTH_DATES,
   HOTEL_NOT_FOUND,
   HotelsService,
   IMAGE_NOT_FOUND,
@@ -84,27 +87,36 @@ export class HotelsController {
     return this.hotels.create(dto);
   }
 
-  // The same route later shows the available rooms and the newest reviews
-  // (the rest of HTL-02). Memo's GET /hotels/search must be registered before
-  // this module so "search" is not read as an :id (team plan, B4).
+  // Memo's GET /hotels/search must be registered before this module so
+  // "search" is not read as an :id (team plan, B4).
   @Get(':id')
   @Public()
   @ApiParam(ID_PARAM)
-  @ApiOperation({ summary: 'Hotel details page (HTL-02)' })
-  @ApiOkResponse({ type: HotelDto })
+  @ApiOperation({
+    summary: 'Hotel details page (HTL-02)',
+    description:
+      'The hotel profile with photos, amenities, check-in and check-out ' +
+      'times, cancellation tiers, average rating and the newest 10 reviews. ' +
+      'With checkIn and checkOut, also the rooms free for every night of the ' +
+      'stay, cheapest first, with the total price. No login needed.',
+  })
+  @ApiOkResponse({ type: HotelDetailsDto })
   @ApiErrors(
     {
       status: 400,
-      message: 'Invalid value for "_id"',
-      details: { _id: ['"abc" is not valid'] },
+      message: 'Validation failed',
+      details: { checkOut: [BOTH_DATES] },
+      description:
+        'Only one of the two dates, checkOut on or before checkIn, checkIn ' +
+        'in the past, a date that is not YYYY-MM-DD, or a malformed hotel id',
     },
     {
       ...NOT_FOUND,
       description: 'No such hotel, or the hotel is inactive',
     },
   )
-  get(@Param('id') id: string) {
-    return this.hotels.getPublic(id);
+  get(@Param('id') id: string, @Query() q: HotelDetailsQueryDto) {
+    return this.hotels.details(id, q);
   }
 
   @Patch(':id')
