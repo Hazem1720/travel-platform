@@ -951,3 +951,14 @@ can u check memos bonus on review and test them then start the rest that doesnt 
 How the output was used:
 Claude built both on Memo's EmailService (two new email types) in my auth module. ACC-02: a new account is unverified and gets a single-use verification link (24 hours; only its SHA-256 hash is stored); GET /api/auth/verify-email?token= verifies it (reuse or expiry: 400), POST /api/auth/resend-verification replaces it, and holding or paying for a flight or hotel booking answers 403 until verified (a @RequireVerifiedEmail() check in the global guard). Accounts from before ACC-02, admins and moderators count as verified; with email off (no SMTP) new accounts start verified, so nothing breaks without a test inbox. ACC-07: POST /api/auth/forgot-password always gives the same answer; for an existing account it emails a link to FRONTEND_URL/reset-password that expires after 30 minutes and is replaced by a newer request; POST /api/auth/reset-password sets the new password once (a used, older or expired link is 400), signs out every session and clears a lockout. Unit tests, and an HTTP test against a real MongoDB with a real SMTP test inbox (Mailpit) on a temporary CI branch.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: ACC-17
+Prompt:
+Yes, start ACC-17
+How the output was used:
+Claude built ACC-17 as my own AdminBookingsModule under the admin/ prefix, as the note in admin.module.ts asks. GET /api/admin/bookings (admins only, read-only) lists every flight and hotel booking in one list, newest first, 10 per page: type, reference, status, user (name, email), provider (airline name looked up, hotel name from the booking), a summary (flight routes or hotel name), travel start and end dates, amount and currency. Filters: type (flight or hotel), status, and a travel date range from/to (flight departure date in UTC or hotel check-in; from after to is 400). The two collections are combined inside MongoDB with $unionWith so filtering, sorting and paging cover both; with a type filter only that collection is read. 7 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test admin and five bookings: the combined list and its order, a round trip's route and dates, each filter, paging over the combined list, 400 for a bad type or reversed dates, 403 for a regular user, 401 without a session, no write routes. Build, lint and all 925 unit tests pass.
+================================================
