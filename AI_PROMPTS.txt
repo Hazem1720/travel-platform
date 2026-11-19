@@ -901,3 +901,14 @@ TN-26 flight search from an itinerary can u do this and test it then merge it
 How the output was used:
 Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-27 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude added linked bookings to Moharm's itineraries as the team plan says: GET, POST /api/itineraries/:id/bookings and DELETE /api/itineraries/:id/bookings/:linkId. The user links their own Confirmed or Completed flight or hotel booking to a day; its total (cents / 100, a snapshot) feeds the budget through Moharm's budgetLines(): hotels under Accommodation, flights under Intercity transport, so every summary (by day, category, city group, converted, the PDF) includes it. Another user's booking or itinerary is 404, a PendingPayment one 400, linking the same booking twice 409. Deleting the day removes its links; the public itinerary view leaves linked bookings out (also from its budget), and cloning never copies them. Unit tests and an HTTP test against a real MongoDB with real bookings.
+================================================
