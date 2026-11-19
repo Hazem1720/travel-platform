@@ -5,16 +5,63 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import {
+  HotelAvailabilityService,
+  stayNights,
+} from '../hotel-bookings/hotel-availability.service';
+import { HotelSearchService } from '../hotel-bookings/hotel-search.service';
+import {
+  Review,
+  ReviewDocument,
+} from '../hotel-bookings/schemas/review.schema';
 import { City, CityDocument } from '../reference/schemas/reference.schemas';
 import { assertImageLimit, UploadedImage } from '../uploads/image-file';
 import { UPLOADS_URL_PREFIX, UploadsService } from '../uploads/uploads.service';
 import { CreateHotelDto } from './dto/create-hotel.dto';
+import { HotelDetailsQueryDto } from './dto/hotel-details.dto';
 import { HotelPoliciesDto } from './dto/policies.dto';
 import { UpdateHotelDto } from './dto/update-hotel.dto';
 import { Hotel, HotelDocument, MAX_HOTEL_IMAGES } from './schemas/hotel.schema';
 
 export const HOTEL_NOT_FOUND = 'Hotel not found';
 export const IMAGE_NOT_FOUND = 'Image not found';
+export const BOTH_DATES = 'Give both checkIn and checkOut, or neither';
+// HTL-02: how many reviews the hotel page shows (newest first).
+export const DETAILS_REVIEWS = 10;
+
+export interface HotelDetailsRoom {
+  id: string;
+  name: string;
+  type: string;
+  beds: number;
+  maxOccupancy: number;
+  pricePerNight: number;
+  nights: number;
+  totalPrice: number;
+}
+
+export interface HotelDetailsReview {
+  id: string;
+  rating: number;
+  text: string;
+  createdAt?: Date;
+}
+
+export type HotelDetails = Hotel & {
+  _id: unknown;
+  reviews: HotelDetailsReview[];
+  availableRooms: HotelDetailsRoom[];
+  checkIn: string | null;
+  checkOut: string | null;
+};
+
+function dateError(field: string, message: string) {
+  return new BadRequestException({
+    error: 'Bad Request',
+    message: 'Validation failed',
+    details: { [field]: [message] },
+  });
+}
 
 // HTL-01 (profile), HTL-09 and HTL-10 (policies), HTL-02 (details page).
 // Exported for other modules: Hazem (ACC-13 checks that a moderator's hotel
@@ -25,6 +72,9 @@ export class HotelsService {
     @InjectModel(Hotel.name) private readonly hotels: Model<HotelDocument>,
     @InjectModel(City.name) private readonly cities: Model<CityDocument>,
     private readonly uploads: UploadsService,
+    @InjectModel(Review.name) private readonly reviews: Model<ReviewDocument>,
+    private readonly availability: HotelAvailabilityService,
+    private readonly search: HotelSearchService,
   ) {}
 
   // HTL-01 photos (GEN-08): adds up to 5 in total. The files are saved first,
@@ -109,6 +159,74 @@ export class HotelsService {
     const hotel = await this.hotels.findById(id).lean();
     if (!hotel || !hotel.isActive) throw new NotFoundException(HOTEL_NOT_FOUND);
     return hotel;
+  }
+
+  // HTL-02: the hotel page. The profile (photos, amenities, check-in and
+  // check-out times, cancellation tiers, ratingAverage and ratingCount), the
+  // newest 10 reviews that are not hidden (Memo's Review model), and, when
+  // both dates are given, the rooms free for the whole stay from Memo's
+  // freeRooms() with the same date rules as HTL-15 (checkOut after checkIn,
+  // checkIn not before today in the hotel's city). Without dates the room
+  // list is empty. An inactive hotel is 404.
+  async details(
+    id: string,
+    q: HotelDetailsQueryDto = {},
+  ): Promise<HotelDetails> {
+    const { checkIn, checkOut } = q;
+    if ((checkIn === undefined) !== (checkOut === undefined)) {
+      throw dateError(
+        checkIn === undefined ? 'checkIn' : 'checkOut',
+        BOTH_DATES,
+      );
+    }
+    const nights =
+      checkIn && checkOut ? stayNights(checkIn, checkOut).length : 0;
+
+    const hotel = await this.getPublic(id);
+    const reviewsQuery = this.reviews
+      .find(
+        { hotelId: hotel._id, hidden: false },
+        { rating: 1, text: 1, createdAt: 1 },
+      )
+      .sort({ createdAt: -1 })
+      .limit(DETAILS_REVIEWS)
+      .lean();
+
+    let availableRooms: HotelDetailsRoom[] = [];
+    if (checkIn && checkOut) {
+      if (checkIn < (await this.search.today({ cityId: hotel.cityId }))) {
+        throw dateError('checkIn', 'checkIn cannot be in the past');
+      }
+      const free = await this.availability.freeRooms(
+        String(hotel._id),
+        checkIn,
+        checkOut,
+      );
+      availableRooms = free.map((r) => ({
+        id: String(r._id),
+        name: r.name,
+        type: r.type,
+        beds: r.beds,
+        maxOccupancy: r.maxOccupancy,
+        pricePerNight: r.pricePerNight,
+        nights,
+        totalPrice: nights * r.pricePerNight,
+      }));
+    }
+
+    const reviews = (await reviewsQuery).map((r) => ({
+      id: String(r._id),
+      rating: r.rating,
+      text: r.text,
+      createdAt: (r as { createdAt?: Date }).createdAt,
+    }));
+    return {
+      ...hotel,
+      reviews,
+      availableRooms,
+      checkIn: checkIn ?? null,
+      checkOut: checkOut ?? null,
+    };
   }
 
   // Only the fields of UpdateHotelDto can reach here (whitelisted DTO), so a
