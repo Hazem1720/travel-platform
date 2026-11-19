@@ -140,6 +140,8 @@ describe('TransportCostsService (ITN-16)', () => {
     expect(model.findOneAndUpdate.mock.calls[0][1].$pull).toEqual({
       days: { _id: days[0]._id },
       transportCosts: { dayId: days[0]._id },
+      // ITN-27: links to the day go with it.
+      linkedBookings: { dayId: days[0]._id },
     });
   });
 });
