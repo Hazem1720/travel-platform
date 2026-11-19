@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import { AccountStatus } from '../common/enums/role.enum';
+import { idInAnyForm } from '../common/helpers/ownership';
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
 import { paginated } from '../common/pagination/pagination.helper';
 import {
@@ -50,7 +51,7 @@ export class AuthorsService {
       hidden: { $ne: true },
     };
     const itineraryFilter = {
-      ownerId: author._id,
+      ownerId: idInAnyForm(author._id),
       visibility: ItineraryVisibility.PUBLIC,
       hidden: { $ne: true },
     };

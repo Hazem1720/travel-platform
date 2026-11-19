@@ -40,7 +40,10 @@ describe('ItinerariesService list and details (ITN-03)', () => {
     const result = await service.listMine(owner, { page: 2, limit: 10 });
     const pipeline = itineraries.aggregate.mock.calls[0][0];
     expect(pipeline[0]).toEqual({
-      $match: { ownerId: new Types.ObjectId(owner.id) },
+      // ownerId is stored as the id string; either form matches.
+      $match: {
+        ownerId: { $in: [owner.id, new Types.ObjectId(owner.id)] },
+      },
     });
     expect(pipeline[1]).toEqual({ $sort: { updatedAt: -1, _id: -1 } });
     expect(pipeline[2]).toEqual({ $skip: 10 });
