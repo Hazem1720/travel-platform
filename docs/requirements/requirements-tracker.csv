@@ -113,4 +113,4 @@ ITN-28,Bonus,Itineraries,Registered User,The system shall allow a user to export
 BLG-13,Bonus,Blog,Registered User,The system shall allow an author to attach an itinerary to a post.,"BLG-01, ITN-03",Low,Memo,M1,Not Started,,,
 GEN-01-B,Bonus,Cross-cutting,System,"The system shall also send the GEN-01 notifications (plus moderator invitations) by email via SMTP, using a test inbox in development.",GEN-01,Medium,Memo,M1,Not Started,,,
 BON-01,Bonus,Accounts & Admin,Admin,The system shall provide an admin analytics dashboard showing bookings and revenue per provider over a selected period.,ACC-17,Medium,Memo,M1,Not Started,,,
-BON-02,Bonus,Cross-cutting,Registered User,The system shall allow a registered user to save hotels and public itineraries to a favourites list and view it.,"HTL-11, ITN-21",Low,Memo,M1,Not Started,,,
+BON-02,Bonus,Cross-cutting,Registered User,The system shall allow a registered user to save hotels and public itineraries to a favourites list and view it.,"HTL-11, ITN-21",Low,Memo,M1,In Review,https://github.com/Hazem1720/travel-platform/pull/193,backend/src/favourites/favourites.service.spec.ts (npm test); live check 19/11,
