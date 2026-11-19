@@ -7,6 +7,8 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { isValidObjectId, Model, Types } from 'mongoose';
 import { BookingStatus } from '../common/enums/booking-status.enum';
+import { PAGE_SIZE } from '../common/pagination/pagination-query.dto';
+import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
 import {
   FlightBooking,
@@ -58,9 +60,13 @@ export class ItineraryBookingsService {
     private readonly hotelBookings: Model<HotelBookingDocument>,
   ) {}
 
-  async list(user: AuthUser, id: string) {
+  async list(
+    user: AuthUser,
+    id: string,
+    { page, limit }: { page: number; limit: number },
+  ) {
     const itinerary = await this.itinerariesService.findOwned(user, id);
-    return this.view(itinerary);
+    return this.view(itinerary, page, limit);
   }
 
   async link(user: AuthUser, id: string, dto: LinkBookingDto) {
@@ -125,25 +131,30 @@ export class ItineraryBookingsService {
     return this.view(updated);
   }
 
-  // The linked bookings with their day number, and the budget they feed.
+  // One page of the linked bookings (GEN-05) with their day number, and the
+  // budget fed by all of them. Link and unlink answer with the first page.
   private view(
     itinerary: Parameters<typeof presentWithBudget>[0] & {
       _id: unknown;
       linkedBookings?: (Record<string, unknown> & { dayId: unknown })[];
     },
+    page = 1,
+    limit = PAGE_SIZE,
   ) {
     const dayNumber = new Map(
       itinerary.days.map((d, i) => [String(d._id), i + 1]),
     );
     const presented = presentWithBudget(itinerary);
+    const all = itinerary.linkedBookings ?? [];
+    const pageItems = all.slice((page - 1) * limit, page * limit).map(
+      (b): LinkedBookingView => ({
+        ...b,
+        dayNumber: dayNumber.get(String(b.dayId)) ?? null,
+      }),
+    );
     return {
       itineraryId: itinerary._id,
-      linkedBookings: (itinerary.linkedBookings ?? []).map(
-        (b): LinkedBookingView => ({
-          ...b,
-          dayNumber: dayNumber.get(String(b.dayId)) ?? null,
-        }),
-      ),
+      ...paginated(pageItems, all.length, page, limit),
       budget: summarizeByCurrency(itinerary),
       cityGroups: presented.cityGroups,
     };

@@ -1,6 +1,13 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
 import { IsEnum, IsMongoId } from 'class-validator';
+import { PaginationQueryDto } from '../../common/pagination/pagination-query.dto';
 import { LinkedBookingType } from '../schemas/itinerary.schema';
+
+// GEN-05: GET /api/itineraries/:id/bookings?page=&limit= (page size 10).
+// The links keep the order they were added in, so there is no sort.
+export class LinkedBookingsQueryDto extends OmitType(PaginationQueryDto, [
+  'sort',
+] as const) {}
 
 // ITN-27 (bonus): POST /api/itineraries/:id/bookings
 export class LinkBookingDto {
