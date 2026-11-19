@@ -133,7 +133,7 @@ export class ItineraryBookingsService {
     return {
       itineraryId: itinerary._id,
       linkedBookings: (itinerary.linkedBookings ?? []).map((b) => ({
-        ...b,
+        ...(b as Record<string, unknown>),
         dayNumber: dayNumber.get(String(b.dayId)) ?? null,
       })),
       budget: summarizeByCurrency(itinerary),
