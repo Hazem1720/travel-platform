@@ -26,10 +26,10 @@ export interface ProviderStats {
 }
 
 // BON-01 (bonus): bookings and revenue per airline and per hotel for the
-// bookings made in a period. Only reads the booking, payment and refund collections,
-// with one aggregation per booking collection, payments and refunds looked
-// up. A round trip with two airlines counts for both; what was paid and
-// refunded is shared by the segments' prices.
+// bookings made in a period. Only reads: one aggregation per booking
+// collection, with its payments and refunds looked up. A round trip with
+// two airlines counts for both; what was paid and refunded is shared by
+// the segments' prices.
 @Injectable()
 export class AdminAnalyticsService {
   constructor(@InjectConnection() private readonly connection: Connection) {}
