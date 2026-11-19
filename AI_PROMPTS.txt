@@ -995,3 +995,14 @@ now i think this wasnt supposed to be in issues what do u think i think these th
 How the output was used:
 Claude recommended keeping one issue per requirement (the project PDF asks for requirement IDs in GitHub issues for traceability) but handling GEN-02 and GEN-05 as rules: written in docs/api/conventions.md and enforced by tests, with the issue pointing to both. It added common/pagination/pagination-routes.spec.ts: every GET route must be listed as a list (query built on PaginationQueryDto with limit at most 10, and a documented { data, meta } response) or as not a list with a reason, so a new unpaginated list fails CI. Routes from open PRs are pre-listed so their CI does not break. Claude checked the test fails when a route is unlisted or a list loses its pagination query, and passes with each of the 11 open PRs merged in. Build, 926 unit tests and eslint passed. It also moved the seven M2-only frontend issues to a GitHub "Milestone 2" milestone so they leave the Milestone 1 view.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-15, ACC-07a, PAY-01 (matching the endpoint tables of the project description)
+Prompt:
+now project description has been modified from the uni so i send u the new one the yellow is the new modification so i want u to check what should we change and all the requierment of milestone 1 need and what we we finish is correct according to this modifications and if there is any issue need to change or modify and check the project board all are required for milestone 1 only
+How the output was used:
+Claude compared the description's endpoint tables (section 8, with the yellow changes), the reviewed requirements sheet and the airports dataset with the code. The requirement texts and datasets are unchanged. Three finished routes did not match the tables: ACC-15 provider deactivation is now PATCH /api/admin/providers/:type/:id/deactivate and /reactivate (:type hotel or airline, a yellow change; replaces /admin/airlines/:id/... and /admin/hotels/:id/...), ACC-07a is now POST /api/admin/users/:id/reset-password (was /admin/accounts/:id/...), and PAY-01 gained POST /api/payments, POST /api/payments/:id/retry and GET /api/payments/:id on top of Memo's PaymentsService (POST /bookings/:type/:id/pay stays). Unit tests and a live HTTP check on a temporary CI branch.
+================================================
