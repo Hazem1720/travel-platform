@@ -16,6 +16,7 @@ import {
   PayableBooking,
   PaymentBookingType,
   PaymentHandler,
+  PARENT_BOOKING_TYPE,
   PaymentStatus,
   RefundResult,
   RefundStatus,
@@ -317,6 +318,9 @@ export class PaymentsService {
               amount: intent.amount,
               currency: intent.currency.toUpperCase(),
               status: PaymentStatus.PENDING,
+              parentBookingId: booking.parentBookingId
+                ? new Types.ObjectId(booking.parentBookingId)
+                : null,
             },
           },
           { upsert: true, new: true },
@@ -499,18 +503,63 @@ export class PaymentsService {
       throw new Error(`Refund amount must be whole cents, got ${amount}`);
     }
     if (amount === 0) return null;
-    const payment = isValidObjectId(bookingId)
-      ? await this.payments
-          .findOne({
-            bookingType: type,
-            bookingId: new Types.ObjectId(bookingId),
-            status: PaymentStatus.SUCCEEDED,
-          })
-          .lean<LeanPayment>()
+    // The booking's payment, plus (FLT-27) what was paid for its changes,
+    // newest first: a refund comes from the latest money first.
+    const id = isValidObjectId(bookingId)
+      ? new Types.ObjectId(bookingId)
       : null;
-    if (!payment) throw new ConflictException(NOTHING_TO_REFUND);
+    const paid = id
+      ? await this.payments
+          .find({
+            status: PaymentStatus.SUCCEEDED,
+            $or: [
+              { bookingType: type, bookingId: id },
+              { parentBookingId: id },
+            ],
+          })
+          .sort({ createdAt: -1, _id: -1 })
+          .lean<LeanPayment[]>()
+      : [];
+    if (paid.length === 0) throw new ConflictException(NOTHING_TO_REFUND);
     const booking = await handler.getPayable(bookingId);
-    return this.issueRefund(payment, amount, booking?.description);
+    if (paid.length === 1) {
+      return this.issueRefund(paid[0], amount, booking?.description);
+    }
+
+    // Split over the payments; more than all of them hold is a 409 before
+    // anything is refunded.
+    const parts: { payment: LeanPayment; amount: number }[] = [];
+    let rest = amount;
+    for (const p of paid) {
+      if (rest === 0) break;
+      const take = Math.min(rest, p.amount - (await this.refunded(p._id)));
+      if (take > 0) parts.push({ payment: p, amount: take });
+      rest -= take;
+    }
+    if (rest > 0) {
+      throw new ConflictException(
+        `Only ${amount - rest} cents of this booking's payments can still be refunded`,
+      );
+    }
+    const results: RefundResult[] = [];
+    for (const part of parts) {
+      results.push(
+        await this.issueRefund(part.payment, part.amount, booking?.description),
+      );
+    }
+    if (results.length === 1) return results[0];
+    const status = results.some((r) => r.status === RefundStatus.FAILED)
+      ? RefundStatus.FAILED
+      : results.some((r) => r.status === RefundStatus.PENDING)
+        ? RefundStatus.PENDING
+        : RefundStatus.REFUNDED;
+    return {
+      refundId: results[0].refundId,
+      amount,
+      currency: results[0].currency,
+      status,
+      parts: results,
+    };
   }
 
   // Records the refund first, so its id is the Stripe idempotency key and
@@ -526,9 +575,13 @@ export class PaymentsService {
         `Only ${left} cents of this payment can still be refunded`,
       );
     }
+    // FLT-27: a change payment's refund is shown on its flight booking.
+    const parent = payment.parentBookingId ?? null;
     const record = await this.refunds.create({
-      bookingType: payment.bookingType,
-      bookingId: payment.bookingId,
+      bookingType: parent
+        ? (PARENT_BOOKING_TYPE[payment.bookingType] ?? payment.bookingType)
+        : payment.bookingType,
+      bookingId: parent ?? payment.bookingId,
       userId: payment.userId,
       paymentId: payment._id,
       amount,
