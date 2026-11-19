@@ -33,7 +33,8 @@ Where this file or the tracker differs from the official sheet, the official she
 ## Reference data (loaded by the seed, see backend/seed-data)
 - Text ids: country `EG`, city `cairo`, airport `CAI` (IATA code), attraction `att-1`.
 - Flights reference airports by IATA code. Itineraries reference countries by country code and day cities by city id.
-- Collections: `countries`, `cities`, `airports`, `attractions`. Airports have an IANA `timeZone`. Inject the models with `@InjectModel(Airport.name)`. `ReferenceModule` is global.
+- Collections: `countries`, `cities`, `airports`, `attractions`, `currencies` (one per currency of the countries, with the countries that use it). Airports have an IANA `timeZone`. Inject the models with `@InjectModel(Airport.name)`. `ReferenceModule` is global.
+- Seeding (GEN-12): the server upserts the reference data when it starts (`SEED_REFERENCE_ON_START=false` turns it off); `npm run seed:reference` does the same on demand. Public lists: `GET /api/reference/countries`, `/cities?country=`, `/attractions?city=`, `/currencies`, and `GET /api/airports`.
 
 ## Providers (airlines and hotels)
 - Active flag (ACC-15, FLT-11, HTL-11): `isActive` on Airline and Hotel. Search and new bookings show only active providers; existing Confirmed bookings stay valid when a provider is deactivated.

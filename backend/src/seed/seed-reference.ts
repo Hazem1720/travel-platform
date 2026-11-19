@@ -1,73 +1,29 @@
 import { NestFactory } from '@nestjs/core';
-import { getModelToken } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import { AppModule } from '../app.module';
-import {
-  Airport,
-  Attraction,
-  City,
-  Country,
-} from '../reference/schemas/reference.schemas';
-import { loadReferenceData, validateReferenceData } from './reference-data';
+import { ReferenceSeedService } from '../reference/reference-seed.service';
 
-// GEN-12: seeds countries, cities, airports and attractions from backend/seed-data,
-// which holds the official datasets unchanged.
+// GEN-12: seeds countries, cities, airports, attractions and the supported
+// currencies from backend/seed-data, which holds the official datasets
+// unchanged. The server also does this when it starts.
 //
 //   npm run seed:reference            insert or update every record (safe to repeat)
 //   npm run seed:reference -- --prune also delete records that are no longer in the CSVs
 
-async function upsertAll(
-  model: Model<any>,
-  docs: { _id: string }[],
-  prune: boolean,
-) {
-  // bulkWrite skips Mongoose validators, so the rows are validated before this point.
-  await model.bulkWrite(
-    docs.map((d) => ({
-      updateOne: { filter: { _id: d._id }, update: { $set: d }, upsert: true },
-    })),
-  );
-  let removed = 0;
-  if (prune) {
-    const res = await model.deleteMany({
-      _id: { $nin: docs.map((d) => d._id) },
-    });
-    removed = res.deletedCount ?? 0;
-  }
-  return `${docs.length} upserted${prune ? `, ${removed} removed` : ''}`;
-}
-
 async function run() {
   const prune = process.argv.includes('--prune');
-
-  // Validate before connecting: a bad file must never reach the shared database.
-  const data = loadReferenceData();
-  const errors = validateReferenceData(data);
-  if (errors.length) {
-    throw new Error(`Seed data is invalid:\n- ${errors.join('\n- ')}`);
-  }
-
+  // The service's own start-up seed is skipped here; this run reports instead.
+  process.env.SEED_REFERENCE_ON_START = 'false';
   const app = await NestFactory.createApplicationContext(AppModule, {
     logger: ['error', 'warn'],
   });
   try {
-    const model = (name: string) => app.get<Model<any>>(getModelToken(name));
-    console.log(
-      'countries   :',
-      await upsertAll(model(Country.name), data.countries, prune),
-    );
-    console.log(
-      'cities      :',
-      await upsertAll(model(City.name), data.cities, prune),
-    );
-    console.log(
-      'airports    :',
-      await upsertAll(model(Airport.name), data.airports, prune),
-    );
-    console.log(
-      'attractions :',
-      await upsertAll(model(Attraction.name), data.attractions, prune),
-    );
+    const c = await app.get(ReferenceSeedService).seed(prune);
+    console.log('countries   :', c.countries, 'upserted');
+    console.log('cities      :', c.cities, 'upserted');
+    console.log('airports    :', c.airports, 'upserted');
+    console.log('attractions :', c.attractions, 'upserted');
+    console.log('currencies  :', c.currencies, 'upserted');
+    if (prune) console.log('removed     :', c.removed);
   } finally {
     await app.close();
   }

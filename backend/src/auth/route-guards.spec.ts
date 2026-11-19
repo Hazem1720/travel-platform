@@ -26,6 +26,11 @@ const PUBLIC_ROUTES = [
   'POST /auth/logout',
   'GET /airlines/:id',
   'GET /airports',
+  // GEN-12: the seeded reference data.
+  'GET /reference/countries',
+  'GET /reference/cities',
+  'GET /reference/attractions',
+  'GET /reference/currencies',
   'GET /flights/search',
   'GET /flights/:id',
   'GET /uploads/:file',

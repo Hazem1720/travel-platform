@@ -882,6 +882,28 @@ As team leader I reviewed Emad's comments, likes and moderation PR with Claude a
 
 ================================================
 Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-12, GEN-13
+Prompt:
+ok can u do my work that left
+How the output was used:
+Claude checked what was still open on my two cross-cutting requirements. GEN-12: reference data was only loaded by a manual script and currencies were not stored. Now the server seeds countries, cities, airports, attractions and a new currencies collection (one per currency of the official countries, with the countries that use it) every time it starts, idempotently and after validating every row (SEED_REFERENCE_ON_START=false turns it off; npm run seed:reference uses the same service), and public GET /api/reference/countries, /cities?country=, /attractions?city= and /currencies list them. GEN-13: added an application-wide test that walks every controller and fails if any request body or query is not a validated DTO class, checks the global pipe rejects unknown fields (e.g. a self-assigned role), that password and refresh-token hashes are never selected, and scans the code so every place that writes a password writes a bcrypt hash. Tested with unit tests and against a real MongoDB on a temporary CI branch before merging. ACC-10 is M2 only (a frontend redirect) and stays for Milestone 2.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-26 (finishing Moharm's requirement at my request as team leader)
+Prompt:
+TN-26 flight search from an itinerary can u do this and test it then merge it
+How the output was used:
+Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
+================================================
+
+================================================
+Date: 2026-11-19
 Student: Mohamad Amr Khallaf
 Tool: Claude Code
 Related Requirement: ITN-28
