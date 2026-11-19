@@ -21,7 +21,14 @@ describe('HotelsService', () => {
     };
     const cities = { findById: jest.fn(() => ({ lean: async () => city })) };
     return {
-      service: new HotelsService(hotels as any, cities as any, {} as any),
+      service: new HotelsService(
+        hotels as any,
+        cities as any,
+        {} as any,
+        {} as any,
+        {} as any,
+        {} as any,
+      ),
       hotels,
       cities,
     };
@@ -164,7 +171,14 @@ describe('HotelsService', () => {
         remove: jest.fn(async () => undefined),
       };
       return {
-        service: new HotelsService(hotels as any, {} as any, uploads as any),
+        service: new HotelsService(
+          hotels as any,
+          {} as any,
+          uploads as any,
+          {} as any,
+          {} as any,
+          {} as any,
+        ),
         hotels,
         uploads,
       };
