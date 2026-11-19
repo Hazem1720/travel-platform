@@ -147,7 +147,10 @@ export class StripeWebhookController {
       'Expired. refund.created, refund.updated, refund.failed and ' +
       'charge.refund.updated update the refund status (PAY-03). Other ' +
       'events are acknowledged and ignored. Locally, run ' +
-      '`stripe listen --forward-to localhost:3000/api/payments/webhook`.',
+      '`stripe listen --forward-to localhost:3000/api/payments/webhook ' +
+      '--events payment_intent.succeeded,payment_intent.payment_failed,' +
+      'payment_intent.canceled,refund.created,refund.updated,' +
+      'refund.failed,charge.refund.updated`.',
   })
   @ApiOkResponse({ type: WebhookReceivedDto })
   @ApiErrors(
