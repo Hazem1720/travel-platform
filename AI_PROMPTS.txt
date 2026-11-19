@@ -961,7 +961,9 @@ Prompt:
 Yes, merge both (#194, #195) ... Yes, sync tracker
 How the output was used:
 Before merging, Claude saw that #195's head was a commit it had not tested and found that Hazem had pushed to it; it then found that Hazem had already merged #194 and #195, plus ACC-02/ACC-07 (#206), ITN-27 (#205), FLT-28 (#204) and BLG-13 (#203), so nothing was merged twice. It checked develop (build, 918 unit tests, eslint) and that the email hooks were intact. For the tracker sync its script refused to run because the CSV and the xlsx disagreed on develop: when #194's branch was updated, the binary xlsx kept the other side's version and lost ITN-28 In Review and BON-02 Done, while the CSV merged line by line. Claude aligned the two files and set the eight rows to Done in both, with PR links and test files; Owner stays Memo (a credit question for Hazem and me), and the rows Hazem built say so in Blocker / notes. The Summary now shows 8 of my 11 bonus items done.
-====================
+=============
+
+
 
 
 
@@ -1067,4 +1069,12 @@ Prompt:
 Yes, start ACC-17
 How the output was used:
 Claude built ACC-17 as my own AdminBookingsModule under the admin/ prefix, as the note in admin.module.ts asks. GET /api/admin/bookings (admins only, read-only) lists every flight and hotel booking in one list, newest first, 10 per page: type, reference, status, user (name, email), provider (airline name looked up, hotel name from the booking), a summary (flight routes or hotel name), travel start and end dates, amount and currency. Filters: type (flight or hotel), status, and a travel date range from/to (flight departure date in UTC or hotel check-in; from after to is 400). The two collections are combined inside MongoDB with $unionWith so filtering, sorting and paging cover both; with a type filter only that collection is read. 7 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test admin and five bookings: the combined list and its order, a round trip's route and dates, each filter, paging over the combined list, 400 for a bad type or reversed dates, 403 for a regular user, 401 without a session, no write routes. Build, lint and all 925 unit tests pass.
+=======
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-06
+Prompt:
+Yes, start FLT-06
+How the output was used:
+Claude built FLT-06 in its own FlightCancellationModule (so Hazem's FlightsModule and Mostafa's FlightBookingsModule stay untouched). POST /api/flights/:id/cancel, airline moderators only, own airline's flights (Hazem's getOwned: 404 unknown, 403 another airline's): the flight must be Scheduled and not departed (409 otherwise) and becomes Cancelled in one conditional update, so it leaves search and two cancels cannot both run. Unpaid holds on it are released through Memo's PaymentsService.releaseInventory (which cancels the PaymentIntent first). Every Confirmed booking on it becomes Cancelled (only if still Confirmed), its seats go back on every flight it was on (a round trip frees the other flight's seat too), it gets a 100% refund through PaymentsService.refund (PAY-03), and its user gets a BOOKING_CANCELLED notification. A failed booking, refund or notification never stops the others; problems are logged and returned, and a refund Stripe recorded as Failed is not counted as refunded. The live check showed my first notification text promised "fully refunded" even when the refund failed; it now says the refund was requested, since Memo's REFUND_ISSUED message reports the outcome. 9 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database, no Stripe key, so refunds were recorded as Failed): flight Cancelled with booked and held seats back to 0, a round trip's seat freed on its other flight, both Confirmed bookings Cancelled, the hold Expired, other bookings and flights untouched, notifications sent; a second cancel 409, another airline's flight 403, a regular user 403, no session 401. Build, lint and all 927 unit tests pass. A real Stripe refund still needs to be tried with the team's test key.
 ================================================
