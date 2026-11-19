@@ -204,6 +204,28 @@ describe('BLG-02 / BLG-08: browse published posts', () => {
     const { service } = setup({ found: { _id: postId, authorId } });
     await expect(service.findById(postId)).rejects.toThrow(NotFoundException);
   });
+
+  it('GEN-10: only published, visible posts for visitors; the author also sees own drafts and hidden posts; an admin any hidden post', async () => {
+    const run = async (viewer?: any) => {
+      const t = setup({
+        found: { _id: postId, authorId, title: 'Paris' },
+        author: { name: 'Sara' },
+      });
+      await t.service.findById(postId, viewer);
+      return t.posts.findOne.mock.calls[0][0];
+    };
+    expect(await run()).toMatchObject({
+      status: 'Published',
+      hidden: { $ne: true },
+    });
+    const own = await run({ id: String(authorId), role: Role.USER });
+    expect(own.$or).toEqual([
+      { status: 'Published', hidden: { $ne: true } },
+      { authorId: expect.objectContaining({ $in: expect.any(Array) }) },
+    ]);
+    const adm = await run({ id: 'admin-1', role: Role.ADMIN });
+    expect(adm).toEqual({ _id: postId, status: 'Published' });
+  });
 });
 
 describe('BLG-09: search posts', () => {

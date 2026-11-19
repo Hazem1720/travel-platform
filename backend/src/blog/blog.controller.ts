@@ -108,11 +108,18 @@ export class BlogController {
   @ApiParam(POST_ID)
   @ApiOperation({
     summary: 'A published post with its author (BLG-02)',
+    description:
+      'Public. A logged-in author may also open their own draft or hidden post, and an admin any hidden post (GEN-10).',
   })
   @ApiOkResponse({ description: 'Post details' })
   @ApiErrors(NOT_FOUND)
-  findById(@Param('id') id: string) {
-    return this.blogService.findById(id);
+  findById(
+    @Param('id') id: string,
+    // Set only when the visitor is logged in (GEN-10: the author or an admin
+    // may open a hidden post; the author may open their own draft).
+    @CurrentUser() viewer?: AuthUser,
+  ) {
+    return this.blogService.findById(id, viewer);
   }
 
   @HttpPost()

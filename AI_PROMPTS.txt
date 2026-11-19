@@ -1289,3 +1289,14 @@ Can u handle the part that didnt pass in part 2
 How the output was used:
 Test plan case 2.16 (every protected route documents a 401) flagged POST /api/auth/logout: it is public by design (always 200) but declared @ApiCookieAuth, so Swagger showed it as protected. Claude removed the two Swagger cookie-auth lines and described the route as public; the route's behaviour is unchanged. Re-ran Part 2 of the test plan (20/20) before merging.
 ================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-10 (hidden content visible to its author and admins), BLG-03
+Prompt:
+Fix the problem in part 7 let all pass so fix then test and test part 8,9
+How the output was used:
+The Milestone 1 test plan (Part 9, case 9.14) found that the author of a hidden post got 404 on GET /api/posts/:id, although GEN-10 says hidden content stays visible to its author and admins: public routes never looked at the session cookie. Claude made the global JWT guard recognise a valid, current, active session on @Public routes without ever refusing the request or counting it as activity, and made GET /posts/:id show the author their own hidden posts and drafts and an admin any hidden post; visitors still see only published, visible posts. Unit tests for the guard and the service, and Part 9 of the test plan re-run.
+================================================
