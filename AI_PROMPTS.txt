@@ -1206,3 +1206,16 @@ Yes, sync tracker
 How the output was used:
 Claude marked my three bonus items Done in requirements-tracker.csv: FLT-27 (#229), HTL-26 (#227) and BON-01 (#228), all merged on 19/11 and built by Hazem, with each PR link, its spec file and the live HTTP check on the temporary CI branch #225 as test evidence. Their issues (#122, #124, #129) were already closed by those PRs. It also noted on HTL-23's row the local-date follow-up merged in #230. Only the team columns changed. It then ran scripts/sync-tracker-xlsx.py --apply, which wrote the same values to the Tracker sheet, my sheet and the Summary counts (my bonus done 8 -> 11), and a second dry run reported the .xlsx matches the CSV.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-02, GEN-05
+Prompt:
+ok now there are 9 issues that belong to ml2 so i think its better to remove them for now so we have a clean state for now what do u think
+im not even convinced that these are issues and espessialy the ml1 ones as they are not requirments
+Yes, move to M2
+How the output was used:
+Claude advised against deleting or closing the 9 open issues: it checked the official Excel and all 9 (ACC-10, GEN-02 to GEN-05, GEN-14 to GEN-17) are official Mandatory requirements, and they were already in the GitHub milestone "Milestone 2". It agreed that GEN-02 and GEN-05 were tagged M1 only by our tracker, because each had a backend half (the shared "Validation failed" error format and paginated list routes), both merged; what is left is frontend work. I kept that and had Claude change their Milestone from M1 to "M2 only" in requirements-tracker.csv and on the Tracker sheet of the .xlsx (the sync script does not edit Milestone, so it used the script's own cell helpers), then the script's dry run confirmed the .xlsx matches the CSV. Status stays In Progress. Their issues (#104, #107) got the m2-only label instead of milestone-1.
+================================================
