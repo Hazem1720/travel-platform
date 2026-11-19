@@ -28,6 +28,7 @@ describe('Hotel policies for PAY-02', () => {
       bookings as any,
       hotels as any,
       {} as any,
+      {} as any,
     );
     return { handler, bookings, hotels };
   }

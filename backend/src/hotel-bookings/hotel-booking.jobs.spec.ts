@@ -1,4 +1,3 @@
-import { NotImplementedException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { BookingStatus } from '../common/enums/booking-status.enum';
 import { PaymentBookingType } from '../payments/payment-handler';
@@ -53,12 +52,14 @@ describe('Hotel hold expiry and payment handler (HTL-18, PAY-01)', () => {
         findById: jest.fn(() => ({ lean: async () => found })),
       };
       const holds = { expire: jest.fn(async () => undefined) };
+      const confirmations = { confirm: jest.fn(async () => undefined) };
       const handler = new HotelPaymentHandler(
         bookings as any,
         {} as any,
         holds as any,
+        confirmations as any,
       );
-      return { handler, holds };
+      return { handler, holds, confirmations };
     }
 
     it('getPayable gives Payments the owner, status, total, hold and policies', async () => {
@@ -91,13 +92,12 @@ describe('Hotel hold expiry and payment handler (HTL-18, PAY-01)', () => {
       expect(await setup(null).handler.getPayable('abc')).toBeNull();
     });
 
-    it('expire goes to HotelHoldService.expire; confirm waits for HTL-17', async () => {
-      const { handler, holds } = setup(null);
+    it('expire goes to HotelHoldService.expire; confirm to HTL-17', async () => {
+      const { handler, holds, confirmations } = setup(null);
       await handler.expire(String(id));
       expect(holds.expire).toHaveBeenCalledWith(String(id));
-      await expect(handler.confirm(String(id))).rejects.toBeInstanceOf(
-        NotImplementedException,
-      );
+      await handler.confirm(String(id));
+      expect(confirmations.confirm).toHaveBeenCalledWith(String(id));
     });
 
     it('PaymentsService refuses to pay before the policies are accepted (PAY-02)', async () => {
@@ -113,7 +113,12 @@ describe('Hotel hold expiry and payment handler (HTL-18, PAY-01)', () => {
         checkIn: '2026-12-05',
         checkOut: '2026-12-08',
       });
-      const payments = new PaymentsService();
+      const payments = new PaymentsService(
+        {} as any,
+        {} as any,
+        {} as any,
+        {} as any,
+      );
       payments.registerHandler(PaymentBookingType.HOTEL, handler);
       await expect(
         payments.getPayableFor(

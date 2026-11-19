@@ -238,6 +238,14 @@ export class HotelAvailabilityService {
     return res.modifiedCount;
   }
 
+  // HTL-17: how many nights of one reservation are Booked, to check after
+  // confirmHeld that none was lost.
+  countBooked(bookingId: string): Promise<number> {
+    return this.locks
+      .countDocuments({ bookingId, kind: RoomLockKind.BOOKED })
+      .exec();
+  }
+
   // Hold expiry (HTL-18) and cancellation (HTL-20, HTL-21): frees every night
   // of one reservation.
   async releaseBooking(bookingId: string): Promise<number> {

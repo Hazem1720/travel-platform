@@ -72,7 +72,12 @@ describe('Booking policies before payment (PAY-02)', () => {
           }
         : {}),
     };
-    const payments = new PaymentsService();
+    const payments = new PaymentsService(
+      {} as any,
+      {} as any,
+      {} as any,
+      {} as any,
+    );
     payments.registerHandler(PaymentBookingType.HOTEL, handler);
     return { payments, handler, state };
   }
