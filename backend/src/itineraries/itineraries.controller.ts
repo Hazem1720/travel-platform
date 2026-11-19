@@ -40,10 +40,7 @@ import {
   ItineraryFlightsQueryDto,
   ItineraryHotelsQueryDto,
 } from './dto/itinerary-search.dto';
-import {
-  FLIGHT_SEARCH_NOT_READY,
-  ItineraryFlightsService,
-} from './itinerary-flights.service';
+import { ItineraryFlightsService } from './itinerary-flights.service';
 import { ItineraryHotelsService } from './itinerary-hotels.service';
 
 export const ID_PARAM = { name: 'id', example: '6735a1f4c1a2b3c4d5e6f901' };
@@ -258,8 +255,13 @@ export class ItinerariesController {
     summary:
       "Flights from an airport to the first day's city (ITN-26, reuses FLT-11 and FLT-12)",
     description:
-      'Searches every airport in the city of the first day. The outbound ' +
-      "date is the start date; with roundTrip=true the return is the last day's date.",
+      'Searches every airport in the city of the first day with the FLT-11 ' +
+      'search (bookable flights of active airlines with enough seats). The ' +
+      'outbound date defaults to the start date; with roundTrip=true (or a ' +
+      "returnDate) the return defaults to the last day's date. Passengers " +
+      '(adults, children, infants), cabin and sort work as in ' +
+      'GET /api/flights/search; ?page pages the outbound flights and ' +
+      '?returnPage the flights back.',
   })
   @ApiOkResponse({
     schema: {
@@ -272,8 +274,24 @@ export class ItinerariesController {
           returnDate: '2026-12-05',
           roundTrip: true,
         },
-        data: [],
-        meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+        data: [
+          {
+            _id: '6736e5f4c1a2b3c4d5e6f101',
+            flightNumber: 'NP101',
+            from: 'CAI',
+            to: 'DXB',
+            airline: { name: 'Nile Air', code: 'NP' },
+            cabins: [{ category: 'Economy', price: 25000, totalFare: 25000 }],
+            lowestPrice: 25000,
+          },
+        ],
+        meta: { page: 1, limit: 10, total: 1, totalPages: 1 },
+        message: null,
+        returnFlights: {
+          data: [],
+          meta: { page: 1, limit: 10, total: 0, totalPages: 0 },
+          message: 'No flights found',
+        },
       },
     },
   })
@@ -281,16 +299,13 @@ export class ItinerariesController {
     {
       status: 400,
       message: 'Unknown airport "XXX"',
-      description: 'An unknown origin, or an itinerary without days',
+      description:
+        'An unknown origin, an itinerary without days, a return before the ' +
+        'outbound date or an invalid passenger mix',
     },
     UNAUTHENTICATED,
     NOT_A_USER,
     NOT_FOUND,
-    {
-      status: 501,
-      message: FLIGHT_SEARCH_NOT_READY,
-      description: "Until Aabsy's flight search is merged",
-    },
   )
   flights(
     @CurrentUser() user: AuthUser,

@@ -1,18 +1,21 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotImplementedException,
-  Optional,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AirportsService } from '../airports/airports.service';
-import {
-  PaginatedResult,
-  paginated,
-} from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
+import {
+  assertSearchCriteria,
+  parseFlightSort,
+  passengerCounts,
+} from '../flight-bookings/flight-booking.rules';
+import {
+  byFlightSort,
+  FlightOption,
+  FlightOptionList,
+  FlightSearchService,
+  returnsAfter,
+  toPage,
+} from '../flight-bookings/flight-search.service';
 import {
   Airport,
   AirportDocument,
@@ -21,30 +24,28 @@ import { ItineraryFlightsQueryDto } from './dto/itinerary-search.dto';
 import { ItinerariesService } from './itineraries.service';
 import { dayDate, toDateOnly } from './itinerary.view';
 
-// ITN-26 reuses Aabsy's flight search (FLT-11, FLT-12) through this contract.
-// When it is merged, provide it in ItinerariesModule:
-//   { provide: FLIGHT_SEARCH, useExisting: FlightSearchService }
-export const FLIGHT_SEARCH = Symbol('FLIGHT_SEARCH');
-
-export interface FlightSearchRequest {
-  from: string;
-  to: string;
+export interface ItineraryFlightSearch {
+  origin: string;
+  cityId: string;
+  destinations: string[];
   date: string;
   returnDate?: string;
-  page: number;
-  limit: number;
+  roundTrip: boolean;
 }
 
-export interface FlightSearchPort {
-  search(q: FlightSearchRequest): Promise<PaginatedResult<unknown>>;
+// data/meta/message: outbound flights to any airport of the first day's
+// city; returnFlights: the flights back for a round trip, else null. The
+// same shape as GET /api/flights/search, plus the search that was run.
+export interface ItineraryFlightsResult extends FlightOptionList {
+  search: ItineraryFlightSearch;
+  returnFlights: FlightOptionList | null;
 }
-
-export const FLIGHT_SEARCH_NOT_READY =
-  'Flight search (FLT-11, FLT-12) is not merged yet';
 
 // ITN-26: one-way or round-trip flights from a chosen airport to any airport
-// in the city of the itinerary's first day. Outbound on the start date,
-// return on the last day's date.
+// in the city of the itinerary's first day, reusing Aabsy's FLT-11/FLT-12
+// search (FlightSearchService.findOptions: bookable flights of active
+// airlines with enough seats, local dates, fares). The outbound date defaults
+// to the start date and the return date to the last day's date.
 @Injectable()
 export class ItineraryFlightsService {
   constructor(
@@ -52,12 +53,14 @@ export class ItineraryFlightsService {
     private readonly airportsService: AirportsService,
     @InjectModel(Airport.name)
     private readonly airports: Model<AirportDocument>,
-    @Optional()
-    @Inject(FLIGHT_SEARCH)
-    private readonly flightSearch?: FlightSearchPort,
+    private readonly flightSearch: FlightSearchService,
   ) {}
 
-  async flightsFor(user: AuthUser, id: string, q: ItineraryFlightsQueryDto) {
+  async flightsFor(
+    user: AuthUser,
+    id: string,
+    q: ItineraryFlightsQueryDto,
+  ): Promise<ItineraryFlightsResult> {
     const itinerary = await this.itinerariesService.findOwned(user, id);
     if (!itinerary.days.length) {
       throw new BadRequestException(
@@ -71,44 +74,64 @@ export class ItineraryFlightsService {
     )
       .map((a) => String(a._id))
       .filter((code) => code !== origin._id);
-    const date = toDateOnly(itinerary.startDate);
-    const returnDate = q.roundTrip
-      ? toDateOnly(dayDate(itinerary.startDate, itinerary.days.length - 1))
+
+    const roundTrip = q.roundTrip || q.returnDate !== undefined;
+    const date = q.date ?? toDateOnly(itinerary.startDate);
+    const returnDate = roundTrip
+      ? (q.returnDate ??
+        toDateOnly(dayDate(itinerary.startDate, itinerary.days.length - 1)))
       : undefined;
-    const search = {
+
+    // FLT-12's rules: return not before the outbound date, a valid
+    // passenger mix. "to" differs from the origin by construction.
+    const passengers = passengerCounts(q);
+    assertSearchCriteria({
+      from: origin._id,
+      to: '',
+      date,
+      returnDate,
+      ...passengers,
+    });
+    const sort = parseFlightSort(q.sort);
+
+    const search: ItineraryFlightSearch = {
       origin: origin._id,
       cityId,
       destinations,
       date,
       ...(returnDate ? { returnDate } : {}),
-      roundTrip: q.roundTrip,
+      roundTrip,
     };
-    if (!destinations.length) {
-      return { search, ...paginated([], 0, q.page, q.limit) };
-    }
-    if (!this.flightSearch) {
-      throw new NotImplementedException({
-        error: 'Not Implemented',
-        message: FLIGHT_SEARCH_NOT_READY,
-        details: { search },
-      });
-    }
 
-    // One search per destination airport, merged; then paged here.
-    const results = await Promise.all(
-      destinations.map((to) =>
-        this.flightSearch!.search({
-          from: origin._id,
-          to,
-          date,
-          returnDate,
-          page: 1,
-          limit: 10,
-        }),
-      ),
-    );
-    const all = results.flatMap((r) => r.data);
-    const page = all.slice((q.page - 1) * q.limit, q.page * q.limit);
-    return { search, ...paginated(page, all.length, q.page, q.limit) };
+    const common = { passengers, cabin: q.cabin, sort };
+    // One FLT-11 search per destination airport, merged and sorted again.
+    const merge = async (
+      route: (to: string) => { from: string; to: string; date: string },
+    ): Promise<FlightOption[]> =>
+      (
+        await Promise.all(
+          destinations.map((to) =>
+            this.flightSearch.findOptions({ ...route(to), ...common }),
+          ),
+        )
+      )
+        .flat()
+        .sort(byFlightSort(sort));
+
+    const outbound = await merge((to) => ({ from: origin._id, to, date }));
+    const inbound = returnDate
+      ? returnsAfter(
+          outbound,
+          await merge((to) => ({ from: to, to: origin._id, date: returnDate })),
+        )
+      : null;
+
+    return {
+      search,
+      ...toPage(outbound, q.page, q.limit),
+      returnFlights: inbound
+        ? toPage(inbound, q.returnPage ?? 1, q.limit)
+        : null,
+    };
   }
 }
