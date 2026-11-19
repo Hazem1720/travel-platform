@@ -177,6 +177,7 @@ withDatabase('M1 endpoint names live check', () => {
     const u = await login('u@m1.test', 'User12345');
     const v = await login('v@m1.test', 'User12345');
     const uid = (await users.findOne({ email: 'u@m1.test' }).lean<any>())._id;
+    await users.updateMany({ email: /@m1\.test$/ }, { $set: { emailVerified: true } });
     const ins = async (status: string) =>
       String(
         (
