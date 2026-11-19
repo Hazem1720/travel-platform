@@ -32,10 +32,21 @@ export interface StripeIntent {
   metadata: Record<string, string>;
 }
 
+// What PaymentsService needs from a Refund (PAY-03).
+export interface StripeRefund {
+  id: string;
+  // pending, requires_action, succeeded, failed or canceled.
+  status: string;
+  amount: number;
+  // refundId: our Refund record (set when it was created).
+  metadata: Record<string, string>;
+}
+
 export interface StripeEvent {
   id: string;
   type: string;
   intent: StripeIntent | null;
+  refund: StripeRefund | null;
 }
 
 export interface CreateIntentParams {
@@ -113,16 +124,23 @@ export class StripeGateway {
     });
   }
 
-  // A full refund. Used only when a payment arrives for a booking that can
-  // no longer be confirmed; PAY-03 adds partial refunds and their records.
-  async refundIntent(id: string, idempotencyKey: string): Promise<string> {
-    return this.call('refund PaymentIntent', async () => {
-      const refund = await this.stripe().refunds.create(
-        { payment_intent: id },
-        { idempotencyKey },
-      );
-      return refund.id;
-    });
+  // PAY-03: refunds `amount` cents of a succeeded PaymentIntent (Stripe
+  // Refunds API). The idempotency key is the Refund record's id, so a retry
+  // never refunds twice.
+  async createRefund(
+    paymentIntentId: string,
+    amount: number,
+    metadata: Record<string, string>,
+    idempotencyKey: string,
+  ): Promise<StripeRefund> {
+    return this.call('create a refund', async () =>
+      toRefund(
+        await this.stripe().refunds.create(
+          { payment_intent: paymentIntentId, amount, metadata },
+          { idempotencyKey },
+        ),
+      ),
+    );
   }
 
   // Checks the Stripe-Signature header against the raw request body with
@@ -148,6 +166,10 @@ export class StripeGateway {
       intent:
         object?.object === 'payment_intent'
           ? toIntent(object as StripeLib.PaymentIntent)
+          : null,
+      refund:
+        object?.object === 'refund'
+          ? toRefund(object as StripeLib.Refund)
           : null,
     };
   }
@@ -180,6 +202,15 @@ function isStripeError(err: unknown): err is Error & { type: string } {
   if (!(err instanceof Error)) return false;
   const type = (err as unknown as { type?: unknown }).type;
   return typeof type === 'string' && type.startsWith('Stripe');
+}
+
+function toRefund(refund: StripeLib.Refund): StripeRefund {
+  return {
+    id: refund.id,
+    status: refund.status ?? 'pending',
+    amount: refund.amount,
+    metadata: (refund.metadata ?? {}) as Record<string, string>,
+  };
 }
 
 function toIntent(pi: StripeLib.PaymentIntent): StripeIntent {

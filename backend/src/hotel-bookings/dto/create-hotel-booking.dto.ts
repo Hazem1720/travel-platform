@@ -1,4 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { RefundDto } from '../../payments/dto/refund.dto';
 import { Type } from 'class-transformer';
 import {
   ArrayMaxSize,
@@ -158,4 +159,9 @@ export class HotelBookingViewDto extends HotelBookingDto {
   confirmedAt: string | null;
   @ApiProperty({ type: ReservationHotelDto, nullable: true })
   hotel: ReservationHotelDto | null;
+  @ApiProperty({
+    type: [RefundDto],
+    description: 'Refunds after a cancellation (PAY-03), oldest first',
+  })
+  refunds: RefundDto[];
 }

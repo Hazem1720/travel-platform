@@ -56,6 +56,40 @@ describe('StripeGateway (PAY-01)', () => {
         clientSecret: 'pi_1_secret_x',
         metadata: { bookingType: 'flight', bookingId: 'b1' },
       },
+      refund: null,
+    });
+  });
+
+  it('reads refund events (PAY-03)', () => {
+    const refundEvent = JSON.stringify({
+      id: 'evt_2',
+      object: 'event',
+      type: 'refund.updated',
+      data: {
+        object: {
+          id: 're_1',
+          object: 'refund',
+          status: 'succeeded',
+          amount: 12000,
+          metadata: { refundId: 'r1' },
+        },
+      },
+    });
+    expect(
+      gateway({ STRIPE_WEBHOOK_SECRET: SECRET }).verifyEvent(
+        Buffer.from(refundEvent),
+        sign(refundEvent),
+      ),
+    ).toEqual({
+      id: 'evt_2',
+      type: 'refund.updated',
+      intent: null,
+      refund: {
+        id: 're_1',
+        status: 'succeeded',
+        amount: 12000,
+        metadata: { refundId: 'r1' },
+      },
     });
   });
 

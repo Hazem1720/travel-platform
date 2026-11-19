@@ -3,8 +3,8 @@ import {
   ConflictException,
   Injectable,
   Module,
+  Global,
   NotFoundException,
-  NotImplementedException,
   OnModuleInit,
 } from '@nestjs/common';
 import { getModelToken } from '@nestjs/mongoose';
@@ -16,8 +16,12 @@ import {
   PaymentBookingType,
   PaymentHandler,
   PaymentStatus,
+  RefundStatus,
 } from './payment-handler';
 import { Payment } from './schemas/payment.schema';
+import { Refund } from './schemas/refund.schema';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationType } from '../notifications/schemas/notification.schema';
 import {
   CreateIntentParams,
   StripeGateway,
@@ -28,7 +32,9 @@ import {
   HOLD_EXPIRED,
   NOT_PENDING_PAYMENT,
   PaymentsService,
+  NOTHING_TO_REFUND,
   POLICIES_NOT_ACCEPTED,
+  REFUND_NOT_FOUND,
 } from './payments.service';
 
 // PAY-01: handler registry, payability rules, the Stripe PaymentIntent, the
@@ -61,20 +67,43 @@ describe('PaymentsService (PAY-01)', () => {
   });
 
   // An in-memory Payment model with the few queries PaymentsService uses.
-  function fakePayments() {
+  // An in-memory Mongoose model with the few queries PaymentsService uses
+  // (payments and refunds).
+  function fakeModel() {
     const docs: any[] = [];
-    const matches = (doc: any, filter: Record<string, any>) =>
-      Object.entries(filter).every(([k, v]) =>
-        v && typeof v === 'object' && '$in' in v
-          ? v.$in.some((x: unknown) => String(x) === String(doc[k]))
-          : String(doc[k]) === String(v),
-      );
-    const lean = (value: unknown) => ({ lean: async () => value });
+    const matches = (doc: any, filter: Record<string, any>): boolean =>
+      Object.entries(filter).every(([k, v]) => {
+        if (k === '$or') return (v as any[]).some((f) => matches(doc, f));
+        if (v && typeof v === 'object' && '$in' in v) {
+          return v.$in.some((x: unknown) => String(x) === String(doc[k]));
+        }
+        if (v && typeof v === 'object' && '$ne' in v) {
+          return String(doc[k]) !== String(v.$ne);
+        }
+        return String(doc[k]) === String(v);
+      });
+    const query = (value: unknown): any => ({
+      lean: async () => value,
+      sort: () => query(value),
+    });
     return {
       docs,
+      create: jest.fn(async (data: any) => {
+        const doc = {
+          _id: new Types.ObjectId(),
+          createdAt: new Date(),
+          ...data,
+        };
+        docs.push(doc);
+        return { ...doc };
+      }),
+      findById: jest.fn((id: unknown) => {
+        const doc = docs.find((d) => String(d._id) === String(id));
+        return query(doc ? { ...doc } : null);
+      }),
       findOneAndUpdate: jest.fn((filter: any, update: any) => {
         let doc = docs.find((d) => matches(d, filter));
-        if (!doc) {
+        if (!doc && update.$setOnInsert) {
           doc = {
             _id: new Types.ObjectId(),
             ...filter,
@@ -82,14 +111,15 @@ describe('PaymentsService (PAY-01)', () => {
           };
           docs.push(doc);
         }
-        return lean({ ...doc });
+        if (doc && update.$set) Object.assign(doc, update.$set);
+        return query(doc ? { ...doc } : null);
       }),
       findOne: jest.fn((filter: any) => {
         const doc = docs.find((d) => matches(d, filter));
-        return lean(doc ? { ...doc } : null);
+        return query(doc ? { ...doc } : null);
       }),
       find: jest.fn((filter: any) =>
-        lean(docs.filter((d) => matches(d, filter)).map((d) => ({ ...d }))),
+        query(docs.filter((d) => matches(d, filter)).map((d) => ({ ...d }))),
       ),
       updateOne: jest.fn(async (filter: any, update: any) => {
         const doc = docs.find((d) => matches(d, filter));
@@ -110,12 +140,24 @@ describe('PaymentsService (PAY-01)', () => {
         intent({ amount: p.amount, currency: p.currency }),
       ),
       cancelIntent: jest.fn(async () => 'canceled'),
-      refundIntent: jest.fn(async () => 're_1'),
+      createRefund: jest.fn(async (_pi: string, amount: number) => ({
+        id: `re_${amount}`,
+        status: 'succeeded',
+        amount,
+        metadata: {},
+      })),
     };
-    const store = fakePayments();
-    const service = new PaymentsService(store as any, stripe as any);
+    const store = fakeModel();
+    const refunds = fakeModel();
+    const notifications = { create: jest.fn(async () => ({})) };
+    const service = new PaymentsService(
+      store as any,
+      stripe as any,
+      refunds as any,
+      notifications as any,
+    );
     service.registerHandler(HOTEL, handler);
-    return { service, handler, stripe, store };
+    return { service, handler, stripe, store, refunds, notifications };
   }
 
   describe('registerHandler', () => {
@@ -151,11 +193,24 @@ describe('PaymentsService (PAY-01)', () => {
       }
       @Module({ imports: [PaymentsModule], providers: [Registrar] })
       class FakeFlightBookingsModule {}
+      // NotificationsModule is global in the app.
+      @Global()
+      @Module({
+        providers: [{ provide: NotificationsService, useValue: {} }],
+        exports: [NotificationsService],
+      })
+      class FakeNotificationsModule {}
 
       const app = await Test.createTestingModule({
-        imports: [PaymentsModule, FakeFlightBookingsModule],
+        imports: [
+          FakeNotificationsModule,
+          PaymentsModule,
+          FakeFlightBookingsModule,
+        ],
       })
         .overrideProvider(getModelToken(Payment.name))
+        .useValue({})
+        .overrideProvider(getModelToken(Refund.name))
         .useValue({})
         .overrideProvider(StripeGateway)
         .useValue({})
@@ -340,17 +395,28 @@ describe('PaymentsService (PAY-01)', () => {
     });
 
     it('refunds in full when the booking can no longer be confirmed (409)', async () => {
-      const { service, handler, stripe } = await paid();
+      const { service, handler, stripe, refunds } = await paid();
       handler.confirm.mockRejectedValueOnce(
         new ConflictException(
           'A booking cannot change from Expired to Confirmed',
         ),
       );
       await service.handleStripeEvent('payment_intent.succeeded', succeeded());
-      expect(stripe.refundIntent).toHaveBeenCalledWith(
+      expect(stripe.createRefund).toHaveBeenCalledWith(
         'pi_1',
-        'refund-unconfirmed-pi_1',
+        24000,
+        expect.objectContaining({ bookingType: 'hotel', bookingId: BOOKING }),
+        expect.stringMatching(/^refund-/),
       );
+      // Recorded like any refund (PAY-03), and only once.
+      expect(refunds.docs).toHaveLength(1);
+      expect(refunds.docs[0]).toMatchObject({
+        amount: 24000,
+        status: RefundStatus.REFUNDED,
+      });
+      handler.confirm.mockRejectedValueOnce(new ConflictException('Expired'));
+      await service.handleStripeEvent('payment_intent.succeeded', succeeded());
+      expect(stripe.createRefund).toHaveBeenCalledTimes(1);
     });
 
     it('lets other errors through, so Stripe sends the event again', async () => {
@@ -359,7 +425,7 @@ describe('PaymentsService (PAY-01)', () => {
       await expect(
         service.handleStripeEvent('payment_intent.succeeded', succeeded()),
       ).rejects.toThrow('database down');
-      expect(stripe.refundIntent).not.toHaveBeenCalled();
+      expect(stripe.createRefund).not.toHaveBeenCalled();
     });
 
     it('payment_failed marks it Failed; canceled marks it Expired', async () => {
@@ -432,11 +498,23 @@ describe('PaymentsService (PAY-01)', () => {
     });
   });
 
-  describe('refund (PAY-03 stub)', () => {
-    it('creates nothing for 0 cents', async () => {
-      await expect(setup().service.refund(HOTEL, BOOKING, 0)).resolves.toBe(
-        null,
+  describe('refund (PAY-03)', () => {
+    // A hotel booking paid 240.00 USD through Stripe.
+    async function paidBooking() {
+      const s = setup(payable({ description: 'Hotel TEST Nile View' }));
+      await s.service.createPayment(HOTEL, BOOKING, USER);
+      await s.service.handleStripeEvent(
+        'payment_intent.succeeded',
+        intent({ status: 'succeeded', amountReceived: 24000 }),
       );
+      return s;
+    }
+
+    it('creates nothing for 0 cents', async () => {
+      const { service, refunds, stripe } = await paidBooking();
+      await expect(service.refund(HOTEL, BOOKING, 0)).resolves.toBe(null);
+      expect(refunds.docs).toHaveLength(0);
+      expect(stripe.createRefund).not.toHaveBeenCalled();
     });
 
     it('refuses an amount that is not whole cents', async () => {
@@ -447,15 +525,143 @@ describe('PaymentsService (PAY-01)', () => {
       }
     });
 
-    it('answers 501 for a positive amount until PAY-03', async () => {
-      await expect(
-        setup().service.refund(HOTEL, BOOKING, 12000),
-      ).rejects.toBeInstanceOf(NotImplementedException);
-    });
-
     it('fails loudly for a type with no handler', async () => {
       await expect(setup().service.refund(FLIGHT, BOOKING, 0)).rejects.toThrow(
         'No payment handler',
+      );
+    });
+
+    it('409 when the booking has no successful payment', async () => {
+      await expect(
+        setup().service.refund(HOTEL, BOOKING, 1000),
+      ).rejects.toThrow(new ConflictException(NOTHING_TO_REFUND));
+    });
+
+    it('a 50% cancellation: Stripe refund, a Refunded record, a notification', async () => {
+      const { service, stripe, refunds, notifications } = await paidBooking();
+      const result = await service.refund(HOTEL, BOOKING, 12000);
+
+      const record = refunds.docs[0];
+      expect(result).toEqual({
+        refundId: String(record._id),
+        amount: 12000,
+        currency: 'USD',
+        status: RefundStatus.REFUNDED,
+      });
+      expect(stripe.createRefund).toHaveBeenCalledWith(
+        'pi_1',
+        12000,
+        {
+          refundId: String(record._id),
+          bookingType: 'hotel',
+          bookingId: BOOKING,
+        },
+        `refund-${String(record._id)}`,
+      );
+      expect(record).toMatchObject({
+        bookingType: 'hotel',
+        amount: 12000,
+        currency: 'USD',
+        status: RefundStatus.REFUNDED,
+        stripeRefundId: 're_12000',
+      });
+      expect(String(record.userId)).toBe(USER);
+      expect(notifications.create).toHaveBeenCalledWith(
+        expect.anything(),
+        NotificationType.REFUND_ISSUED,
+        'A refund of 120.00 USD for your Hotel TEST Nile View has been issued',
+        expect.objectContaining({ amount: 12000, status: 'Refunded' }),
+      );
+    });
+
+    it('never refunds more than what is left of the payment', async () => {
+      const { service } = await paidBooking();
+      await service.refund(HOTEL, BOOKING, 20000);
+      await expect(service.refund(HOTEL, BOOKING, 5000)).rejects.toThrow(
+        'Only 4000 cents of this payment can still be refunded',
+      );
+      await expect(service.refund(HOTEL, BOOKING, 4000)).resolves.toMatchObject(
+        { amount: 4000 },
+      );
+    });
+
+    it('records a Stripe failure as Failed instead of throwing', async () => {
+      const { service, stripe, refunds, notifications } = await paidBooking();
+      stripe.createRefund.mockRejectedValueOnce(new Error('Stripe down'));
+      await expect(
+        service.refund(HOTEL, BOOKING, 12000),
+      ).resolves.toMatchObject({ status: RefundStatus.FAILED });
+      expect(refunds.docs[0]).toMatchObject({ status: RefundStatus.FAILED });
+      expect(refunds.docs[0].stripeRefundId ?? null).toBeNull();
+      expect(notifications.create).toHaveBeenLastCalledWith(
+        expect.anything(),
+        NotificationType.REFUND_ISSUED,
+        expect.stringContaining('could not be completed'),
+        expect.anything(),
+      );
+      // A failed refund gave nothing back, so the full amount is still left.
+      await expect(
+        service.refund(HOTEL, BOOKING, 24000),
+      ).resolves.toMatchObject({ status: RefundStatus.REFUNDED });
+    });
+
+    it('the webhook moves Pending to Refunded, and Refunded to Failed if the bank rejects it', async () => {
+      const { service, stripe, refunds, notifications } = await paidBooking();
+      stripe.createRefund.mockResolvedValueOnce({
+        id: 're_slow',
+        status: 'pending',
+        amount: 12000,
+        metadata: {},
+      });
+      await service.refund(HOTEL, BOOKING, 12000);
+      expect(refunds.docs[0].status).toBe(RefundStatus.PENDING);
+      const refundId = String(refunds.docs[0]._id);
+      const event = (status: string) => ({
+        id: 're_slow',
+        status,
+        amount: 12000,
+        metadata: { refundId },
+      });
+
+      await service.handleStripeEvent(
+        'refund.updated',
+        null,
+        event('succeeded'),
+      );
+      expect(refunds.docs[0].status).toBe(RefundStatus.REFUNDED);
+      // Never back to Pending.
+      await service.handleStripeEvent('refund.updated', null, event('pending'));
+      expect(refunds.docs[0].status).toBe(RefundStatus.REFUNDED);
+
+      notifications.create.mockClear();
+      await service.handleStripeEvent('refund.failed', null, event('failed'));
+      expect(refunds.docs[0].status).toBe(RefundStatus.FAILED);
+      expect(notifications.create).toHaveBeenCalledTimes(1);
+      // A repeated failure event changes nothing and tells nobody twice.
+      await service.handleStripeEvent('refund.failed', null, event('failed'));
+      expect(notifications.create).toHaveBeenCalledTimes(1);
+    });
+
+    it("lists a booking's refunds and shows one only to its owner", async () => {
+      const { service } = await paidBooking();
+      const r = await service.refund(HOTEL, BOOKING, 12000);
+      await expect(service.refundsFor(HOTEL, BOOKING)).resolves.toEqual([
+        expect.objectContaining({
+          _id: r!.refundId,
+          amount: 12000,
+          status: RefundStatus.REFUNDED,
+        }),
+      ]);
+      const owner = { id: USER, role: 'user' } as any;
+      await expect(
+        service.getRefundFor(owner, r!.refundId),
+      ).resolves.toMatchObject({ amount: 12000, bookingId: BOOKING });
+      const other = { id: String(new Types.ObjectId()), role: 'user' } as any;
+      await expect(service.getRefundFor(other, r!.refundId)).rejects.toThrow(
+        new NotFoundException(REFUND_NOT_FOUND),
+      );
+      await expect(service.getRefundFor(owner, 'nope')).rejects.toThrow(
+        new NotFoundException(REFUND_NOT_FOUND),
       );
     });
   });
