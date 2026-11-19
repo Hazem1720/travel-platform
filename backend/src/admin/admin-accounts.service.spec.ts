@@ -16,6 +16,7 @@ import { AuthUser } from '../common/types/auth-user.type';
 import { NotificationType } from '../notifications/schemas/notification.schema';
 import { AdminAccountsService } from './admin-accounts.service';
 import { CreateModeratorDto } from './dto/create-moderator.dto';
+import { providerKind } from './admin-accounts.controller';
 
 // ACC-13, ACC-15, ACC-16 with mocked models (no database).
 const admin: AuthUser = {
@@ -278,5 +279,15 @@ describe('ACC-15 provider deactivation', () => {
     await expect(
       setup().service.setProviderActive(admin, 'hotel', 'id', false),
     ).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('ACC-15: /admin/providers/:type/:id (project description 8.2)', () => {
+  it('accepts hotel or airline as :type, anything else is 400', () => {
+    expect(providerKind('hotel')).toBe('hotel');
+    expect(providerKind('airline')).toBe('airline');
+    expect(() => providerKind('hotels')).toThrow(
+      'type must be hotel or airline',
+    );
   });
 });

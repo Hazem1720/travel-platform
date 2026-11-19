@@ -7,6 +7,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { PaymentsService } from '../payments/payments.service';
 import { HotelAvailabilityService } from './hotel-availability.service';
 import { HotelBookingJobs } from './hotel-booking.jobs';
+import { HotelBookingsReaderService } from './hotel-bookings.reader.service';
 import { HotelBookingsController } from './hotel-bookings.controller';
 import { HotelConfirmationService } from './hotel-confirmation.service';
 import { HotelHoldService } from './hotel-hold.service';
@@ -15,6 +16,8 @@ import { HotelRoomsController } from './hotel-rooms.controller';
 import { HotelRoomsService } from './hotel-rooms.service';
 import { HotelSearchController } from './hotel-search.controller';
 import { HotelSearchService } from './hotel-search.service';
+import { MyHotelBookingsController } from './my-hotel-bookings.controller';
+import { MyHotelBookingsService } from './my-hotel-bookings.service';
 import {
   HotelBooking,
   HotelBookingSchema,
@@ -54,6 +57,7 @@ import { ReviewsService } from './reviews.service';
     HotelSearchController,
     HotelRoomsController,
     HotelBookingsController,
+    MyHotelBookingsController,
   ],
   providers: [
     ReviewsService,
@@ -63,13 +67,16 @@ import { ReviewsService } from './reviews.service';
     HotelRoomsService,
     HotelHoldService,
     HotelConfirmationService,
+    HotelBookingsReaderService,
     HotelPaymentHandler,
     HotelBookingJobs,
+    MyHotelBookingsService,
   ],
   exports: [
     HotelAvailabilityService,
     HotelSearchService,
     HotelHoldService,
+    HotelBookingsReaderService,
     MongooseModule,
   ],
 })
