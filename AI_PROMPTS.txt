@@ -906,9 +906,9 @@ Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight sear
 Date: 2026-11-19
 Student: Hazem Ahmed
 Tool: Claude Code
-Related Requirement: BLG-13 (bonus, Memo's item, built at my request as team leader)
+Related Requirement: ITN-03, ITN-21, ACC-12, BLG-12 (bug fix found while testing the bonus items)
 Prompt:
 can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
 How the output was used:
-Claude added PATCH /api/posts/:id/itinerary to Hafez's blog module as the team plan says: the author attaches one of their own public itineraries (itineraryId, or null to detach); a private, hidden, someone else's or unknown itinerary is 400 and someone else's post is 404. The post page shows the itinerary (title, countries, start date, number of days) only while it stays public and visible, so making it private later or an admin hiding it removes it from the post. Unit tests and an HTTP test against a real MongoDB on a temporary CI branch.
+A live test against a real MongoDB showed that itineraries store ownerId as the user id string (their schema type does not cast it), while three queries looked for an ObjectId: GET /api/itineraries (ITN-03, my itineraries) always answered 0, public itinerary search did not leave out deactivated authors (ACC-12, ITN-21), and the author page (BLG-12) never listed the author's itineraries. Claude added idInAnyForm()/idsInAnyForm() to the ownership helpers and used them in those three queries, so they match both the stored strings and ObjectIds, with no data migration; the other itinerary queries already used the string and were left unchanged. Tests updated, and checked live on the temporary CI branch.
 ================================================

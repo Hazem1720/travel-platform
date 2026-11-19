@@ -6,6 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage, Types } from 'mongoose';
 import { AccountStatus } from '../common/enums/role.enum';
+import { idsInAnyForm } from '../common/helpers/ownership';
 import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
 import {
@@ -211,7 +212,10 @@ export class PublicItinerariesService {
     return {
       visibility: ItineraryVisibility.PUBLIC,
       hidden: { $ne: true },
-      ...(deactivated.length ? { ownerId: { $nin: deactivated } } : {}),
+      // ownerId is stored as the id string: exclude either form (ACC-12).
+      ...(deactivated.length
+        ? { ownerId: { $nin: idsInAnyForm(deactivated) } }
+        : {}),
     };
   }
 
