@@ -43,6 +43,8 @@ const REFUND_EVENTS = new Set([
 ]);
 
 export const BOOKING_NOT_FOUND = 'Booking not found';
+export const PAYMENT_NOT_FOUND = 'Payment not found';
+export const ALREADY_PAID = 'This payment has already succeeded';
 export const HOLD_EXPIRED = 'The hold has expired; please book again';
 export const NOT_PENDING_PAYMENT = 'This booking is not waiting for payment';
 export const POLICIES_NOT_ACCEPTED =
@@ -252,6 +254,47 @@ export class PaymentsService {
       currency: payment.currency,
       expiresAt: booking.expiresAt!,
     };
+  }
+
+  // PAY-01, as section 8.7 of the project description lists it:
+  // GET /api/payments/:id. The user's own payment, without Stripe secrets;
+  // another user's is 404 (ACC-11).
+  async getPayment(user: AuthUser, id: string): Promise<PaymentView> {
+    const payment = await this.ownPayment(user, id);
+    return {
+      _id: String(payment._id),
+      bookingType: payment.bookingType,
+      bookingId: String(payment.bookingId),
+      amount: payment.amount,
+      currency: payment.currency,
+      status: payment.status,
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt,
+    };
+  }
+
+  // PAY-01: POST /api/payments/:id/retry after a declined card. Pays the
+  // same booking again, inside its hold (the same rules as paying).
+  async retryPayment(user: AuthUser, id: string): Promise<CreatedPayment> {
+    const payment = await this.ownPayment(user, id);
+    if (payment.status === PaymentStatus.SUCCEEDED) {
+      throw new ConflictException(ALREADY_PAID);
+    }
+    return this.createPayment(
+      payment.bookingType,
+      String(payment.bookingId),
+      user.id,
+    );
+  }
+
+  private async ownPayment(user: AuthUser, id: string): Promise<LeanPayment> {
+    const payment = isValidObjectId(id)
+      ? await this.payments
+          .findOne({ _id: id, userId: new Types.ObjectId(user.id) })
+          .lean<LeanPayment>()
+      : null;
+    if (!payment) throw new NotFoundException(PAYMENT_NOT_FOUND);
+    return payment;
   }
 
   // One Payment per PaymentIntent (unique index): of two requests at the
@@ -619,6 +662,18 @@ export class PaymentsService {
     assertOwner(refund?.userId, user, REFUND_NOT_FOUND);
     return toRefundView(refund!);
   }
+}
+
+// PAY-01: GET /api/payments/:id
+export interface PaymentView {
+  _id: string;
+  bookingType: PaymentBookingType;
+  bookingId: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface RefundView {

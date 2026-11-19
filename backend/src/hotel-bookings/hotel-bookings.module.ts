@@ -7,6 +7,7 @@ import { PaymentsModule } from '../payments/payments.module';
 import { PaymentsService } from '../payments/payments.service';
 import { HotelAvailabilityService } from './hotel-availability.service';
 import { HotelBookingJobs } from './hotel-booking.jobs';
+import { HotelBookingsReaderService } from './hotel-bookings.reader.service';
 import { HotelBookingsController } from './hotel-bookings.controller';
 import { HotelConfirmationService } from './hotel-confirmation.service';
 import { HotelHoldService } from './hotel-hold.service';
@@ -15,12 +16,18 @@ import { HotelRoomsController } from './hotel-rooms.controller';
 import { HotelRoomsService } from './hotel-rooms.service';
 import { HotelSearchController } from './hotel-search.controller';
 import { HotelSearchService } from './hotel-search.service';
+import { MyHotelBookingsController } from './my-hotel-bookings.controller';
+import { MyHotelBookingsService } from './my-hotel-bookings.service';
 import {
   HotelBooking,
   HotelBookingSchema,
 } from './schemas/hotel-booking.schema';
 import { Review, ReviewSchema } from './schemas/review.schema';
 import { RoomLock, RoomLockSchema } from './schemas/room-lock.schema';
+// Hasan: reviews (HTL-23, HTL-24) and the Completed job (HTL-23).
+import { HotelStayCompletionJob } from './hotel-stay-completion.job';
+import { ReviewsController } from './reviews.controller';
+import { ReviewsService } from './reviews.service';
 
 // Memo's hotel side (HTL-11, HTL-12, HTL-15 to HTL-18): the RoomLock, Review
 // and HotelBooking models, HotelAvailabilityService, the hotel search
@@ -46,23 +53,30 @@ import { RoomLock, RoomLockSchema } from './schemas/room-lock.schema';
     PaymentsModule,
   ],
   controllers: [
+    ReviewsController,
     HotelSearchController,
     HotelRoomsController,
     HotelBookingsController,
+    MyHotelBookingsController,
   ],
   providers: [
+    ReviewsService,
+    HotelStayCompletionJob,
     HotelAvailabilityService,
     HotelSearchService,
     HotelRoomsService,
     HotelHoldService,
     HotelConfirmationService,
+    HotelBookingsReaderService,
     HotelPaymentHandler,
     HotelBookingJobs,
+    MyHotelBookingsService,
   ],
   exports: [
     HotelAvailabilityService,
     HotelSearchService,
     HotelHoldService,
+    HotelBookingsReaderService,
     MongooseModule,
   ],
 })

@@ -965,6 +965,160 @@ Before merging, Claude saw that #195's head was a commit it had not tested and f
 
 ================================================
 Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: BLG-01, BLG-02, BLG-03, BLG-04, BLG-05, BLG-06, BLG-07, BLG-08, BLG-09, BLG-10, BLG-12, GEN-09, GEN-10, HTL-02, HTL-05, HTL-06, HTL-08, ACC-11, ITN-26, GEN-12, GEN-13
+Prompt:
+i think there is some extra issues that i dont know where they came from they are marked as not started ... Yes, sync tracker
+How the output was used:
+Claude compared the project board, the GitHub issues, the tracker and the official sheet. No issue was extra: the 12 Not Started on the board (ACC-10, GEN-02 to GEN-05, GEN-14 to GEN-17, FLT-27, HTL-26, BON-01) are all in the official sheet and were created with the rest on 2026-10-17. The tracker was behind the board instead, so Claude synced 21 rows from the merged PRs and their tests: Hafez's blog items (#188) and Emad's comments, likes and reports (#183) to Done, Rawda's HTL-02/05/06/08 to In Review (#215), and ACC-11 (#146), ITN-26 (#199), GEN-12 and GEN-13 (#197 and earlier) to Done. Hasan's 11 rows were left to his own PR #218. Claude also added scripts/sync-tracker-xlsx.py (standard library only), which copies the CSV's team columns into the xlsx Tracker and owner sheets and recomputes the Summary, refusing to run if official columns or owners disagree; run on develop's files first, it found nothing to change, which confirmed it reproduces the existing Summary exactly.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-05, GEN-02, ITN-27
+Prompt:
+yes check for both issues of ml1 ... Yes, do both
+How the output was used:
+Claude audited the 45 GET routes on develop and the list routes in the 11 open PRs for GEN-05, and the validation pipe and error filter for GEN-02. GEN-02's backend part was already complete (details per field, nested paths, database errors in the same shape), so the tracker marks it In Progress with only the M2 frontend left. For GEN-05 every list used PaginationQueryDto and paginated() except GET /itineraries/:id/bookings (ITN-27), which returned every linked booking; Claude paginated it (10 per page, limit above 10 is 400, no sort), kept the budget counting all links, made POST and DELETE answer with the first page in the same { data, meta } shape, and added unit tests for paging and for the query DTO through the real validation pipe. Build, 920 unit tests and eslint passed. The other gap, availableRooms on the hotel details page in Rawda's #215, was raised as a comment on that PR instead of changing her code.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-05, GEN-02
+Prompt:
+now i think this wasnt supposed to be in issues what do u think i think these things must be in a rules file or something and also the frontend issues tell me what do u think ... Yes, do both
+How the output was used:
+Claude recommended keeping one issue per requirement (the project PDF asks for requirement IDs in GitHub issues for traceability) but handling GEN-02 and GEN-05 as rules: written in docs/api/conventions.md and enforced by tests, with the issue pointing to both. It added common/pagination/pagination-routes.spec.ts: every GET route must be listed as a list (query built on PaginationQueryDto with limit at most 10, and a documented { data, meta } response) or as not a list with a reason, so a new unpaginated list fails CI. Routes from open PRs are pre-listed so their CI does not break. Claude checked the test fails when a route is unlisted or a list loses its pagination query, and passes with each of the 11 open PRs merged in. Build, 926 unit tests and eslint passed. It also moved the seven M2-only frontend issues to a GitHub "Milestone 2" milestone so they leave the Milestone 1 view.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-15, ACC-07a, PAY-01 (matching the endpoint tables of the project description)
+Prompt:
+now project description has been modified from the uni so i send u the new one the yellow is the new modification so i want u to check what should we change and all the requierment of milestone 1 need and what we we finish is correct according to this modifications and if there is any issue need to change or modify and check the project board all are required for milestone 1 only
+How the output was used:
+Claude compared the description's endpoint tables (section 8, with the yellow changes), the reviewed requirements sheet and the airports dataset with the code. The requirement texts and datasets are unchanged. Three finished routes did not match the tables: ACC-15 provider deactivation is now PATCH /api/admin/providers/:type/:id/deactivate and /reactivate (:type hotel or airline, a yellow change; replaces /admin/airlines/:id/... and /admin/hotels/:id/...), ACC-07a is now POST /api/admin/users/:id/reset-password (was /admin/accounts/:id/...), and PAY-01 gained POST /api/payments, POST /api/payments/:id/retry and GET /api/payments/:id on top of Memo's PaymentsService (POST /bookings/:type/:id/pay stays). Unit tests and a live HTTP check on a temporary CI branch.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-20
+Prompt:
+okay i want to begin with my work, tell me what it is and tell me do i need anything to do first so we start clean with no problems ... Yes, start HTL-20
+How the output was used:
+Claude first checked that my setup was clean (latest develop, packages, a baseline test run) and listed my phase 5 items with what each one reuses. For HTL-20 it read Memo's HotelBooking schema, the confirmation page (GET /hotel-bookings/:id) and the team's list pattern (ITN-03), then added my own controller and service under the same /hotel-bookings prefix, as the module comment asks: GET /api/hotel-bookings?group=upcoming|past|cancelled, 10 per page. Upcoming = Confirmed stays whose check-out date has not passed (soonest check-in first) plus holds still waiting for payment; Past = Completed stays and Confirmed stays whose check-out has passed (so a finished stay leaves Upcoming even before the HTL-23 Completed job exists), most recent first; Cancelled = most recently cancelled first; Expired holds appear in no tab. Each row shows reference, hotel, rooms, dates, guests (totals over all rooms), total and status; the details stay on Memo's GET /hotel-bookings/:id. One aggregation reads only the user's reservations and uses the { userId, status, createdAt } index. 21 unit tests cover the tab rules (including the check-out day and dead holds), sorting, paging, the fields and the query validation. Live check against a throwaway local MongoDB in Docker (never the shared database): two test users and 19 reservations covering every status; each tab, the 11-row Cancelled list over two pages, the other user's booking never shown, 401 without a session, 400 for an unknown group, limit 11 or a sort parameter, and GET /hotel-bookings/:id still 200 for the owner and 404 for another user. Build, lint and all 879 unit tests pass. I reviewed the code and the tab rules before committing.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-25
+Prompt:
+Yes, start FLT-25
+How the output was used:
+Claude built FLT-25 the same way as my HTL-20, on Mostafa's FlightBooking schema: my own MyFlightBookingsController and MyFlightBookingsService under the /flight-bookings prefix, GET /api/flight-bookings?group=upcoming|past|cancelled, 10 per page. Upcoming = Confirmed bookings with a flight that has not landed yet (so a round trip half flown and a flight in the air count) plus holds still waiting for payment, soonest departure first; Past = Completed bookings and Confirmed bookings whose flights have all landed (the same rule as the flight Completed job, so nothing waits for the job), most recent first; Cancelled = most recently cancelled first; Expired holds appear in no tab. Each row shows the reference, each flight (number, route, departure and arrival in UTC, cabin), the passengers' names and types, total and status; passport numbers and birth dates stay on Mostafa's GET /flight-bookings/:id. 11 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with 10 bookings in every situation: each tab right, a just-landed Confirmed booking already in Past, no passport data in the list, the other user's booking never shown, the details page still 200 for the owner and 404 for another user, 401 without a session, 400 for an unknown group or a sort parameter. Build, lint and all 886 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: ACC-12
+Prompt:
+shouldnt i wait for hazem to review the pr and push it ?? ... okay continue
+How the output was used:
+Claude explained that ACC-12 could start from develop while my HTL-20 PR (#200) waits for review, because it touches different code. It then mapped what ACC-12 already had: Hazem's DELETE /api/users/me route, login and the session guard refusing deactivated accounts, and the blog, public itineraries and comments already hiding or showing "Deleted user" for deactivated authors (reviews come with my HTL-24). The missing part was the TODO in AuthService.deactivate: blocking deactivation while the user has upcoming Confirmed bookings. Claude added HotelBookingsReaderService.hasUpcomingConfirmed (a Confirmed stay whose check-out date has not passed, so an ongoing stay and the check-out day still count), the hotel twin of Mostafa's FlightBookingsReaderService.hasUpcomingConfirmed, and made deactivate ask both and refuse with 409 before changing anything. AuthModule imports FlightBookingsModule and HotelBookingsModule for this; the app still boots without circular dependencies. The 409 is documented in Swagger. 7 unit tests cover the reader query and the allowed and refused cases. Live check against a throwaway local MongoDB in Docker (never the shared database) with six users: a hotel stay in 10 days, a stay checking out today and a flight in 5 days were refused with 409 and stayed active; no bookings, only past, cancelled or expired bookings, and only flights already flown were deactivated, and their next login was refused with 403. Build, lint and all 882 unit tests pass. I checked that this change and #200 merge cleanly in hotel-bookings.module.ts.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-23, HTL-24
+Prompt:
+yes keep them short and go to the next now
+How the output was used:
+Claude built my hotel ratings and reviews on Memo's Review schema. HTL-23: a new HotelStayCompletionJob runs every minute and sets Confirmed reservations whose check-out date has passed to Completed (the check-out day itself stays Confirmed), the hotel twin of the flight Completed job; POST /api/hotel-bookings/:id/review saves one rating (1-5) and optional text (up to 1000 characters, trimmed) for the owner's Completed reservation only (404 for others, 409 if not Completed or already reviewed); PATCH and DELETE /api/reviews/:id for the author only (404 for others). The hotel's ratingAverage and ratingCount are recalculated after every change with the same rule as Emad's moderation code (average of all reviews including hidden ones, one decimal, 0 with none). HTL-24: public GET /api/hotels/:id/reviews returns the average, the count and the visible reviews newest first, 10 per page, with a deactivated author shown as "Deleted user" (ACC-12); an unknown or inactive hotel is 404. Added the route to the route-guards public allowlist. The new files sit apart from my open PRs #200 and #201, and a simulated merge of all three is clean. 19 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database): the job completed a stay that ended yesterday within a minute and left a future one Confirmed; then 18 requests covering writing, a second review, a future stay, other users, bad ratings, editing the rating or only the text, hiding, a deactivated author, deleting, an inactive hotel, limit 11, sort and a guest writing all gave the expected status and averages (5 -> 3.5 -> 3 -> 2). Build, lint and all 894 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-22
+Prompt:
+Get up to date and continue the work for me (HTL-22).
+How the output was used:
+Claude built HTL-22 for hotel moderators in its own HotelReservationsModule (so it does not touch Memo's HotelBookingsModule or my open HTL-20 PR). GET /api/hotels/:id/reservations checks the hotel with assertOwnsProvider (403 for another hotel or another role) and then that it exists (404). It lists the hotel's paid reservations (Confirmed, Completed, Cancelled; unpaid holds left out) by check-in date, 10 per page, using Memo's { hotelId, checkIn } index, with the reference, status, guest (name and email of the user who booked, looked up from users; null for a deleted account), adults and children, dates, nights, rooms, total and cancelledAt. Optional filters: status, and from/to for stays with a night in that range (400 when to is before from). 6 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test moderator, two hotels and seven reservations: the list and its order, the guest details, the status and date filters, paging, unpaid holds and another hotel's reservation left out, 400 for a bad status or to before from, 403 for another hotel and for a regular user, 404 once the hotel was deleted, 401 without a session. Build, lint and all 924 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-21
+Prompt:
+Start HTL-21
+How the output was used:
+Claude built HTL-21 in its own HotelCancellationModule (so it does not touch Memo's HotelBookingsModule). GET /api/hotel-bookings/:id/cancellation shows the refund for cancelling now: the hotel's tier (HTL-10, Hazem's refundAmount helper) for the days left before check-in, counted in the hotel's local date (Memo's HotelSearchService.today), on the full total. POST /api/hotel-bookings/:id/cancel { refundAmount } cancels the whole reservation only if that amount is still the current one (409 otherwise, so a tier change or a new day never surprises the user). Only the owner (404 for anyone else), only Confirmed and only before the check-in date (409). One conditional update Confirmed -> Cancelled so two cancels cannot both win, then all room nights are freed (releaseBooking), the refund goes through Memo's PaymentsService.refund (PAY-03, nothing for 0) and the user gets a BOOKING_CANCELLED notification; a refund error never undoes the cancellation. I chose to require the confirmed refund amount in the body. 10 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a hotel with tiers 14/100, 2/50, 0/0 and five reservations: 50% at 10 days (45003 -> 22502 cents), 100% at 20 days, 0% the day before, 409 on the check-in day, a second cancel and a stale amount, 400 for a non-integer amount, 404 for another user's reservation, 401 without a session, the room locks of the cancelled reservation removed and the other one's kept, and both notifications. The Stripe refund itself was not called (no real payment in the throwaway database); PAY-03's own tests cover it. Build, lint and all 928 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-26
+Prompt:
+Okay continue (FLT-26, my last item).
+How the output was used:
+Claude built FLT-26 in its own FlightBookingCancellationModule (so it does not touch Mostafa's FlightBookingsModule), with the same preview-then-confirm design as my HTL-21. GET /api/flight-bookings/:id/cancellation shows the refund: the outbound airline's tier (FLT-09) for the days left before departure, counted in the departure airport's local date (Hazem's localDaysUntil), on the full total; a round trip is cancelled as a whole with the outbound tier (conventions.md). POST /api/flight-bookings/:id/cancel { refundAmount } cancels only if that amount is still the current one (409 otherwise). Only the owner (404 for anyone else), only Confirmed and only before departure (409). One conditional update Confirmed -> Cancelled that also checks the departure time, then the seats go back on every flight of the booking (never below zero), its FLT-28 seat assignments are deleted, the refund goes through Memo's PaymentsService.refund (PAY-03, nothing for 0) and the user gets a BOOKING_CANCELLED notification; a refund error never undoes the cancellation. 9 unit tests, including a departure just after midnight local time that gives 11 days in Cairo but 10 in UTC. Live check against a throwaway local MongoDB in Docker (never the shared database) with an airline with tiers 30/100, 7/50, 0/0 and four bookings: 50% for a round trip 10 days out (40001 -> 20001 cents) with seats returned on both flights and its chosen seat freed (another booking's kept), 0% three hours before departure, 409 after departure, for a second cancel and for a stale amount, 400 without an amount, 404 for another user's booking, 401 without a session, and both notifications. The Stripe refund itself was not called (no real payment in the throwaway database); PAY-03's own tests cover it. Build, lint and all 927 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-06
+Prompt:
+Yes, start FLT-06
+How the output was used:
+Claude built FLT-06 in its own FlightCancellationModule (so Hazem's FlightsModule and Mostafa's FlightBookingsModule stay untouched). POST /api/flights/:id/cancel, airline moderators only, own airline's flights (Hazem's getOwned: 404 unknown, 403 another airline's): the flight must be Scheduled and not departed (409 otherwise) and becomes Cancelled in one conditional update, so it leaves search and two cancels cannot both run. Unpaid holds on it are released through Memo's PaymentsService.releaseInventory (which cancels the PaymentIntent first). Every Confirmed booking on it becomes Cancelled (only if still Confirmed), its seats go back on every flight it was on (a round trip frees the other flight's seat too), it gets a 100% refund through PaymentsService.refund (PAY-03), and its user gets a BOOKING_CANCELLED notification. A failed booking, refund or notification never stops the others; problems are logged and returned, and a refund Stripe recorded as Failed is not counted as refunded. The live check showed my first notification text promised "fully refunded" even when the refund failed; it now says the refund was requested, since Memo's REFUND_ISSUED message reports the outcome. 9 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database, no Stripe key, so refunds were recorded as Failed): flight Cancelled with booked and held seats back to 0, a round trip's seat freed on its other flight, both Confirmed bookings Cancelled, the hold Expired, other bookings and flights untouched, notifications sent; a second cancel 409, another airline's flight 403, a regular user 403, no session 401. Build, lint and all 927 unit tests pass. A real Stripe refund still needs to be tried with the team's test key.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-29
+Prompt:
+Yes, start FLT-29
+How the output was used:
+Claude built FLT-29 for airline moderators in its own FlightPassengersModule (so it does not touch Mostafa's FlightBookingsModule or my open FLT-25 PR), reusing Hazem's FlightsService.getOwned for the ownership check (404 unknown flight, 403 another airline's flight). GET /api/flights/:id/bookings lists the flight's paid bookings (Confirmed, Completed, Cancelled; unpaid holds left out), newest first, 10 per page, with reference, passenger names, the cabin and seats on this flight (the right segment of a round trip), and the seats remaining per cabin (total - booked - held). GET /api/flights/:id/passengers/export downloads a CSV with one row per passenger of the Confirmed and Completed bookings (reference, name, type, date of birth, passport number, cabin, status), sorted by reference; every field is quoted and a value starting with = + - @ is prefixed so a spreadsheet cannot run it as a formula. 7 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test moderator, two of their flights, another airline's flight and five bookings: the list, the seat counts, the round-trip segment, the CSV headers and content (a cancelled booking and an unpaid hold left out, a quoted name and a formula-looking name made safe), 403 for another airline's flight and for a regular user, 404 for an unknown flight, 401 without a session. Build, lint and all 882 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: ACC-17
+Prompt:
+Yes, start ACC-17
+How the output was used:
+Claude built ACC-17 as my own AdminBookingsModule under the admin/ prefix, as the note in admin.module.ts asks. GET /api/admin/bookings (admins only, read-only) lists every flight and hotel booking in one list, newest first, 10 per page: type, reference, status, user (name, email), provider (airline name looked up, hotel name from the booking), a summary (flight routes or hotel name), travel start and end dates, amount and currency. Filters: type (flight or hotel), status, and a travel date range from/to (flight departure date in UTC or hotel check-in; from after to is 400). The two collections are combined inside MongoDB with $unionWith so filtering, sorting and paging cover both; with a type filter only that collection is read. 7 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test admin and five bookings: the combined list and its order, a round trip's route and dates, each filter, paging over the combined list, 400 for a bad type or reversed dates, 403 for a regular user, 401 without a session, no write routes. Build, lint and all 925 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
 Student: Rawda
 Tool: Claude Code
 Related Requirement: HTL-05, HTL-06, HTL-08, HTL-02

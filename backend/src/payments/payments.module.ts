@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { BookingPoliciesController } from './booking-policies.controller';
 import {
   PaymentsController,
+  PaymentsResourceController,
   RefundsController,
   StripeWebhookController,
 } from './payments.controller';
@@ -26,6 +27,7 @@ import { StripeGateway } from './stripe.gateway';
   controllers: [
     BookingPoliciesController,
     PaymentsController,
+    PaymentsResourceController,
     StripeWebhookController,
     RefundsController,
   ],
