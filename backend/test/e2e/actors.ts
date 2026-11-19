@@ -5,6 +5,7 @@ import * as request from 'supertest';
 import { AccountStatus, Role } from '../../src/common/enums/role.enum';
 import { User } from '../../src/users/schemas/user.schema';
 import { TestApp } from './app';
+import { SETUP_HEADER } from './run-dir';
 
 export const TEST_PASSWORD = 'Passw0rd1';
 
@@ -20,7 +21,9 @@ export const testEmail = (who = 'user') =>
   `e2e-${who}-${randomUUID().slice(0, 8)}@example.test`;
 
 // A traveler who registered through the API (ACC-01), opened the emailed
-// verification link (ACC-02) and logged in (ACC-04).
+// verification link (ACC-02) and logged in (ACC-04). Every request here is
+// setup (x-e2e-setup), so it does not count toward route coverage; the auth
+// suite tests these routes itself.
 export async function traveler(
   t: TestApp,
   name = 'TEST Traveler',
@@ -29,11 +32,13 @@ export async function traveler(
   await t
     .http()
     .post('/api/auth/register')
+    .set(SETUP_HEADER, '1')
     .send({ name, email, password: TEST_PASSWORD, acceptTerms: true })
     .expect(201);
   await t
     .http()
     .get('/api/auth/verify-email')
+    .set(SETUP_HEADER, '1')
     .query({ token: t.outbox.token(email, 'verify-email') })
     .expect(200);
   return login(t, email, TEST_PASSWORD);
@@ -73,6 +78,7 @@ export async function login(
   const agent = request.agent(t.server);
   const res = await agent
     .post('/api/auth/login')
+    .set(SETUP_HEADER, '1')
     .send({ email, password })
     .expect(200);
   const id = String(res.body?.user?.id ?? res.body?.id ?? '');

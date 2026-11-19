@@ -1,13 +1,13 @@
 import { appendFileSync } from 'fs';
 import { join } from 'path';
 import type { NextFunction, Request, Response } from 'express';
-import { HITS_PREFIX } from './run-dir';
+import { HITS_PREFIX, SETUP_HEADER } from './run-dir';
 import { findSensitiveKeys } from './sensitive-keys';
 
 // One line per response in E2E_RUN_DIR/hits-<pid>.jsonl, read by
 // check-coverage.ts after the run.
 export type HitLine =
-  | { kind: 'hit'; route: string; status: number }
+  | { kind: 'hit'; route: string; status: number; setup?: true }
   | {
       kind: 'sensitive';
       route: string;
@@ -50,7 +50,12 @@ export function recorder(runDir: string) {
     res.on('finish', () => {
       const route = routeOf();
       // An unknown URL (404 from Express) belongs to no route.
-      if (route) write({ kind: 'hit', route, status: res.statusCode });
+      // A setup request (actors.ts, fixtures.ts) is recorded but marked, so
+      // the route gate does not count it.
+      const setup =
+        req.headers[SETUP_HEADER] === '1' ? { setup: true as const } : {};
+      if (route)
+        write({ kind: 'hit', route, status: res.statusCode, ...setup });
     });
     next();
   };

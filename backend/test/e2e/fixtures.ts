@@ -10,9 +10,20 @@ import { Room } from '../../src/hotels/schemas/room.schema';
 import { ReferenceSeedService } from '../../src/reference/reference-seed.service';
 import { Airport } from '../../src/reference/schemas/reference.schemas';
 import { TestApp } from './app';
+import { SETUP_HEADER } from './run-dir';
 
 // Arranging data that the API under test does not create itself. Every
 // name starts with "TEST " (CLAUDE.md).
+
+// Marks a request that only arranges data for a test (x-e2e-setup: 1). The
+// recorder still sees it, but the route gate does not count it: a route is
+// covered only by a test that checks it. Wrap every arranging request:
+//   await setup(user.agent.post('/api/itineraries')).send(body).expect(201);
+export function setup<T extends { set(name: string, value: string): T }>(
+  req: T,
+): T {
+  return req.set(SETUP_HEADER, '1');
+}
 
 // GEN-12: the 8 cities, their countries, attractions and airports, seeded by
 // the app's own seeder (it does not run on start in tests).

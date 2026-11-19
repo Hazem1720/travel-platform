@@ -8,7 +8,11 @@ import { FlightBooking } from '../../src/flight-bookings/schemas/flight-booking.
 import { SeatAssignment } from '../../src/flight-bookings/schemas/seat-assignment.schema';
 import { HotelBooking } from '../../src/hotel-bookings/schemas/hotel-booking.schema';
 import { Review } from '../../src/hotel-bookings/schemas/review.schema';
+import { Post } from '../../src/blog/schemas/post.schema';
+import { Comment } from '../../src/comments/schemas/comment.schema';
+import { Favourite } from '../../src/favourites/schemas/favourite.schema';
 import { Itinerary } from '../../src/itineraries/schemas/itinerary.schema';
+import { Notification } from '../../src/notifications/schemas/notification.schema';
 import { Payment } from '../../src/payments/schemas/payment.schema';
 import { Refund } from '../../src/payments/schemas/refund.schema';
 import { UploadsService } from '../../src/uploads/uploads.service';
@@ -36,6 +40,7 @@ import {
   createHotel,
   createRoom,
   seedReference,
+  setup,
   TINY_PNG,
 } from './fixtures';
 
@@ -126,7 +131,7 @@ describe('access control', () => {
     const accessInCode = (r: RouteInfo): string =>
       r.isPublic ? 'public' : r.roles.length ? r.roles.join('+') : 'any';
 
-    it('every route the app serves has the access rule of the reviewed table (GEN-13)', () => {
+    it('every route the app serves has the access rule of the reviewed table [partial: GEN-13]', () => {
       const served = routes.map((r) => `${r.key}: ${accessInCode(r)}`);
       const reviewed = Object.entries(ACCESS).map(([k, v]) => `${k}: ${v}`);
       expect(served.sort()).toEqual(reviewed.sort());
@@ -142,7 +147,7 @@ describe('access control', () => {
           return { key, method, path, access };
         });
 
-    it('every route that is not public answers 401 without a session, in the shared error format (GEN-13)', async () => {
+    it('every route that is not public answers 401 without a session, in the shared error format [partial: GEN-13]', async () => {
       const wrong: string[] = [];
       for (const r of byAccess((a) => a !== 'public')) {
         const res = await call(t.http(), r.method, fill(r.path, DUMMY));
@@ -156,7 +161,7 @@ describe('access control', () => {
       expect(wrong).toEqual([]);
     });
 
-    it('every role-restricted route answers 403 to another role (GEN-13)', async () => {
+    it('every role-restricted route answers 403 to another role [partial: GEN-13]', async () => {
       // A traveler for admin and moderator routes; an admin for routes that
       // only registered users may call.
       const user = await traveler(t);
@@ -173,7 +178,7 @@ describe('access control', () => {
       expect(wrong).toEqual([]);
     });
 
-    it('stores passwords only as salted bcrypt hashes (GEN-13)', async () => {
+    it('stores passwords only as salted bcrypt hashes [partial: GEN-13]', async () => {
       const a = await traveler(t);
       const b = await traveler(t);
       const [ha, hb] = await Promise.all(
@@ -198,26 +203,35 @@ describe('access control', () => {
   });
 
   // ---------------------------------------------------------------------
-  describe("another user's bookings and itineraries", () => {
+  describe("another user's records", () => {
     // User A owns one of everything; user B tries every owner-only route on
-    // it. ACC-11: only the owner may see or change them; conventions.md
-    // settles the spec's "403/404" on 404, the same answer as for an id that
-    // does not exist, so B learns nothing.
+    // it. ACC-11 and conventions.md (P-10): another user's booking or private
+    // resource answers 404, exactly as for an id that does not exist, so B
+    // learns nothing. For another user's public content (a published post, a
+    // comment, a review) the spec says only that the owner may change it
+    // (BLG-04, BLG-07, HTL-24), so 403 and 404 both pass. Either way nothing
+    // may change.
     let a: Actor;
     let b: Actor;
+    // A's records by name; bItinerary, bDay and bPost are B's own records.
     const ids: Record<string, string> = {};
 
+    // 'like missing': any 4xx, but exactly the answer for an id that does
+    // not exist (the status itself is an open spec question).
+    type Expected = '404' | '403 or 404' | 'like missing';
     interface OwnedRoute {
-      route: string; // "METHOD /api/path/:param" as Express serves it
-      params?: Record<string, string>; // extra :params (default: ids)
-      body?: () => object;
+      route: string; // "METHOD /api/path/:param", optionally "?query"
+      params?: Record<string, string>; // :param -> a name in `ids`
+      body?: (x: Record<string, string>) => object;
       upload?: boolean; // multipart with one PNG
+      expected?: Expected; // default '404'
     }
 
-    // ACC-11 table: every owner-only route on bookings and itineraries. The
-    // test below fails if the app serves one that is not listed here.
+    // Every owner-only route, for A's records. The test below fails if the
+    // app serves a user route with an :id that is neither here nor in
+    // NOT_OWNER_ONLY.
     const OWNED: OwnedRoute[] = [
-      // Flight bookings
+      // Flight bookings (ACC-11)
       { route: 'GET /api/flight-bookings/:id' },
       { route: 'GET /api/flight-bookings/:id/cancellation' },
       {
@@ -232,9 +246,9 @@ describe('access control', () => {
       },
       {
         route: 'PATCH /api/flight-bookings/:id/change-flight',
-        body: () => ({ outboundFlightId: ids.otherFlight }),
+        body: (x) => ({ outboundFlightId: x.otherFlight }),
       },
-      // Hotel bookings
+      // Hotel bookings (ACC-11)
       { route: 'GET /api/hotel-bookings/:id' },
       { route: 'GET /api/hotel-bookings/:id/cancellation' },
       {
@@ -245,31 +259,28 @@ describe('access control', () => {
         route: 'POST /api/hotel-bookings/:id/review',
         body: () => ({ rating: 5 }),
       },
-      // Policies and payment, for both booking types
-      {
-        route: 'GET /api/bookings/:type/:id/policies',
-        params: { type: 'flight' },
-      },
-      {
-        route: 'GET /api/bookings/:type/:id/policies',
-        params: { type: 'hotel' },
-      },
-      {
-        route: 'POST /api/bookings/:type/:id/accept-policies',
-        params: { type: 'flight' },
-        body: () => ({ accepted: true }),
-      },
-      {
-        route: 'POST /api/bookings/:type/:id/accept-policies',
-        params: { type: 'hotel' },
-        body: () => ({ accepted: true }),
-      },
-      { route: 'POST /api/bookings/:type/:id/pay', params: { type: 'flight' } },
-      { route: 'POST /api/bookings/:type/:id/pay', params: { type: 'hotel' } },
+      // Policies and payment, for both booking types (ACC-11, PAY-01)
+      ...(['flight', 'hotel'] as const).flatMap((type) => [
+        { route: 'GET /api/bookings/:type/:id/policies', params: { type } },
+        {
+          route: 'POST /api/bookings/:type/:id/accept-policies',
+          params: { type },
+          body: () => ({ accepted: true }),
+        },
+        { route: 'POST /api/bookings/:type/:id/pay', params: { type } },
+        // B tries to pay A's booking by naming it in the body.
+        {
+          route: 'POST /api/payments',
+          body: (x: Record<string, string>) => ({
+            bookingType: type,
+            bookingId: type === 'flight' ? x.flightBooking : x.hotelBooking,
+          }),
+        },
+      ]),
       { route: 'GET /api/payments/:id', params: { id: 'payment' } },
       { route: 'POST /api/payments/:id/retry', params: { id: 'payment' } },
       { route: 'GET /api/refunds/:id', params: { id: 'refund' } },
-      // Itineraries
+      // Itineraries (ACC-11)
       { route: 'GET /api/itineraries/:id', params: { id: 'itinerary' } },
       {
         route: 'PATCH /api/itineraries/:id',
@@ -298,10 +309,20 @@ describe('access control', () => {
       {
         route: 'POST /api/itineraries/:id/bookings',
         params: { id: 'itinerary' },
-        body: () => ({
+        body: (x) => ({
           type: 'flight',
-          bookingId: ids.confirmedFlightBooking,
-          dayId: ids.day,
+          bookingId: x.confirmedFlightBooking,
+          dayId: x.day,
+        }),
+      },
+      // B links A's booking into B's own itinerary.
+      {
+        route: 'POST /api/itineraries/:id/bookings',
+        params: { id: 'bItinerary' },
+        body: (x) => ({
+          type: 'flight',
+          bookingId: x.confirmedFlightBooking,
+          dayId: x.bDay,
         }),
       },
       {
@@ -316,7 +337,7 @@ describe('access control', () => {
       {
         route: 'PATCH /api/itineraries/:id/days/reorder',
         params: { id: 'itinerary' },
-        body: () => ({ dayId: ids.day, newPosition: 1 }),
+        body: (x) => ({ dayId: x.day, newPosition: 1 }),
       },
       {
         route: 'PATCH /api/itineraries/:id/days/:dayId',
@@ -340,13 +361,13 @@ describe('access control', () => {
       {
         route: 'POST /api/itineraries/:id/transport-costs',
         params: { id: 'itinerary' },
-        body: () => ({
+        body: (x) => ({
           mode: 'train',
           fromCityId: 'cairo',
           toCityId: 'cairo',
           amount: 10,
           currency: 'USD',
-          dayId: ids.day,
+          dayId: x.day,
         }),
       },
       {
@@ -362,7 +383,7 @@ describe('access control', () => {
       },
       {
         route: 'DELETE /api/activities/:id/images/:imageId',
-        params: { id: 'activity', imageId: 'image' },
+        params: { id: 'activity', imageId: 'activityImage' },
       },
       {
         route: 'PATCH /api/budgets/:id',
@@ -379,26 +400,111 @@ describe('access control', () => {
         route: 'DELETE /api/transport-costs/:id',
         params: { id: 'transportCost' },
       },
+      // Posts (BLG-04): A's draft is private (404); a published post is
+      // public, so 403 or 404.
+      {
+        route: 'PATCH /api/posts/:id',
+        params: { id: 'draftPost' },
+        body: () => ({ title: 'TEST Taken over' }),
+      },
+      { route: 'DELETE /api/posts/:id', params: { id: 'draftPost' } },
+      {
+        route: 'PATCH /api/posts/:id',
+        params: { id: 'post' },
+        body: () => ({ title: 'TEST Taken over' }),
+        expected: '403 or 404',
+      },
+      {
+        route: 'DELETE /api/posts/:id',
+        params: { id: 'post' },
+        expected: '403 or 404',
+      },
+      {
+        route: 'POST /api/posts/:id/images',
+        params: { id: 'post' },
+        upload: true,
+        expected: '403 or 404',
+      },
+      {
+        route: 'DELETE /api/posts/:id/images/:imageId',
+        params: { id: 'post', imageId: 'postImage' },
+        expected: '403 or 404',
+      },
+      {
+        route: 'PATCH /api/posts/:id/itinerary',
+        params: { id: 'post' },
+        body: () => ({ itineraryId: null }),
+        expected: '403 or 404',
+      },
+      // B attaches A's private itinerary to B's own post. BLG-13 does not
+      // say which status refuses it (spec question #236); it must at least
+      // answer exactly as for an itinerary that does not exist.
+      {
+        route: 'PATCH /api/posts/:id/itinerary',
+        params: { id: 'bPost' },
+        body: (x) => ({ itineraryId: x.itinerary }),
+        expected: 'like missing',
+      },
+      // Comments (BLG-07) and reviews: public content, so 403 or 404.
+      {
+        route: 'PATCH /api/comments/:id',
+        params: { id: 'comment' },
+        body: () => ({ body: 'TEST taken over' }),
+        expected: '403 or 404',
+      },
+      {
+        route: 'DELETE /api/comments/:id',
+        params: { id: 'comment' },
+        expected: '403 or 404',
+      },
+      {
+        route: 'PATCH /api/reviews/:id',
+        params: { id: 'review' },
+        body: () => ({ rating: 1 }),
+        expected: '403 or 404',
+      },
+      {
+        route: 'DELETE /api/reviews/:id',
+        params: { id: 'review' },
+        expected: '403 or 404',
+      },
+      // Favourites (BON-02) and notifications (GEN-01) are private to A.
+      { route: 'DELETE /api/favourites/:id', params: { id: 'favourite' } },
+      // B saves A's private itinerary as a favourite by naming it.
+      {
+        route: 'POST /api/favourites',
+        body: (x) => ({ type: 'itinerary', id: x.itinerary }),
+      },
+      {
+        route: 'PATCH /api/notifications/:id/read',
+        params: { id: 'notification' },
+      },
     ];
 
-    // Routes whose path starts with an owned resource and an id.
-    const OWNED_PATTERN =
-      /^\w+ \/api\/(flight-bookings|hotel-bookings|bookings\/:type|payments|refunds|itineraries|activities|budgets|transport-costs)\/:/;
+    // Reviewed: user routes with an :id that act on someone else's public
+    // post by design, so they are not owner-only.
+    const NOT_OWNER_ONLY: Record<string, string> = {
+      'POST /api/posts/:id/comments':
+        'BLG-05: anyone may comment on a published post',
+      'POST /api/posts/:id/like': 'BLG-06: anyone may like a published post',
+      'DELETE /api/posts/:id/like': "BLG-06: removes the caller's own like",
+    };
 
     const keyOf = (r: OwnedRoute) => r.route.split('?')[0];
+    const nameOf = (r: OwnedRoute) =>
+      r.params ? `${r.route} (${Object.values(r.params).join(', ')})` : r.route;
 
-    // The :param values for a row: "flight" and "hotel" for :type, the name
-    // of an entry of `ids` otherwise (default: the row's booking).
+    // The URL for a row, with :params taken from `source` (A's real ids, or
+    // fresh ones that exist nowhere). :type is the booking type itself; :id
+    // defaults to the row's booking.
     function urlFor(r: OwnedRoute, source: Record<string, string>): string {
-      const [method, template] = r.route.split(' ');
-      void method;
-      const defaults: Record<string, string> = {
-        id:
-          r.params?.type === 'hotel' || r.route.includes('/hotel-bookings/')
-            ? 'hotelBooking'
-            : 'flightBooking',
+      const template = r.route.split(' ')[1];
+      const hotel =
+        r.params?.type === 'hotel' || r.route.includes('/hotel-bookings/');
+      const names = {
+        id: hotel ? 'hotelBooking' : 'flightBooking',
+        ...r.params,
       };
-      const names = { ...defaults, ...r.params };
       const values: Record<string, string> = {};
       for (const [param, name] of Object.entries(names)) {
         values[param] = param === 'type' ? name : source[name];
@@ -410,21 +516,26 @@ describe('access control', () => {
       const method = r.route.split(' ')[0];
       const req = call(actor.agent, method, urlFor(r, source));
       if (r.upload) return req.attach('images', TINY_PNG, 'TEST.png');
-      return r.body ? req.send(r.body()) : req;
+      return r.body ? req.send(r.body(source)) : req;
     }
 
     // Everything B could change, as JSON, plus the uploaded files.
     async function snapshot(): Promise<string> {
+      const models = [
+        FlightBooking,
+        HotelBooking,
+        Itinerary,
+        Payment,
+        Refund,
+        SeatAssignment,
+        Review,
+        Post,
+        Comment,
+        Favourite,
+        Notification,
+      ];
       const docs = await Promise.all(
-        [
-          FlightBooking,
-          HotelBooking,
-          Itinerary,
-          Payment,
-          Refund,
-          SeatAssignment,
-          Review,
-        ].map((m) => t.model(m.name).find().sort({ _id: 1 }).lean()),
+        models.map((m) => t.model(m.name).find().sort({ _id: 1 }).lean()),
       );
       let files: string[] = [];
       try {
@@ -452,8 +563,7 @@ describe('access control', () => {
         passportNumber: 'A1234567',
       };
       const hold = () =>
-        a.agent
-          .post('/api/flight-bookings/hold')
+        setup(a.agent.post('/api/flight-bookings/hold'))
           .send({
             outboundFlightId: String(flight._id),
             cabin: 'Economy',
@@ -474,60 +584,71 @@ describe('access control', () => {
       );
 
       // A payment for A's flight booking, over HTTP, and a refund record.
-      await a.agent
-        .post(`/api/bookings/flight/${ids.flightBooking}/accept-policies`)
+      await setup(
+        a.agent.post(
+          `/api/bookings/flight/${ids.flightBooking}/accept-policies`,
+        ),
+      )
         .send({ accepted: true })
         .expect(200);
-      const payment = await a.agent
-        .post('/api/payments')
+      const payment = await setup(a.agent.post('/api/payments'))
         .send({ bookingType: 'flight', bookingId: ids.flightBooking })
         .expect(201);
       ids.payment = String(payment.body.paymentId);
-      ids.refund = String(
-        (
-          await t.model(Refund.name).create({
-            bookingType: 'flight',
-            bookingId: ids.flightBooking,
-            userId: a.id,
-            paymentId: ids.payment,
-            amount: 100,
-            currency: 'USD',
-          })
-        )._id,
-      );
+      const refund = await t.model(Refund.name).create({
+        bookingType: 'flight',
+        bookingId: ids.flightBooking,
+        userId: a.id,
+        paymentId: ids.payment,
+        amount: 100,
+        currency: 'USD',
+      });
+      ids.refund = String(refund._id);
 
-      // Hotels: A's PendingPayment reservation (arranged; the hotel suites
-      // book over HTTP).
+      // Hotels: A's PendingPayment reservation and a review of a Completed
+      // stay (arranged; the hotel suites book and review over HTTP).
       const hotelId = await createHotel(t);
       const room = await createRoom(t, hotelId);
+      const reservation = (status: BookingStatus) =>
+        t.model(HotelBooking.name).create({
+          userId: a.id,
+          hotelId,
+          hotelName: 'TEST Hotel',
+          status,
+          checkIn: '2099-12-01',
+          checkOut: '2099-12-03',
+          nights: 2,
+          rooms: [
+            {
+              roomId: room._id,
+              name: room.name,
+              type: room.type,
+              adults: 1,
+              pricePerNight: 10000,
+              subtotal: 20000,
+            },
+          ],
+          totalAmount: 20000,
+          expiresAt:
+            status === BookingStatus.PENDING_PAYMENT
+              ? new Date(Date.now() + 10 * 60_000)
+              : null,
+        });
       ids.hotelBooking = String(
-        (
-          await t.model(HotelBooking.name).create({
-            userId: a.id,
-            hotelId,
-            hotelName: 'TEST Hotel',
-            checkIn: '2099-12-01',
-            checkOut: '2099-12-03',
-            nights: 2,
-            rooms: [
-              {
-                roomId: room._id,
-                name: room.name,
-                type: room.type,
-                adults: 1,
-                pricePerNight: 10000,
-                subtotal: 20000,
-              },
-            ],
-            totalAmount: 20000,
-            expiresAt: new Date(Date.now() + 10 * 60_000),
-          })
-        )._id,
+        (await reservation(BookingStatus.PENDING_PAYMENT))._id,
       );
+      const stay = await reservation(BookingStatus.COMPLETED);
+      const review = await t.model(Review.name).create({
+        hotelId,
+        bookingId: stay._id,
+        userId: a.id,
+        rating: 4,
+        text: 'TEST review',
+      });
+      ids.review = String(review._id);
 
       // A private itinerary with one of everything, built over HTTP.
-      const itinerary = await a.agent
-        .post('/api/itineraries')
+      const itinerary = await setup(a.agent.post('/api/itineraries'))
         .send({
           title: 'TEST Private trip',
           countries: ['EG'],
@@ -536,21 +657,21 @@ describe('access control', () => {
         .expect(201);
       ids.itinerary = idOf(itinerary.body);
       const base = `/api/itineraries/${ids.itinerary}`;
-      await a.agent.post(`${base}/days`).send({ cityId: 'cairo' }).expect(201);
-      const day = (
-        await t.model(Itinerary.name).findById(ids.itinerary).lean<any>()
-      ).days[0];
-      ids.day = String(day._id);
-      await a.agent
-        .post(`${base}/days/${ids.day}/activities`)
+      await setup(a.agent.post(`${base}/days`))
+        .send({ cityId: 'cairo' })
+        .expect(201);
+      const dayOf = async (id: string) =>
+        String(
+          (await t.model(Itinerary.name).findById(id).lean<any>()).days[0]._id,
+        );
+      ids.day = await dayOf(ids.itinerary);
+      await setup(a.agent.post(`${base}/days/${ids.day}/activities`))
         .send({ name: 'TEST Pyramids' })
         .expect(201);
-      await a.agent
-        .post(`${base}/days/${ids.day}/budgets`)
+      await setup(a.agent.post(`${base}/days/${ids.day}/budgets`))
         .send({ category: 'food', amount: 20, currency: 'USD' })
         .expect(201);
-      await a.agent
-        .post(`${base}/transport-costs`)
+      await setup(a.agent.post(`${base}/transport-costs`))
         .send({
           mode: 'train',
           fromCityId: 'cairo',
@@ -560,8 +681,7 @@ describe('access control', () => {
           dayId: ids.day,
         })
         .expect(201);
-      await a.agent
-        .post(`${base}/bookings`)
+      await setup(a.agent.post(`${base}/bookings`))
         .send({
           type: 'flight',
           bookingId: ids.confirmedFlightBooking,
@@ -576,24 +696,88 @@ describe('access control', () => {
       ids.budget = String(saved.days[0].budgets[0]._id);
       ids.transportCost = String(saved.transportCosts[0]._id);
       ids.link = String(saved.linkedBookings[0]._id);
-      await a.agent
-        .post(`/api/activities/${ids.activity}/images`)
+      await setup(a.agent.post(`/api/activities/${ids.activity}/images`))
         .attach('images', TINY_PNG, 'TEST.png')
         .expect(201);
       const withImage = await t
         .model(Itinerary.name)
         .findById(ids.itinerary)
         .lean<any>();
-      ids.image = withImage.days[0].activities[0].images[0].split('/').pop();
+      ids.activityImage = withImage.days[0].activities[0].images[0]
+        .split('/')
+        .pop();
+
+      // Posts: a draft, and a published post with an image and a comment.
+      const post = (title: string, status: string) =>
+        setup(a.agent.post('/api/posts'))
+          .send({ title, body: 'TEST body', status })
+          .expect(201)
+          .then((res: any) => idOf(res.body));
+      ids.draftPost = await post('TEST A draft', 'Draft');
+      ids.post = await post('TEST A post', 'Published');
+      await setup(a.agent.post(`/api/posts/${ids.post}/images`))
+        .attach('images', TINY_PNG, 'TEST.png')
+        .expect(201);
+      const savedPost = await t.model(Post.name).findById(ids.post).lean<any>();
+      ids.postImage = savedPost.images[0].split('/').pop();
+      const comment = await setup(
+        a.agent.post(`/api/posts/${ids.post}/comments`),
+      )
+        .send({ body: 'TEST comment' })
+        .expect(201);
+      ids.comment = idOf(comment.body);
+
+      // A favourite and a notification.
+      const favourite = await setup(a.agent.post('/api/favourites'))
+        .send({ type: 'hotel', id: String(hotelId) })
+        .expect(201);
+      ids.favourite = idOf(favourite.body);
+      const note = await t.model(Notification.name).create({
+        userId: a.id,
+        type: 'BOOKING_CONFIRMED',
+        message: 'TEST notification',
+      });
+      ids.notification = String(note._id);
+
+      // B's own itinerary (with a day) and post, for the rows where B names
+      // A's records in a body.
+      const bItinerary = await setup(b.agent.post('/api/itineraries'))
+        .send({
+          title: 'TEST B trip',
+          countries: ['EG'],
+          startDate: '2099-12-01',
+        })
+        .expect(201);
+      ids.bItinerary = idOf(bItinerary.body);
+      await setup(b.agent.post(`/api/itineraries/${ids.bItinerary}/days`))
+        .send({ cityId: 'cairo' })
+        .expect(201);
+      ids.bDay = await dayOf(ids.bItinerary);
+      const bPost = await setup(b.agent.post('/api/posts'))
+        .send({ title: 'TEST B post', body: 'TEST body', status: 'Published' })
+        .expect(201);
+      ids.bPost = idOf(bPost.body);
     });
 
-    it('the table lists every owner-only route the app serves (ACC-11)', () => {
-      const served = routes
-        .map((r) => r.key)
-        .filter((k) => OWNED_PATTERN.test(k));
+    it('the table lists every owner-only user route the app serves (ACC-11)', () => {
+      // Every user route with an :id is owner-only unless reviewed otherwise.
+      const userRoutesWithId = Object.entries(ACCESS)
+        .filter(
+          ([key, access]) =>
+            (access === 'user' || access === 'any') && key.includes('/:'),
+        )
+        .map(([key]) => key);
       const listed = new Set(OWNED.map(keyOf));
-      expect(served.filter((k) => !listed.has(k))).toEqual([]);
-      expect([...listed].filter((k) => !served.includes(k))).toEqual([]);
+      expect(
+        userRoutesWithId.filter(
+          (k) => !listed.has(k) && !(k in NOT_OWNER_ONLY),
+        ),
+      ).toEqual([]);
+      const served = new Set(routes.map((r) => r.key));
+      expect([...listed].filter((k) => !served.has(k))).toEqual([]);
+      expect(Object.keys(NOT_OWNER_ONLY).filter((k) => listed.has(k))).toEqual(
+        [],
+      );
     });
 
     it("the owner reaches every read route of the table, so B's 404 is about ownership (ACC-11)", async () => {
@@ -601,37 +785,56 @@ describe('access control', () => {
       for (const r of OWNED.filter((x) => x.route.startsWith('GET '))) {
         const res = await send(a, r, ids);
         if ([401, 403, 404].includes(res.status)) {
-          wrong.push(`${r.route} -> ${res.status} ${res.body?.message ?? ''}`);
+          wrong.push(
+            `${nameOf(r)} -> ${res.status} ${res.body?.message ?? ''}`,
+          );
         }
       }
       expect(wrong).toEqual([]);
     });
 
-    it('another user gets 404 on every owner-only route, exactly as for an id that does not exist, and changes nothing (ACC-11)', async () => {
-      // Every record id replaced by a fresh one that exists nowhere.
+    it('another user is refused on every owner-only route (404 for private records, exactly as for an id that does not exist) and changes nothing (ACC-11) [partial: BLG-04, BLG-07, BON-02]', async () => {
+      // A's ids replaced by fresh ones that exist nowhere; B's own stay.
       const missing = Object.fromEntries(
-        Object.keys(ids).map((k) => [k, k === 'image' ? 'missing.png' : oid()]),
+        Object.entries(ids).map(([k, v]) => [
+          k,
+          /^b[A-Z]/.test(k) ? v : k.endsWith('Image') ? 'missing.png' : oid(),
+        ]),
       );
-      const before = await snapshot();
+      // Every row is checked; all mismatches are reported together, each
+      // with its route.
       const wrong: string[] = [];
       for (const r of OWNED) {
+        const before = await snapshot();
         const real = await send(b, r, ids);
         const none = await send(b, r, missing);
-        if (real.status !== 404) {
+        const expected = r.expected ?? '404';
+        const allowed =
+          expected === '404'
+            ? [404]
+            : expected === '403 or 404'
+              ? [403, 404]
+              : [400, 403, 404, 409, 422];
+        const compareWithMissing =
+          real.status === 404 || expected === 'like missing';
+        if (!allowed.includes(real.status)) {
           wrong.push(
-            `${r.route}: ${real.status} ${JSON.stringify(real.body?.message)}`,
+            `${nameOf(r)}: expected ${expected}, got ${real.status} ${JSON.stringify(real.body?.message)}`,
           );
         } else if (
-          JSON.stringify(errorOf(real.body)) !==
-          JSON.stringify(errorOf(none.body))
+          compareWithMissing &&
+          (real.status !== none.status ||
+            JSON.stringify(errorOf(real.body)) !==
+              JSON.stringify(errorOf(none.body)))
         ) {
           wrong.push(
-            `${r.route}: 404 differs from a missing id: ${JSON.stringify(real.body.message)} vs ${JSON.stringify(none.body.message)}`,
+            `${nameOf(r)}: differs from a missing id: ${real.status} ${JSON.stringify(real.body.message)} vs ${none.status} ${JSON.stringify(none.body.message)}`,
           );
         }
+        if ((await snapshot()) !== before)
+          wrong.push(`${nameOf(r)}: changed data`);
       }
       expect(wrong).toEqual([]);
-      expect(await snapshot()).toBe(before);
     });
   });
 
@@ -649,14 +852,12 @@ describe('access control', () => {
     let adminActor: Actor;
 
     const hide = (type: string, id: string) =>
-      adminActor.agent
-        .patch(`/api/admin/content/${type}/${id}/hide`)
+      setup(adminActor.agent.patch(`/api/admin/content/${type}/${id}/hide`))
         .send({ hidden: true })
         .expect(200);
 
     async function newPost(title: string, status: 'Published' | 'Draft') {
-      const res = await author.agent
-        .post('/api/posts')
+      const res = await setup(author.agent.post('/api/posts'))
         .send({
           title: `TEST ${word} ${title}`,
           body: 'TEST body',
@@ -668,8 +869,7 @@ describe('access control', () => {
     }
 
     async function newItinerary(title: string, visibility: 'Public' | null) {
-      const res = await author.agent
-        .post('/api/itineraries')
+      const res = await setup(author.agent.post('/api/itineraries'))
         .send({
           title: `TEST ${word} ${title}`,
           countries: ['EG'],
@@ -678,8 +878,7 @@ describe('access control', () => {
         .expect(201);
       const id = idOf(res.body);
       if (visibility) {
-        await author.agent
-          .patch(`/api/itineraries/${id}`)
+        await setup(author.agent.patch(`/api/itineraries/${id}`))
           .send({ visibility })
           .expect(200);
       }
@@ -699,8 +898,9 @@ describe('access control', () => {
       const comment = async (body: string) =>
         idOf(
           (
-            await other.agent
-              .post(`/api/posts/${c.publishedPost}/comments`)
+            await setup(
+              other.agent.post(`/api/posts/${c.publishedPost}/comments`),
+            )
               .send({ body })
               .expect(201)
           ).body,
@@ -804,7 +1004,7 @@ describe('access control', () => {
       },
     ];
 
-    it('lists and pages show only published, public and not hidden content, to guests and other users (GEN-10, BLG-02, BLG-09, BLG-12, ITN-21, HTL-24, BLG-05)', async () => {
+    it('lists and pages show only published, public and not hidden content, to guests and other users [partial: GEN-10, BLG-02, BLG-09, BLG-12, ITN-21, HTL-24, BLG-05]', async () => {
       const wrong: string[] = [];
       const viewers = [
         ['guest', () => t.http()],
@@ -829,7 +1029,7 @@ describe('access control', () => {
       expect(wrong).toEqual([]);
     });
 
-    it('a draft, hidden or private item answers 404 on its own page, to guests and other users (GEN-10, BLG-01, ITN-01, ITN-20)', async () => {
+    it('a draft, hidden or private item answers 404 on its own page, to guests and other users (ITN-20) [partial: GEN-10, BLG-01, ITN-01]', async () => {
       const pages: [string, string][] = [
         ['draftPost', '/api/posts/'],
         ['hiddenPost', '/api/posts/'],
@@ -856,7 +1056,7 @@ describe('access control', () => {
       expect(statuses).toEqual([...expected, ...expected]);
     });
 
-    it('the author still sees their draft and hidden content, and an admin sees hidden content (GEN-10, BLG-03)', async () => {
+    it('the author still sees their draft and hidden content, and an admin sees hidden content [partial: GEN-10, BLG-03]', async () => {
       const mine = idsIn(
         (await author.agent.get('/api/posts/mine').expect(200)).body,
       );
@@ -1020,7 +1220,7 @@ describe('access control', () => {
     const agentFor = (r: RouteInfo) =>
       r.isPublic ? t.http() : actors[r.roles[0] ?? 'user'].agent;
 
-    it('every write route reads its body only through one validated DTO (GEN-13)', () => {
+    it('every write route reads its body only through one validated DTO [partial: GEN-13]', () => {
       const wrong: string[] = [];
       const rawReaders: string[] = [];
       for (const r of routes.filter((x) => WRITE.test(x.key))) {
@@ -1034,7 +1234,7 @@ describe('access control', () => {
       expect(rawReaders.sort()).toEqual([...RAW_REQUEST_READERS].sort());
     });
 
-    it('refuses a body field the DTO does not declare, so no caller can set a role, provider, status or owner (GEN-13, ACC-01)', async () => {
+    it('refuses a body field the DTO does not declare, so no caller can set a role, provider, status or owner [partial: GEN-13, ACC-01]', async () => {
       const wrong: string[] = [];
       const declaredOnPurpose: string[] = [];
       for (const r of routes.filter((x) => WRITE.test(x.key))) {
@@ -1073,7 +1273,7 @@ describe('access control', () => {
     const refusal = (res: any, field: string) =>
       `${res.status} ${res.body?.details?.[field] ? field : '(not refused)'}`;
 
-    it('where a DTO declares such a field, only its allowed values pass (ACC-13, BLG-01)', async () => {
+    it('where a DTO declares such a field, only its allowed values pass [partial: ACC-13, BLG-01]', async () => {
       // ACC-13: a moderator is a hotel or airline moderator, never an admin.
       const moderator = await actors.admin.agent
         .post('/api/admin/moderators')
@@ -1093,7 +1293,7 @@ describe('access control', () => {
       ]).toEqual(['400 role', '400 status', '400 status']);
     });
 
-    it('refuses MongoDB operators in a login body or a search query (GEN-13)', async () => {
+    it('refuses MongoDB operators in a login body or a search query [partial: GEN-13]', async () => {
       const admins = actors.admin.agent;
       const cases: [string, string, () => any][] = [
         [

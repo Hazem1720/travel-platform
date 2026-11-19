@@ -36,6 +36,10 @@ export const REPORT_FILE = join(BACKEND, 'coverage', 'e2e-coverage.md');
 const ID_PATTERN = /\b[A-Z]{2,4}-\d{2}(?:[a-z]|-[A-Z])?\b/g;
 // A known bug, written as it.failing('... (bug #123)') (rule 0.1).
 const BUG_PATTERN = /\(bug #\d+\)/;
+// "[partial: GEN-10, BLG-02]": the test checks only part of those
+// requirements. The gate ignores these IDs (they do not count as covered);
+// the report lists them per requirement.
+const PARTIAL_PATTERN = /\[partial:([^\]]*)\]/g;
 
 export interface CheckInput {
   runDir: string;
@@ -72,6 +76,7 @@ export function checkCoverage(input: CheckInput): CheckResult {
 
   const passing = new Map<string, number>();
   const failingBugs = new Map<string, number>();
+  const partial = new Map<string, string[]>(); // requirement -> test titles
   if (!existsSync(input.jestJson)) {
     problems.push(`Jest results not found: ${input.jestJson}`);
   } else {
@@ -80,8 +85,15 @@ export function checkCoverage(input: CheckInput): CheckResult {
       for (const t of file.assertionResults ?? []) {
         if (t.status !== 'passed') continue;
         const name: string = t.fullName ?? t.title ?? '';
+        for (const m of name.matchAll(PARTIAL_PATTERN)) {
+          for (const id of new Set(m[1].match(ID_PATTERN) ?? [])) {
+            if (known.has(id))
+              partial.set(id, [...(partial.get(id) ?? []), name]);
+          }
+        }
+        const full = name.replace(PARTIAL_PATTERN, '');
         const target = BUG_PATTERN.test(name) ? failingBugs : passing;
-        for (const id of new Set(name.match(ID_PATTERN) ?? [])) {
+        for (const id of new Set(full.match(ID_PATTERN) ?? [])) {
           if (known.has(id)) target.set(id, (target.get(id) ?? 0) + 1);
         }
       }
@@ -110,8 +122,9 @@ export function checkCoverage(input: CheckInput): CheckResult {
         `requirement ${r.id} (M1) is named in no passing test and not excluded`,
       );
     }
+    const parts = partial.get(r.id)?.length ?? 0;
     reqRows.push(
-      `| ${r.id} | ${r.type} | ${r.owner} | ${p} | ${f} | ${status} |`,
+      `| ${r.id} | ${r.type} | ${r.owner} | ${p} | ${f} | ${parts} | ${status} |`,
     );
   }
   for (const id of Object.keys(reqExcl)) {
@@ -143,8 +156,15 @@ export function checkCoverage(input: CheckInput): CheckResult {
     string,
     { ok2xx: number; s401: number; s403: number }
   >();
+  let setupHits = 0;
   for (const h of hits) {
     if (h.kind !== 'hit') continue;
+    // A request sent by actors.ts, fixtures.ts or a suite's setup to arrange
+    // data (x-e2e-setup: 1) does not test the route, so it never counts.
+    if (h.setup) {
+      setupHits += 1;
+      continue;
+    }
     const c = byRoute.get(h.route) ?? { ok2xx: 0, s401: 0, s403: 0 };
     if (h.status >= 200 && h.status < 300) c.ok2xx += 1;
     if (h.status === 401) c.s401 += 1;
@@ -213,7 +233,8 @@ export function checkCoverage(input: CheckInput): CheckResult {
     '# E2E coverage',
     '',
     `- Requirements (M1): ${coveredReqs} of ${m1.length} named in a passing test; ${Object.keys(reqExcl).length} excluded.`,
-    `- Routes: ${coveredRoutes} of ${routes.length} fully covered; ${Object.keys(routeExcl).length} excluded.`,
+    `- Routes: ${coveredRoutes} of ${routes.length} fully covered; ${Object.keys(routeExcl).length} excluded. ${setupHits} setup requests (x-e2e-setup) not counted.`,
+    `- Requirements named only as [partial: ...]: ${[...partial.keys()].filter((id) => m1Ids.has(id) && !(passing.get(id) ?? 0)).length} (listed below).`,
     `- Sensitive keys in responses: ${leaks.length}.`,
     `- Result: ${problems.length ? `FAILED (${problems.length} problems)` : 'passed'}.`,
     '',
@@ -222,9 +243,20 @@ export function checkCoverage(input: CheckInput): CheckResult {
       : []),
     '## Requirements',
     '',
-    '| ID | Type | Owner | Passing tests | it.failing (bug) | Status |',
-    '|---|---|---|---|---|---|',
+    '| ID | Type | Owner | Passing tests | it.failing (bug) | Partial tests | Status |',
+    '|---|---|---|---|---|---|---|',
     ...reqRows,
+    '',
+    '## Partial coverage',
+    '',
+    'Tests that check only part of a requirement name it as `[partial: ID]`. They do not make it covered.',
+    '',
+    ...m1
+      .filter((r) => partial.has(r.id))
+      .flatMap((r) => [
+        `- **${r.id}**`,
+        ...partial.get(r.id)!.map((name) => `  - ${name}`),
+      ]),
     '',
     '## Routes',
     '',
