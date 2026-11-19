@@ -973,3 +973,14 @@ i think there is some extra issues that i dont know where they came from they ar
 How the output was used:
 Claude compared the project board, the GitHub issues, the tracker and the official sheet. No issue was extra: the 12 Not Started on the board (ACC-10, GEN-02 to GEN-05, GEN-14 to GEN-17, FLT-27, HTL-26, BON-01) are all in the official sheet and were created with the rest on 2026-10-17. The tracker was behind the board instead, so Claude synced 21 rows from the merged PRs and their tests: Hafez's blog items (#188) and Emad's comments, likes and reports (#183) to Done, Rawda's HTL-02/05/06/08 to In Review (#215), and ACC-11 (#146), ITN-26 (#199), GEN-12 and GEN-13 (#197 and earlier) to Done. Hasan's 11 rows were left to his own PR #218. Claude also added scripts/sync-tracker-xlsx.py (standard library only), which copies the CSV's team columns into the xlsx Tracker and owner sheets and recomputes the Summary, refusing to run if official columns or owners disagree; run on develop's files first, it found nothing to change, which confirmed it reproduces the existing Summary exactly.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-05, GEN-02, ITN-27
+Prompt:
+yes check for both issues of ml1 ... Yes, do both
+How the output was used:
+Claude audited the 45 GET routes on develop and the list routes in the 11 open PRs for GEN-05, and the validation pipe and error filter for GEN-02. GEN-02's backend part was already complete (details per field, nested paths, database errors in the same shape), so the tracker marks it In Progress with only the M2 frontend left. For GEN-05 every list used PaginationQueryDto and paginated() except GET /itineraries/:id/bookings (ITN-27), which returned every linked booking; Claude paginated it (10 per page, limit above 10 is 400, no sort), kept the budget counting all links, made POST and DELETE answer with the first page in the same { data, meta } shape, and added unit tests for paging and for the query DTO through the real validation pipe. Build, 920 unit tests and eslint passed. The other gap, availableRooms on the hotel details page in Rawda's #215, was raised as a comment on that PR instead of changing her code.
+================================================
