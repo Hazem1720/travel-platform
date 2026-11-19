@@ -3,7 +3,6 @@ import {
   ApiCookieAuth,
   ApiOkResponse,
   ApiOperation,
-  ApiProduces,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
@@ -59,7 +58,6 @@ export class FlightPassengersController {
 
   @Get(':id/passengers/export')
   @Roles(Role.AIRLINE_MODERATOR)
-  @ApiProduces('text/csv')
   @ApiOperation({
     summary: "Download a flight's passenger list as CSV (FLT-29)",
     description:
@@ -68,13 +66,19 @@ export class FlightPassengersController {
       'birth, passport number, cabin, status), sorted by reference. ' +
       'Cancelled bookings are left out.',
   })
+  // The CSV is declared on the 200 response only (like the e-ticket PDF),
+  // so the error responses stay application/json with their examples.
   @ApiOkResponse({
     description: 'A CSV file',
-    schema: {
-      type: 'string',
-      example:
-        '"Booking reference","Passenger name","Passenger type","Date of birth","Passport number","Cabin","Booking status"\r\n' +
-        '"FL-7K2M9QX4","Sara Ali","adult","1995-01-01","A1234567","Economy","Confirmed"\r\n',
+    content: {
+      'text/csv': {
+        schema: {
+          type: 'string',
+          example:
+            '"Booking reference","Passenger name","Passenger type","Date of birth","Passport number","Cabin","Booking status"\r\n' +
+            '"FL-7K2M9QX4","Sara Ali","adult","1995-01-01","A1234567","Economy","Confirmed"\r\n',
+        },
+      },
     },
   })
   @ApiErrors(UNAUTHENTICATED, NOT_YOUR_FLIGHT, NO_FLIGHT)

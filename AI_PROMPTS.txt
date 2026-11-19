@@ -1143,6 +1143,17 @@ Claude reviewed Hasan's ten feature PRs (#200, #201, #207, #209 to #214, #216) a
 Date: 2026-11-19
 Student: Hazem Ahmed
 Tool: Claude Code
+Related Requirement: FLT-29 (fix to Hasan's merged code, as team leader)
+Prompt:
+now iwant u to check all the review and there is no any conflict and test them then merge
+How the output was used:
+Claude's live test of the merged PRs found that the Swagger check (app e2e: a 401 example on every protected route) failed for GET /api/flights/:id/passengers/export: @ApiProduces('text/csv') moved the error responses off application/json. Claude declared the CSV on the 200 response only, as the e-ticket PDF route does; the route itself is unchanged.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
 Related Requirement: HTL-26 (bonus, Memo's item, built at my request as team leader)
 Prompt:
 now iwant u to make the 3 remaining bonus iissues and test them then merge
