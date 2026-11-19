@@ -2,6 +2,7 @@ import { ReferenceService } from './reference.service';
 
 function model(rows: unknown[]) {
   const chain = {
+    select: jest.fn<any, any[]>(() => chain),
     sort: jest.fn<any, any[]>(() => chain),
     skip: jest.fn<any, any[]>(() => chain),
     limit: jest.fn<any, any[]>(() => chain),
@@ -30,6 +31,7 @@ describe('GEN-12: reference lists', () => {
   it('lists countries by name, paginated', async () => {
     const res = await service.listCountries(q);
     expect(countries.chain.sort).toHaveBeenCalledWith({ name: 1 });
+    expect(countries.chain.select).toHaveBeenCalledWith('-__v');
     expect(res).toEqual({
       data: [{ _id: 'EG', name: 'Egypt', currency: 'EGP' }],
       meta: { page: 1, limit: 10, total: 1, totalPages: 1 },

@@ -64,6 +64,7 @@ export class ReferenceService {
     const [data, total] = await Promise.all([
       model
         .find(filter)
+        .select('-__v')
         .sort(sort)
         .skip((q.page - 1) * q.limit)
         .limit(q.limit)
