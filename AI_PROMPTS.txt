@@ -901,3 +901,14 @@ TN-26 flight search from an itinerary can u do this and test it then merge it
 How the output was used:
 Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Rawda
+Tool: Claude Code
+Related Requirement: HTL-05, HTL-06, HTL-08, HTL-02
+Prompt:
+do my part in phase 2 (with the team plan PDF and the official project description attached)
+How the output was used:
+Claude read my chapter of the team plan and built my four open phase 2 items in src/hotels on top of Memo's RoomLock schema, HotelAvailabilityService and Review schema. HTL-05: PATCH /hotels/:id/rooms/:roomId edits beds, maxOccupancy and pricePerNight (reservations keep their booked price snapshot), and PATCH .../availability with `ranges` replaces the bookable ranges, refused with 409 (listing the nights) when a future Confirmed or PendingPayment night would no longer be covered; the write is conditional on updatedAt and re-checked afterwards so a hold placed in between puts the old ranges back. HTL-06: `block` / `unblock` on the same route (Blocked RoomLocks through lockNights, all or nothing, 409 over held, booked or blocked nights), isActive=false deactivation refused while a future reservation exists, and DELETE only for rooms never reserved (an unpaid expired hold does not count); the room is hidden from search during the check. HTL-08: GET /hotels/:id/availability?from&to (at most 31 nights, rooms paginated) shows each night as Available, Booked with the reservation reference, Blocked, or Unavailable (outside the bookable ranges or deactivated). HTL-02: GET /hotels/:id now adds the newest 10 visible reviews and, with checkIn and checkOut, the free rooms from freeRooms() with the stay total, using HTL-15's date rules. HotelsModule now imports HotelBookingsModule. I reviewed the rules against my chapter; unit tests cover every "Test when done" rule with mocked models.
+================================================
