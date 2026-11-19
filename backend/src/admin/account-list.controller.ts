@@ -40,10 +40,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 @Roles(Role.ADMIN)
 @Controller('admin/accounts')
 export class AccountListController {
-  constructor(
-    private readonly accounts: AccountListService,
-    private readonly passwords: AccountPasswordService,
-  ) {}
+  constructor(private readonly accounts: AccountListService) {}
 
   @Get()
   @ApiOperation({
@@ -76,6 +73,16 @@ export class AccountListController {
   list(@Query() q: AccountQueryDto) {
     return this.accounts.list(q);
   }
+}
+
+// ACC-07a, as section 8.1 of the project description lists it:
+// POST /api/admin/users/:id/reset-password.
+@ApiTags('Admin: accounts')
+@ApiCookieAuth('access_token')
+@Roles(Role.ADMIN)
+@Controller('admin/users')
+export class AdminUsersController {
+  constructor(private readonly passwords: AccountPasswordService) {}
 
   @Post(':id/reset-password')
   @HttpCode(200)

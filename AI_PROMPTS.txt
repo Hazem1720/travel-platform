@@ -954,6 +954,72 @@ Claude built both on Memo's EmailService (two new email types) in my auth module
 
 ================================================
 Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-28, GEN-01-B, ACC-02, ACC-07, ITN-27, FLT-28, BLG-13, BON-02
+Prompt:
+Yes, merge both (#194, #195) ... Yes, sync tracker
+How the output was used:
+Before merging, Claude saw that #195's head was a commit it had not tested and found that Hazem had pushed to it; it then found that Hazem had already merged #194 and #195, plus ACC-02/ACC-07 (#206), ITN-27 (#205), FLT-28 (#204) and BLG-13 (#203), so nothing was merged twice. It checked develop (build, 918 unit tests, eslint) and that the email hooks were intact. For the tracker sync its script refused to run because the CSV and the xlsx disagreed on develop: when #194's branch was updated, the binary xlsx kept the other side's version and lost ITN-28 In Review and BON-02 Done, while the CSV merged line by line. Claude aligned the two files and set the eight rows to Done in both, with PR links and test files; Owner stays Memo (a credit question for Hazem and me), and the rows Hazem built say so in Blocker / notes. The Summary now shows 8 of my 11 bonus items done.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: BLG-01, BLG-02, BLG-03, BLG-04, BLG-05, BLG-06, BLG-07, BLG-08, BLG-09, BLG-10, BLG-12, GEN-09, GEN-10, HTL-02, HTL-05, HTL-06, HTL-08, ACC-11, ITN-26, GEN-12, GEN-13
+Prompt:
+i think there is some extra issues that i dont know where they came from they are marked as not started ... Yes, sync tracker
+How the output was used:
+Claude compared the project board, the GitHub issues, the tracker and the official sheet. No issue was extra: the 12 Not Started on the board (ACC-10, GEN-02 to GEN-05, GEN-14 to GEN-17, FLT-27, HTL-26, BON-01) are all in the official sheet and were created with the rest on 2026-10-17. The tracker was behind the board instead, so Claude synced 21 rows from the merged PRs and their tests: Hafez's blog items (#188) and Emad's comments, likes and reports (#183) to Done, Rawda's HTL-02/05/06/08 to In Review (#215), and ACC-11 (#146), ITN-26 (#199), GEN-12 and GEN-13 (#197 and earlier) to Done. Hasan's 11 rows were left to his own PR #218. Claude also added scripts/sync-tracker-xlsx.py (standard library only), which copies the CSV's team columns into the xlsx Tracker and owner sheets and recomputes the Summary, refusing to run if official columns or owners disagree; run on develop's files first, it found nothing to change, which confirmed it reproduces the existing Summary exactly.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-05, GEN-02, ITN-27
+Prompt:
+yes check for both issues of ml1 ... Yes, do both
+How the output was used:
+Claude audited the 45 GET routes on develop and the list routes in the 11 open PRs for GEN-05, and the validation pipe and error filter for GEN-02. GEN-02's backend part was already complete (details per field, nested paths, database errors in the same shape), so the tracker marks it In Progress with only the M2 frontend left. For GEN-05 every list used PaginationQueryDto and paginated() except GET /itineraries/:id/bookings (ITN-27), which returned every linked booking; Claude paginated it (10 per page, limit above 10 is 400, no sort), kept the budget counting all links, made POST and DELETE answer with the first page in the same { data, meta } shape, and added unit tests for paging and for the query DTO through the real validation pipe. Build, 920 unit tests and eslint passed. The other gap, availableRooms on the hotel details page in Rawda's #215, was raised as a comment on that PR instead of changing her code.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-05, GEN-02
+Prompt:
+now i think this wasnt supposed to be in issues what do u think i think these things must be in a rules file or something and also the frontend issues tell me what do u think ... Yes, do both
+How the output was used:
+Claude recommended keeping one issue per requirement (the project PDF asks for requirement IDs in GitHub issues for traceability) but handling GEN-02 and GEN-05 as rules: written in docs/api/conventions.md and enforced by tests, with the issue pointing to both. It added common/pagination/pagination-routes.spec.ts: every GET route must be listed as a list (query built on PaginationQueryDto with limit at most 10, and a documented { data, meta } response) or as not a list with a reason, so a new unpaginated list fails CI. Routes from open PRs are pre-listed so their CI does not break. Claude checked the test fails when a route is unlisted or a list loses its pagination query, and passes with each of the 11 open PRs merged in. Build, 926 unit tests and eslint passed. It also moved the seven M2-only frontend issues to a GitHub "Milestone 2" milestone so they leave the Milestone 1 view.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-15, ACC-07a, PAY-01 (matching the endpoint tables of the project description)
+Prompt:
+now project description has been modified from the uni so i send u the new one the yellow is the new modification so i want u to check what should we change and all the requierment of milestone 1 need and what we we finish is correct according to this modifications and if there is any issue need to change or modify and check the project board all are required for milestone 1 only
+How the output was used:
+Claude compared the description's endpoint tables (section 8, with the yellow changes), the reviewed requirements sheet and the airports dataset with the code. The requirement texts and datasets are unchanged. Three finished routes did not match the tables: ACC-15 provider deactivation is now PATCH /api/admin/providers/:type/:id/deactivate and /reactivate (:type hotel or airline, a yellow change; replaces /admin/airlines/:id/... and /admin/hotels/:id/...), ACC-07a is now POST /api/admin/users/:id/reset-password (was /admin/accounts/:id/...), and PAY-01 gained POST /api/payments, POST /api/payments/:id/retry and GET /api/payments/:id on top of Memo's PaymentsService (POST /bookings/:type/:id/pay stays). Unit tests and a live HTTP check on a temporary CI branch.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-20
+Prompt:
+okay i want to begin with my work, tell me what it is and tell me do i need anything to do first so we start clean with no problems ... Yes, start HTL-20
+How the output was used:
+Claude first checked that my setup was clean (latest develop, packages, a baseline test run) and listed my phase 5 items with what each one reuses. For HTL-20 it read Memo's HotelBooking schema, the confirmation page (GET /hotel-bookings/:id) and the team's list pattern (ITN-03), then added my own controller and service under the same /hotel-bookings prefix, as the module comment asks: GET /api/hotel-bookings?group=upcoming|past|cancelled, 10 per page. Upcoming = Confirmed stays whose check-out date has not passed (soonest check-in first) plus holds still waiting for payment; Past = Completed stays and Confirmed stays whose check-out has passed (so a finished stay leaves Upcoming even before the HTL-23 Completed job exists), most recent first; Cancelled = most recently cancelled first; Expired holds appear in no tab. Each row shows reference, hotel, rooms, dates, guests (totals over all rooms), total and status; the details stay on Memo's GET /hotel-bookings/:id. One aggregation reads only the user's reservations and uses the { userId, status, createdAt } index. 21 unit tests cover the tab rules (including the check-out day and dead holds), sorting, paging, the fields and the query validation. Live check against a throwaway local MongoDB in Docker (never the shared database): two test users and 19 reservations covering every status; each tab, the 11-row Cancelled list over two pages, the other user's booking never shown, 401 without a session, 400 for an unknown group, limit 11 or a sort parameter, and GET /hotel-bookings/:id still 200 for the owner and 404 for another user. Build, lint and all 879 unit tests pass. I reviewed the code and the tab rules before committing.
+================================================
+
+================================================
+Date: 2026-11-19
 Student: Hasan Saeid
 Tool: Claude Code
 Related Requirement: FLT-25

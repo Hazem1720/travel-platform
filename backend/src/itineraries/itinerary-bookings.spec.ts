@@ -5,7 +5,9 @@ import {
 } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { BookingStatus } from '../common/enums/booking-status.enum';
+import { createValidationPipe } from '../common/pipes/validation.pipe';
 import { summarizeByCurrency } from './budget.summary';
+import { LinkedBookingsQueryDto } from './dto/link-booking.dto';
 import { ItinerariesService } from './itineraries.service';
 import { ItineraryBookingsService } from './itinerary-bookings.service';
 import {
@@ -107,7 +109,7 @@ describe('ITN-27: link bookings to itinerary days', () => {
       bookingId: String(hotelId),
       dayId: day2,
     });
-    expect(res.linkedBookings).toEqual([
+    expect(res.data).toEqual([
       expect.objectContaining({
         type: 'hotel',
         dayNumber: 2,
@@ -129,7 +131,7 @@ describe('ITN-27: link bookings to itinerary days', () => {
       bookingId: String(flightId),
       dayId: String(doc.days[0]._id),
     });
-    expect(res.linkedBookings[0].label).toBe('NP101 CAI-LXR');
+    expect(res.data[0].label).toBe('NP101 CAI-LXR');
     expect(res.budget.byCategory.intercity_transport).toEqual({ USD: 120.5 });
   });
 
@@ -179,16 +181,60 @@ describe('ITN-27: link bookings to itinerary days', () => {
     await expect(service.link(OWNER, ITN_ID, dto)).rejects.toBeInstanceOf(
       ConflictException,
     );
-    const res = await service.unlink(
-      OWNER,
-      ITN_ID,
-      String(first.linkedBookings[0]._id),
-    );
-    expect(res.linkedBookings).toEqual([]);
+    const res = await service.unlink(OWNER, ITN_ID, String(first.data[0]._id));
+    expect(res.data).toEqual([]);
     expect(res.budget.total).toEqual({});
     await expect(
       service.unlink(OWNER, ITN_ID, String(new Types.ObjectId())),
     ).rejects.toThrow('Linked booking not found');
+  });
+
+  it('lists the links 10 per page while the budget counts all of them (GEN-05)', async () => {
+    const { service, doc } = setup();
+    doc.linkedBookings = Array.from({ length: 12 }, (_, i) => ({
+      _id: new Types.ObjectId(),
+      type: 'hotel',
+      bookingId: new Types.ObjectId(),
+      dayId: doc.days[i % 2]._id,
+      reference: `HT-${i}`,
+      amount: 10,
+      currency: 'USD',
+    }));
+
+    const first = await service.list(OWNER, ITN_ID, { page: 1, limit: 10 });
+    expect(first.data).toHaveLength(10);
+    expect(first.data[0]).toMatchObject({ reference: 'HT-0', dayNumber: 1 });
+    expect(first.meta).toEqual({
+      page: 1,
+      limit: 10,
+      total: 12,
+      totalPages: 2,
+    });
+    expect(first.budget.total).toEqual({ USD: 120 });
+
+    const second = await service.list(OWNER, ITN_ID, { page: 2, limit: 10 });
+    expect(second.data.map((b) => b.reference)).toEqual(['HT-10', 'HT-11']);
+    expect(second.data[1].dayNumber).toBe(2);
+    expect(second.budget.total).toEqual({ USD: 120 });
+
+    await expect(
+      service.list(STRANGER, ITN_ID, { page: 1, limit: 10 }),
+    ).rejects.toBeInstanceOf(NotFoundException);
+  });
+
+  it('rejects a page size above 10 and does not accept sort (GEN-05)', async () => {
+    const pipe = createValidationPipe();
+    const meta = { type: 'query' as const, metatype: LinkedBookingsQueryDto };
+    await expect(pipe.transform({ limit: '11' }, meta)).rejects.toMatchObject({
+      response: { details: { limit: ['limit must not be greater than 10'] } },
+    });
+    await expect(
+      pipe.transform({ sort: 'createdAt:desc' }, meta),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    await expect(pipe.transform({}, meta)).resolves.toMatchObject({
+      page: 1,
+      limit: 10,
+    });
   });
 
   it('ignores links to a deleted day in the budget', () => {
