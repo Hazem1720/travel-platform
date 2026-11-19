@@ -29,6 +29,12 @@ export const BOOKING_NOT_FOUND = 'Booking not found';
 export const LINK_NOT_FOUND = 'Linked booking not found';
 const LINKABLE = [BookingStatus.CONFIRMED, BookingStatus.COMPLETED];
 
+// A linked booking as the routes return it: every stored field and the
+// day's number.
+type LinkedBookingView = Record<string, unknown> & {
+  dayNumber: number | null;
+};
+
 interface BookingFacts {
   reference: string | null;
   label: string;
@@ -132,10 +138,12 @@ export class ItineraryBookingsService {
     const presented = presentWithBudget(itinerary);
     return {
       itineraryId: itinerary._id,
-      linkedBookings: (itinerary.linkedBookings ?? []).map((b) => ({
-        ...(b as Record<string, unknown>),
-        dayNumber: dayNumber.get(String(b.dayId)) ?? null,
-      })),
+      linkedBookings: (itinerary.linkedBookings ?? []).map(
+        (b): LinkedBookingView => ({
+          ...b,
+          dayNumber: dayNumber.get(String(b.dayId)) ?? null,
+        }),
+      ),
       budget: summarizeByCurrency(itinerary),
       cityGroups: presented.cityGroups,
     };
