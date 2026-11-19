@@ -57,6 +57,27 @@ export class User {
   @Prop({ type: Date, default: null })
   lastActivityAt: Date | null;
 
+  // ACC-02 (bonus): false from registration until the emailed link is
+  // opened; bookings are refused meanwhile. Accounts from before ACC-02, and
+  // admins and moderators, are verified. Only the SHA-256 hash of the link's
+  // token is stored.
+  @Prop({ type: Boolean, default: true })
+  emailVerified: boolean;
+
+  @Prop({ type: String, default: null, select: false })
+  emailVerificationTokenHash: string | null;
+
+  @Prop({ type: Date, default: null, select: false })
+  emailVerificationExpiresAt: Date | null;
+
+  // ACC-07 (bonus): the current password-reset link (hash only). A newer
+  // request replaces it; using it clears it.
+  @Prop({ type: String, default: null, select: false })
+  passwordResetTokenHash: string | null;
+
+  @Prop({ type: Date, default: null, select: false })
+  passwordResetExpiresAt: Date | null;
+
   @Prop({ type: Number, default: 0 })
   failedLoginAttempts: number;
 
