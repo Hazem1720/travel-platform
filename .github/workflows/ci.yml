@@ -14,6 +14,10 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports: ['27017:27017']
     defaults:
       run:
         working-directory: backend
@@ -34,3 +38,26 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      - name: Lint changed modules (TEMP)
+        if: ${{ !cancelled() }}
+        run: npx eslint "src/blog/**/*.ts" "src/comments/**/*.ts" "src/reports/**/*.ts" src/app.module.ts src/auth/route-guards.spec.ts
+
+      - name: Lint everything (TEMP, informational)
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        run: npx eslint "src/**/*.ts"
+
+      - name: Seed reference data (TEMP)
+        if: ${{ !cancelled() }}
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/e2e
+          JWT_SECRET: e2e-test-secret-e2e-test-secret-123456
+          FRONTEND_URL: http://localhost:3001
+        run: npm run seed:reference
+
+      - name: E2E with a real database (TEMP)
+        if: ${{ !cancelled() }}
+        env:
+          E2E_MONGODB_URI: mongodb://127.0.0.1:27017/e2e
+        run: npm run test:e2e -- --runInBand
