@@ -14,6 +14,8 @@ const SUBJECT: Record<NotificationType, string> = {
   [NotificationType.FLIGHT_SCHEDULE_CHANGED]: 'Your flight schedule changed',
   [NotificationType.ACCOUNT_SUSPENDED]: 'Your account was suspended',
   [NotificationType.PROVIDER_SUSPENDED]: 'Your provider was suspended',
+  [NotificationType.REVIEW_REPLIED]: 'The hotel replied to your review',
+  [NotificationType.BOOKING_CHANGED]: 'Your flight booking was changed',
 } as Record<NotificationType, string>;
 
 const APP = 'Travel Platform';

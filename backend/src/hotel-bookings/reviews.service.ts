@@ -128,6 +128,7 @@ export class ReviewsService {
           rating: 1,
           text: 1,
           userId: 1,
+          reply: 1,
           createdAt: 1,
           updatedAt: 1,
         })
@@ -157,6 +158,10 @@ export class ReviewsService {
         author: gone
           ? { id: null, name: DELETED_USER }
           : { id: r.userId, name: String(author.name ?? '') },
+        // HTL-26 (bonus): the hotel's reply, if any.
+        reply: r.reply
+          ? { text: r.reply.text, createdAt: r.reply.createdAt }
+          : null,
         createdAt: (r as { createdAt?: Date }).createdAt,
         updatedAt: (r as { updatedAt?: Date }).updatedAt,
       };

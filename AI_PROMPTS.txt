@@ -1138,3 +1138,14 @@ there are 12 open pull requests i want you to check them and merge them ... leav
 How the output was used:
 Claude reviewed Hasan's ten feature PRs (#200, #201, #207, #209 to #214, #216) and Rawda's #215 against conventions.md: role guards, assertOwner / assertOwnsProvider, pagination, conditional updates, refunds through PAY-03, Swagger errors. It found no blocker. One at a time it merged the latest develop into each branch (AI_PROMPTS.txt rebuilt with every entry whole; app.module.ts kept both sides' module registrations), ran build, all unit tests and the read-only eslint check, pushed, waited for CI on that commit and merged with --match-head-commit. For #215 it also ran a live HTTP check against the shared database with TEST data (two TEST hotels, a TEST moderator, one Confirmed reservation), 39/39 passing for HTL-05, HTL-06, HTL-08 and HTL-02, and deleted everything afterwards. It then started the merged develop once to check the module wiring. In this tracker PR it marked the 15 requirements Done (Hasan's team columns from this PR, Rawda's test evidence added) and ran scripts/sync-tracker-xlsx.py --apply. Two follow-ups noted, not blocking: HTL-20's tabs, the HTL-23 Completed job and the ACC-12 hotel check use the UTC date rather than the hotel city's date, and FLT-06 does not free the chosen seats (FLT-28) of a cancelled round trip's other flight.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: HTL-26 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+now iwant u to make the 3 remaining bonus iissues and test them then merge
+How the output was used:
+Claude added POST /api/reviews/:id/reply in its own files next to Hasan's reviews (HTL-23): the hotel moderator of the reviewed hotel replies once (another hotel's moderator 403, a second reply 409 through one conditional update, unknown review 404); the reviewer gets an in-app notification (new type REVIEW_REPLIED, also emailed by GEN-01-B); the reply shows on GET /api/hotels/:id/reviews. Unit tests and an HTTP test against a real MongoDB on a temporary CI branch.
+================================================
