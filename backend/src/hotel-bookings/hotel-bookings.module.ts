@@ -16,6 +16,8 @@ import { HotelRoomsController } from './hotel-rooms.controller';
 import { HotelRoomsService } from './hotel-rooms.service';
 import { HotelSearchController } from './hotel-search.controller';
 import { HotelSearchService } from './hotel-search.service';
+import { MyHotelBookingsController } from './my-hotel-bookings.controller';
+import { MyHotelBookingsService } from './my-hotel-bookings.service';
 import {
   HotelBooking,
   HotelBookingSchema,
@@ -50,6 +52,7 @@ import { RoomLock, RoomLockSchema } from './schemas/room-lock.schema';
     HotelSearchController,
     HotelRoomsController,
     HotelBookingsController,
+    MyHotelBookingsController,
   ],
   providers: [
     HotelAvailabilityService,
@@ -60,6 +63,7 @@ import { RoomLock, RoomLockSchema } from './schemas/room-lock.schema';
     HotelBookingsReaderService,
     HotelPaymentHandler,
     HotelBookingJobs,
+    MyHotelBookingsService,
   ],
   exports: [
     HotelAvailabilityService,

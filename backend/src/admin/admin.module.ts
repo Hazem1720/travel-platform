@@ -1,12 +1,15 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from '../users/schemas/user.schema';
-import { AccountListController } from './account-list.controller';
+import {
+  AccountListController,
+  AdminUsersController,
+} from './account-list.controller';
 import { AccountListService } from './account-list.service';
 import { AccountPasswordService } from './account-password.service';
 
 // Memo's part of src/admin: ACC-14 (GET /admin/accounts) and ACC-07a
-// (POST /admin/accounts/:id/reset-password).
+// (POST /admin/users/:id/reset-password).
 // Every route is @Roles(Role.ADMIN). The admin area is split by owner, each
 // with its own module and files, all sharing the admin/ route prefix:
 // - this module: account-list.controller.ts (Memo)
@@ -18,7 +21,7 @@ import { AccountPasswordService } from './account-password.service';
   imports: [
     MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
   ],
-  controllers: [AccountListController],
+  controllers: [AccountListController, AdminUsersController],
   providers: [AccountListService, AccountPasswordService],
   exports: [AccountListService],
 })
