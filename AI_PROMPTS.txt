@@ -951,3 +951,14 @@ can u check memos bonus on review and test them then start the rest that doesnt 
 How the output was used:
 Claude built both on Memo's EmailService (two new email types) in my auth module. ACC-02: a new account is unverified and gets a single-use verification link (24 hours; only its SHA-256 hash is stored); GET /api/auth/verify-email?token= verifies it (reuse or expiry: 400), POST /api/auth/resend-verification replaces it, and holding or paying for a flight or hotel booking answers 403 until verified (a @RequireVerifiedEmail() check in the global guard). Accounts from before ACC-02, admins and moderators count as verified; with email off (no SMTP) new accounts start verified, so nothing breaks without a test inbox. ACC-07: POST /api/auth/forgot-password always gives the same answer; for an existing account it emails a link to FRONTEND_URL/reset-password that expires after 30 minutes and is replaced by a newer request; POST /api/auth/reset-password sets the new password once (a used, older or expired link is 400), signs out every session and clears a lockout. Unit tests, and an HTTP test against a real MongoDB with a real SMTP test inbox (Mailpit) on a temporary CI branch.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-22
+Prompt:
+Get up to date and continue the work for me (HTL-22).
+How the output was used:
+Claude built HTL-22 for hotel moderators in its own HotelReservationsModule (so it does not touch Memo's HotelBookingsModule or my open HTL-20 PR). GET /api/hotels/:id/reservations checks the hotel with assertOwnsProvider (403 for another hotel or another role) and then that it exists (404). It lists the hotel's paid reservations (Confirmed, Completed, Cancelled; unpaid holds left out) by check-in date, 10 per page, using Memo's { hotelId, checkIn } index, with the reference, status, guest (name and email of the user who booked, looked up from users; null for a deleted account), adults and children, dates, nights, rooms, total and cancelledAt. Optional filters: status, and from/to for stays with a night in that range (400 when to is before from). 6 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test moderator, two hotels and seven reservations: the list and its order, the guest details, the status and date filters, paging, unpaid holds and another hotel's reservation left out, 400 for a bad status or to before from, 403 for another hotel and for a regular user, 404 once the hotel was deleted, 401 without a session. Build, lint and all 924 unit tests pass.
+================================================
