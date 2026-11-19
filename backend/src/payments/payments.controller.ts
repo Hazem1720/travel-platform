@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Get,
   Headers,
@@ -33,12 +34,15 @@ import {
   CreatedPaymentDto,
   WebhookReceivedDto,
 } from './dto/created-payment.dto';
+import { CreatePaymentDto, PaymentDto } from './dto/create-payment.dto';
 import { RefundDto } from './dto/refund.dto';
 import { PaymentBookingType } from './payment-handler';
 import {
+  ALREADY_PAID,
   BOOKING_NOT_FOUND,
   HOLD_EXPIRED,
   NOT_PENDING_PAYMENT,
+  PAYMENT_NOT_FOUND,
   PaymentsService,
   POLICIES_NOT_ACCEPTED,
   REFUND_NOT_FOUND,
@@ -118,6 +122,87 @@ export class PaymentsController {
     @Param('id') id: string,
   ) {
     return this.payments.createPayment(type, id, user.id);
+  }
+}
+
+// PAY-01, as section 8.7 of the project description lists it: POST
+// /api/payments, POST /api/payments/:id/retry and GET /api/payments/:id.
+// POST /api/payments does the same as POST /api/bookings/:type/:id/pay.
+@ApiTags('Payments')
+@ApiCookieAuth('access_token')
+@Roles(Role.USER)
+@Controller('payments')
+export class PaymentsResourceController {
+  constructor(private readonly payments: PaymentsService) {}
+
+  @Post()
+  // ACC-02 (bonus): 403 until the account's email is verified.
+  @RequireVerifiedEmail()
+  @ApiOperation({
+    summary: 'Start paying for your booking with Stripe (PAY-01)',
+    description:
+      'Same as POST /api/bookings/{type}/{id}/pay: your own PendingPayment ' +
+      'booking, within its hold, after accepting the policies (PAY-02). ' +
+      'Returns the clientSecret for Stripe Elements; the booking is ' +
+      'confirmed only when Stripe reports success (webhook).',
+  })
+  @ApiCreatedResponse({ type: CreatedPaymentDto })
+  @ApiErrors(
+    { status: 400, message: POLICIES_NOT_ACCEPTED },
+    UNAUTHENTICATED,
+    {
+      status: 403,
+      message: 'You do not have permission for this action',
+      description: 'Not a registered user',
+    },
+    { status: 404, message: BOOKING_NOT_FOUND },
+    { status: 409, message: HOLD_EXPIRED },
+    { status: 502, message: PROVIDER_ERROR },
+    { status: 503, message: PAYMENTS_NOT_CONFIGURED },
+  )
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreatePaymentDto) {
+    return this.payments.createPayment(dto.bookingType, dto.bookingId, user.id);
+  }
+
+  @Post(':id/retry')
+  @HttpCode(200)
+  @RequireVerifiedEmail()
+  @ApiParam({ name: 'id', example: '6737c0a1c1a2b3c4d5e6fc01' })
+  @ApiOperation({
+    summary: 'Retry a payment after a declined card (PAY-01)',
+    description:
+      'Pays the same booking again while its hold lasts, with the same ' +
+      'rules as paying. A payment that already succeeded is 409.',
+  })
+  @ApiOkResponse({ type: CreatedPaymentDto })
+  @ApiErrors(
+    UNAUTHENTICATED,
+    {
+      status: 404,
+      message: PAYMENT_NOT_FOUND,
+      description: "Unknown id, or another user's payment",
+    },
+    {
+      status: 409,
+      message: ALREADY_PAID,
+      description: `Or the hold has run out: "${HOLD_EXPIRED}"`,
+    },
+  )
+  retry(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.payments.retryPayment(user, id);
+  }
+
+  @Get(':id')
+  @ApiParam({ name: 'id', example: '6737c0a1c1a2b3c4d5e6fc01' })
+  @ApiOperation({ summary: 'Your payment and its status (PAY-01)' })
+  @ApiOkResponse({ type: PaymentDto })
+  @ApiErrors(UNAUTHENTICATED, {
+    status: 404,
+    message: PAYMENT_NOT_FOUND,
+    description: "Unknown id, or another user's payment",
+  })
+  findOne(@CurrentUser() user: AuthUser, @Param('id') id: string) {
+    return this.payments.getPayment(user, id);
   }
 }
 
