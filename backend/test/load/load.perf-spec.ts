@@ -130,7 +130,7 @@ const cookieFrom = (h: Hit) =>
 
 describe('Test plan Part 16: load and performance', () => {
   let t: TestApp;
-  let flights: string[] = [];
+  const flights: string[] = [];
   let hotelId = '';
   const users: Actor[] = [];
   const cookies: string[] = [];
@@ -394,15 +394,15 @@ describe('Test plan Part 16: load and performance', () => {
               'GET',
               `/api/flights/search?from=CAI&to=DXB&date=2099-12-${String((i % 20) + 1).padStart(2, '0')}&passengers=1`,
             ),
-          (i: number) =>
+          () =>
             call(
               'GET',
               '/api/hotels/search?city=dubai&checkIn=2099-12-05&checkOut=2099-12-07&guests=1&rooms=1',
             ),
-          (i: number) => call('GET', '/api/reference/cities'),
+          () => call('GET', '/api/reference/cities'),
           (i: number) =>
             call('GET', '/api/auth/me', { cookie: cookies[i % 100] }),
-          (i: number) => call('GET', '/api/posts'),
+          () => call('GET', '/api/posts'),
           (i: number) => call('GET', `/api/flights/${flights[i % 20]}`),
         ];
         const hits: Hit[] = [];

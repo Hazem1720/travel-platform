@@ -101,7 +101,6 @@ describe('Test plan Part 3: airlines & flights management', () => {
 
   it('runs cases 3.1-3.21 (ACC-15, FLT-01, FLT-03, FLT-04, FLT-05, FLT-06, FLT-08, FLT-09, FLT-29)', async () => {
     let X = '';
-    let modX!: Actor, modY!: Actor;
     await tc('3.1', async () => {
       const r = await adm.agent
         .post('/api/airlines')
@@ -114,8 +113,8 @@ describe('Test plan Part 3: airlines & flights management', () => {
         r,
       );
     });
-    modX = await airlineModerator(t, X);
-    modY = await airlineModerator(t, await createAirline(t));
+    const modX: Actor = await airlineModerator(t, X);
+    const modY: Actor = await airlineModerator(t, await createAirline(t));
 
     await tc('3.2', async () => {
       const dup = await adm.agent

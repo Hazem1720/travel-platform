@@ -115,7 +115,8 @@ describe('Test plan Part 1: accounts & authentication', () => {
     await tc('1.4', async () => {
       const r1 = await register({ ...newUser(), acceptTerms: false });
       check(r1.status === 400, 'acceptTerms false -> 400', r1);
-      const { acceptTerms: _, ...noTerms } = newUser();
+      const noTerms: Record<string, unknown> = { ...newUser() };
+      delete noTerms.acceptTerms;
       const r2 = await register(noTerms);
       check(r2.status === 400, 'acceptTerms missing -> 400', r2);
     });

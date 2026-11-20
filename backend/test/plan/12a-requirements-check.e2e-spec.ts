@@ -513,13 +513,7 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
 
     await tc('12.11', async () => {
       const got: string[] = [];
-      for (const [days, pct] of [
-        [7, 100],
-        [6, 50],
-        [2, 50],
-        [1, 0],
-        [0, 0],
-      ] as const) {
+      for (const days of [7, 6, 2, 1, 0]) {
         const f = await flight({
           dep: new Date(Date.now() + days * DAY + 2 * 3600_000),
         });
