@@ -264,12 +264,10 @@ describe('Test plan Part 19: beyond the written requirements', () => {
       .patch(`/api/flights/${F}`)
       .send({ to: 'LHR' });
     expect(route.status).toBe(400);
-    const time = await mod.agent
-      .patch(`/api/flights/${F}`)
-      .send({
-        departureLocal: '2099-06-01T09:00',
-        arrivalLocal: '2099-06-01T15:00',
-      });
+    const time = await mod.agent.patch(`/api/flights/${F}`).send({
+      departureLocal: '2099-06-01T09:00',
+      arrivalLocal: '2099-06-01T15:00',
+    });
     expect(time.status).toBe(200);
     const notes = (await U.agent.get('/api/notifications')).body.data;
     expect(notes.map((x: any) => x.type)).toContain('FLIGHT_SCHEDULE_CHANGED');
