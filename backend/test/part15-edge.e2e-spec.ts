@@ -72,8 +72,14 @@ describe('Test plan Part 15: edge cases', () => {
   it('runs cases 15.1-15.12', async () => {
     await tc('15.1 ten users hold the last 3 seats at the same moment', async () => {
       const f = await newFlight(3);
-      const users = await Promise.all(Array.from({ length: 10 }, (_, i) => traveler(t, `TEST Racer ${i}`)));
-      const res = await Promise.all(users.map((u) => holdOn(u, f)));
+      const users: Actor[] = [];
+      for (let i = 0; i < 10; i++) users.push(await traveler(t, `TEST Racer ${i}`));
+      let res: Res[];
+      try {
+        res = await Promise.all(users.map((u) => holdOn(u, f)));
+      } catch (e) {
+        throw new Error('during the 10 simultaneous holds: ' + (e as Error).message);
+      }
       const won = res.filter((r) => r.status === 201).length;
       const codes = [...new Set(res.filter((r) => r.status !== 201).map((r) => r.status))];
       check(won === 3, `exactly 3 holds (got ${won})`);
