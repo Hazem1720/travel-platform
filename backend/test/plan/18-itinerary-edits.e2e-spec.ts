@@ -6,6 +6,7 @@ import * as request from 'supertest';
 import { createTestApp, TestApp } from '../e2e/app';
 import { Actor, traveler } from '../e2e/actors';
 import { seedReference } from '../e2e/fixtures';
+import { SUPPORTED_CURRENCIES } from '../../src/common/constants/currencies';
 
 const idOf = (b: any) => String(b?._id ?? b?.id ?? '');
 
@@ -15,6 +16,15 @@ describe('Test plan Part 18: itinerary edits and deletions', () => {
   beforeAll(async () => {
     t = await createTestApp('plan-18-itinerary-edits');
     await seedReference(t);
+    // Today's rates, so budget summaries work without the rates API.
+    const rates: Record<string, number> = {};
+    for (const c of SUPPORTED_CURRENCIES) rates[c] = 1;
+    await t.model('ExchangeRate').create({
+      date: new Date().toISOString().slice(0, 10),
+      base: 'USD',
+      rates,
+      fetchedAt: new Date(),
+    });
   }, 60_000);
 
   afterAll(async () => {
@@ -164,7 +174,7 @@ describe('Test plan Part 18: itinerary edits and deletions', () => {
     const tr = await trip(U, 'TEST Vanishing trip');
     await U.agent
       .patch(`/api/itineraries/${tr.id}`)
-      .send({ visibility: 'public' })
+      .send({ visibility: 'Public' })
       .expect(200);
     const found = await request(t.server)
       .get('/api/itineraries/public/search')
@@ -215,7 +225,7 @@ describe('Test plan Part 18: itinerary edits and deletions', () => {
     const tr = await trip(U, 'TEST Attached trip');
     await U.agent
       .patch(`/api/itineraries/${tr.id}`)
-      .send({ visibility: 'public' })
+      .send({ visibility: 'Public' })
       .expect(200);
     const post = await U.agent
       .post('/api/posts')
@@ -250,7 +260,7 @@ describe('Test plan Part 18: itinerary edits and deletions', () => {
     const tr = await trip(U, 'TEST Favourite trip');
     await U.agent
       .patch(`/api/itineraries/${tr.id}`)
-      .send({ visibility: 'public' })
+      .send({ visibility: 'Public' })
       .expect(200);
     const fav = await V.agent
       .post('/api/favourites')
