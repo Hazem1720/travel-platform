@@ -91,14 +91,14 @@ describe('Test plan Part 10: admin, audit & analytics', () => {
       const r = await adm.agent.patch(`/api/admin/accounts/${V.id}/suspend`).send({ reason: 'TEST spam' });
       check(r.status === 200, 'suspend 200', r);
       const me = await V.agent.get('/api/users/me');
-      check(me.status === 403 && /suspend/i.test(me.body.message), 'open session stops working', me);
+      check(me.status === 401 || me.status === 403, 'open session stops working', me);
       const lg = await t.http().post('/api/auth/login').send({ email: V.email, password: TEST_PASSWORD });
-      check(lg.status === 403 || lg.status === 401, 'login refused', lg);
+      check(lg.status === 403 && /suspend/i.test(lg.body.message), 'login refused with "account suspended" (ACC-04)', lg);
       const st = await adm.agent.get('/api/admin/accounts').query({ status: 'suspended' });
       check(JSON.stringify(st.body).includes(V.email), 'filter by status shows it', st);
       const n = await t.model('Notification').countDocuments({ userId: new Types.ObjectId(V.id), type: 'ACCOUNT_SUSPENDED' });
       check(n === 1, 'suspension notification (GEN-01)');
-      return `login: ${lg.status}`;
+      return `open session: ${me.status}, login: ${lg.status} "${lg.body.message}"`;
     });
 
     await tc('10.3', async () => {
