@@ -11,6 +11,7 @@ import { assertOwner } from '../common/helpers/ownership';
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
 import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
+import { visibleTo } from '../common/helpers/ownership';
 import { DELETED_USER } from '../comments/comments.service';
 import { Hotel, HotelDocument } from '../hotels/schemas/hotel.schema';
 import { HOTEL_NOT_FOUND } from './hotel-rooms.service';
@@ -112,7 +113,13 @@ export class ReviewsService {
   // reviews (GEN-10) are left out of the list but still count in the
   // average (review.schema.ts). A deactivated author shows as "Deleted
   // user" (ACC-12). An unknown or inactive hotel is 404, like its page.
-  async listForHotel(hotelId: string, { page, limit }: PaginationQueryDto) {
+  // GEN-10: a hidden review is also shown to its author and admins, marked
+  // hidden: true.
+  async listForHotel(
+    hotelId: string,
+    { page, limit }: PaginationQueryDto,
+    viewer?: AuthUser,
+  ) {
     const hotel = isValidObjectId(hotelId)
       ? await this.hotels
           .findById(hotelId, { isActive: 1, ratingAverage: 1, ratingCount: 1 })
@@ -121,7 +128,7 @@ export class ReviewsService {
     if (!hotel || !hotel.isActive) {
       throw new NotFoundException(HOTEL_NOT_FOUND);
     }
-    const filter = { hotelId: hotel._id, hidden: { $ne: true } };
+    const filter = { hotelId: hotel._id, ...visibleTo(viewer, 'userId') };
     const [rows, total] = await Promise.all([
       this.reviews
         .find(filter, {
@@ -129,6 +136,7 @@ export class ReviewsService {
           text: 1,
           userId: 1,
           reply: 1,
+          hidden: 1,
           createdAt: 1,
           updatedAt: 1,
         })
@@ -155,6 +163,7 @@ export class ReviewsService {
         _id: r._id,
         rating: r.rating,
         text: r.text,
+        ...(r.hidden ? { hidden: true } : {}),
         author: gone
           ? { id: null, name: DELETED_USER }
           : { id: r.userId, name: String(author.name ?? '') },

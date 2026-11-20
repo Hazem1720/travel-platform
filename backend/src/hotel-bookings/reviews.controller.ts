@@ -171,7 +171,12 @@ export class ReviewsController {
       description: 'No such hotel, or an inactive hotel',
     },
   )
-  listForHotel(@Param('id') id: string, @Query() query: HotelReviewsQueryDto) {
-    return this.reviews.listForHotel(id, query);
+  listForHotel(
+    @Param('id') id: string,
+    @Query() query: HotelReviewsQueryDto,
+    // Set only when logged in (GEN-10: authors see their hidden reviews).
+    @CurrentUser() viewer?: AuthUser,
+  ) {
+    return this.reviews.listForHotel(id, query, viewer);
   }
 }

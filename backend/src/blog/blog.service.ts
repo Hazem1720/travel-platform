@@ -189,7 +189,11 @@ export class BlogService {
     // draft or hidden post shows none (the comment list itself is public).
     const isPublic = post.status !== PostStatus.DRAFT && !post.hidden;
     const comments = isPublic
-      ? await this.comments.listForPost(id, { page: 1, limit: PAGE_SIZE })
+      ? await this.comments.listForPost(
+          id,
+          { page: 1, limit: PAGE_SIZE },
+          viewer,
+        )
       : paginated([], 0, 1, PAGE_SIZE);
     return {
       ...post,

@@ -10,6 +10,7 @@ import { Connection, isValidObjectId, Model, Types } from 'mongoose';
 import { PaginationQueryDto } from '../common/pagination/pagination-query.dto';
 import { paginated } from '../common/pagination/pagination.helper';
 import { AuthUser } from '../common/types/auth-user.type';
+import { visibleTo } from '../common/helpers/ownership';
 import {
   Comment,
   CommentDocument,
@@ -58,11 +59,16 @@ export class CommentsService {
   }
 
   // BLG-02 and BLG-05: the visible comments of a published, visible post,
-  // oldest first. Hidden comments (GEN-10) are left out; a deactivated
-  // author is shown as "Deleted user" (ACC-12).
-  async listForPost(postId: string, query: PaginationQueryDto) {
+  // oldest first. Hidden comments (GEN-10) are left out, except for their
+  // author and admins (marked hidden: true); a deactivated author is shown
+  // as "Deleted user" (ACC-12).
+  async listForPost(
+    postId: string,
+    query: PaginationQueryDto,
+    viewer?: AuthUser,
+  ) {
     const post = await this.findVisiblePublishedPost(postId, '');
-    const filter = { postId: post._id, hidden: { $ne: true } };
+    const filter = { postId: post._id, ...visibleTo(viewer, 'authorId') };
     const [rows, total] = await Promise.all([
       this.comments
         .find(filter)
@@ -89,6 +95,7 @@ export class CommentsService {
         _id: c._id,
         postId: c.postId,
         body: c.body,
+        ...(c.hidden ? { hidden: true } : {}),
         author: gone
           ? { id: null, name: DELETED_USER }
           : { id: c.authorId, name: String(author?.name ?? '') },

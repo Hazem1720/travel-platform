@@ -55,3 +55,16 @@ export function idsInAnyForm(
 ): (string | Types.ObjectId)[] {
   return ids.flatMap((id) => idInAnyForm(id).$in);
 }
+
+// GEN-10: hidden content stays visible to its author and admins. A filter
+// part for a list of comments or reviews: visitors see only visible items,
+// a logged-in user also their own hidden ones, an admin all of them.
+export function visibleTo(
+  viewer: { id: string; role: string } | undefined,
+  authorField: string,
+): Record<string, unknown> {
+  if (viewer?.role === 'admin') return {};
+  const visible = { hidden: { $ne: true } };
+  if (!viewer) return visible;
+  return { $or: [visible, { [authorField]: idInAnyForm(viewer.id) }] };
+}
