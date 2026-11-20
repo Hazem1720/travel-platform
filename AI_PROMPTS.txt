@@ -1311,3 +1311,14 @@ Ok in all tests we do if theres case need fix or handling handle it
 How the output was used:
 After the post fix (PR #254), Claude checked the other content types GEN-10 covers. Itineraries were already visible to their owner, but a hidden comment or review disappeared for its own author too. Claude added one helper (visibleTo in common/helpers/ownership.ts) used by GET /api/posts/:id/comments, the comments on a post's page and GET /api/hotels/:id/reviews: visitors see only visible items, the logged-in author also their own hidden ones (marked hidden: true), admins all of them; ratings are unchanged. Unit tests for the helper and a live check (test plan case 9.18) before merging.
 ================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: HTL-12 (price filter and sort use the cheapest qualifying room)
+Prompt:
+Fix any bug and test part 12
+How the output was used:
+Test plan case 12.23 found that hotel search priced a hotel at its cheapest free room even when that room could not hold the guests (3 guests in one room were priced at a 1-person room), so the price filter and sort could include or drop hotels wrongly. Claude added qualifyingRooms() in hotel-search.service.ts: a room qualifies if it, with the largest other free rooms up to the number of rooms asked for, holds every guest; fromPricePerNight is now the cheapest of those. Unit tests for the rule, and Part 12 of the test plan re-run on the branch.
+================================================
