@@ -15,7 +15,7 @@ jobs:
           node-version: 20
       - run: npm ci
       - run: npm install mongoose@8 --save
-      - run: git diff --stat; grep -n '"mongoose"' package.json; node -p "require('./node_modules/mongoose/package.json').version"
+      - run: git diff --no-color > /tmp/lock.diff; cat /tmp/lock.diff; echo DIFF-END; git diff --stat; grep -n '"mongoose"' package.json; node -p "require('./node_modules/mongoose/package.json').version"
       - run: npm audit --omit=dev || true
       - uses: actions/upload-artifact@v4
         if: always()
