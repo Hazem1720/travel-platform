@@ -1420,3 +1420,14 @@ what now -> Gap analysis first -> Yes, gaps PR
 How the output was used:
 Claude compared backend/test/E2E_PLAN.md suites 3 to 14 with what the 19 suites in backend/test/plan/ actually assert (by assertion, not by title) and found them mostly covered, with seven gaps. It wrote backend/test/e2e/money-and-time.e2e-spec.ts for six of them: the payment webhook racing the hold expiry (flights and hotels, 20 runs each, Confirmed-and-booked or Expired-free-and-refunded, never both or neither), a webhook for less than the total, refund rounding (whole cents within one cent; the direction is spec question #287), a New York departure found on its local date and shown in local time, the FX key never in a response, and an audit entry for each of 12 admin actions. Its first race was one-sided: marking the intent succeeded in the fake Stripe before the race let the expiry always confirm; then every run expired. Claude made the webhook carry the succeeded state without changing the fake, staggered the expiry job by 0 to 9 ms, and checked that both outcomes occur. Mutation check: six changes each fail the suite; the first time-zone mutation hit a field search does not use and was redone on the search window. Plan section 3 now maps each suite to the plan files. No backend/src change.
 ================================================
+================================================
+Date: 2026-11-20
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-05, PAY-04, BLG-13 (spec decisions pinned in the e2e tests)
+Prompt:
+i dont understand what we are doing what does this pull rquest do and why is it oen and why is there 2 new issues
+u decide and u review and merge and why is devalop has recent pushes without pr or what is happening
+How the output was used:
+Claude explained the e2e work in plain terms and checked develop's history: every commit on its main line since #234 is a PR merge, none was pushed directly (the "recent pushes" banner lists pushed branches). On my instruction it decided the open spec questions and recorded each decision on its issue: #285 (ACC-05) the 5th failure locks the account but keeps the generic message, attempts while locked get the lockout message; #287 (PAY-04) refunds round to the nearest cent, half up; #236 (BLG-13) only one's own public itineraries can be attached, and the 400 is fine since it reveals nothing. All match the current code. It then pinned #285 and #287 in the auth and money-and-time suites (ACC-05 now fully tested; the refund of 50% of 333.33 USD must be exactly 166.67 USD, and a temporary switch to rounding down made the test fail) and updated the plan text.
+================================================

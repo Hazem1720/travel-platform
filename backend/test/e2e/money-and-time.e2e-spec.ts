@@ -336,12 +336,12 @@ describe('money and time', () => {
   });
 
   // ---------------------------------------------------------------------
-  it('a refund percentage that is not a whole cent is still a whole number of cents, within one cent, and recorded as shown [partial: PAY-04, PAY-03, FLT-09, HTL-10]', async () => {
+  it('a refund percentage that is not a whole cent is rounded to the nearest cent, half up, and recorded as shown [partial: PAY-04, PAY-03, FLT-09, HTL-10]', async () => {
     // 50% of 333.33 USD is 166.665 USD. PAY-04 and conventions.md keep money
-    // in integer cents; which way to round is spec question #287, so only
-    // "whole cents, within one cent of the exact amount" is asserted.
+    // in integer cents; #287 decided: the nearest cent, half a cent up, so
+    // the refund is 166.67 USD.
     const total = 33333;
-    const exact = total / 2;
+    const expected = 16667;
 
     const airlineId = await createAirline(t);
     const flightMod = await airlineModerator(t, airlineId);
@@ -380,13 +380,11 @@ describe('money and time', () => {
         .send({ refundAmount: shown })
         .expect(200);
       const recorded = await refunded(id);
-      answers.push(
-        `${type}: whole cents ${Number.isInteger(shown)}, within one cent ${Math.abs(shown - exact) < 1}, recorded as shown ${recorded === shown}`,
-      );
+      answers.push(`${type}: shown ${shown}, recorded ${recorded}`);
     }
     expect(answers).toEqual([
-      'flight: whole cents true, within one cent true, recorded as shown true',
-      'hotel: whole cents true, within one cent true, recorded as shown true',
+      `flight: shown ${expected}, recorded ${expected}`,
+      `hotel: shown ${expected}, recorded ${expected}`,
     ]);
   });
 
