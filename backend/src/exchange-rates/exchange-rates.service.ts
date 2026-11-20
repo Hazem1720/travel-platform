@@ -43,6 +43,7 @@ function today(): string {
 export class ExchangeRatesService {
   private readonly logger = new Logger(ExchangeRatesService.name);
   private lastFailureAt = 0;
+  private warnedNoKey = false;
 
   constructor(
     @InjectModel(ExchangeRate.name)
@@ -77,17 +78,18 @@ export class ExchangeRatesService {
     base: string;
     rates: unknown;
   } | null> {
+    // FXRatesAPI's free tier also answers without a key (with a lower
+    // quota), so a missing key is not a reason to stop.
     const key = this.config.get<string>('FXRATES_API_KEY');
-    if (!key) {
-      this.lastFailureAt = Date.now();
-      this.logger.warn('FXRATES_API_KEY is not set; using cached rates');
-      return null;
+    if (!key && !this.warnedNoKey) {
+      this.warnedNoKey = true;
+      this.logger.warn('FXRATES_API_KEY is not set; using the keyless tier');
     }
     try {
       const url = new URL(FXRATES_URL);
       url.searchParams.set('base', RATES_BASE);
       url.searchParams.set('currencies', SUPPORTED_CURRENCIES.join(','));
-      url.searchParams.set('api_key', key);
+      if (key) url.searchParams.set('api_key', key);
       const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
       const body = (await res.json().catch(() => null)) as {
         success?: boolean;

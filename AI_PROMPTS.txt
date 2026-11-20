@@ -1333,3 +1333,14 @@ i need to be 100% sure that i will get the full mark on milestone one so i want 
 How the output was used:
 Claude wrote a robustness sweep (test plan Part 13) that calls all 150 Swagger operations as every role with invalid, random and real ids, bad query strings and bodies broken one field at a time. It found that a JSON array sent as a PATCH body crashed five routes (500) and was accepted as a no-op on four others. The global validation pipe now rejects an array body with 400 "Validation failed" (details.body). Unit tests added; the sweep was re-run on the branch.
 ================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-18 (exchange rates fetched once a day and cached)
+Prompt:
+can i give u the acces and u make it manually
+How the output was used:
+During a manual Swagger check on Hazem's machine the budget summary answered 503 because FXRATES_API_KEY was empty and the service stopped before calling the API. FXRatesAPI's free tier answers without a key, so Claude changed ExchangeRatesService.refresh() to call it without api_key when no key is set (one warning in the log), still falling back to the cache and then 503 if the call fails. Unit tests updated; README notes the key is optional.
+================================================

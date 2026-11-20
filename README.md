@@ -34,7 +34,7 @@ GIU Software Project I, Winter 2026.
         SEED_ADMIN_PASSWORD=<8+ characters with a letter and a digit>
         STRIPE_SECRET_KEY=<Stripe test-mode secret key>
         STRIPE_WEBHOOK_SECRET=<from the Stripe CLI or dashboard>
-        FXRATES_API_KEY=<FXRatesAPI key>
+        FXRATES_API_KEY=<FXRatesAPI key; optional, without it the keyless free tier is used>
 
    The server checks these at startup and stops with a message if `MONGODB_URI`, `JWT_SECRET` or `FRONTEND_URL` is missing or invalid. Keep `COOKIE_SECURE=true`; set it to `false` only if your browser drops cookies on `http://localhost` (for example Safari). It is refused when `NODE_ENV=production`.
 
