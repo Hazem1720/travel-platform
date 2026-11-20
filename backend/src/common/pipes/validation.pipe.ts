@@ -1,4 +1,5 @@
 import {
+  ArgumentMetadata,
   BadRequestException,
   ValidationError,
   ValidationPipe,
@@ -25,8 +26,30 @@ export function toFieldErrors(
   return out;
 }
 
+// GEN-13: every request body is a DTO object. A JSON array would otherwise
+// reach the services as an array of DTOs (a 500, or a no-op edit answered 200).
+export const BODY_NOT_OBJECT = 'The request body must be a JSON object';
+
+class AppValidationPipe extends ValidationPipe {
+  override async transform(value: unknown, metadata: ArgumentMetadata) {
+    if (
+      metadata.type === 'body' &&
+      Array.isArray(value) &&
+      metadata.metatype &&
+      metadata.metatype !== Array
+    ) {
+      throw new BadRequestException({
+        error: 'Bad Request',
+        message: 'Validation failed',
+        details: { body: [BODY_NOT_OBJECT] },
+      });
+    }
+    return super.transform(value, metadata);
+  }
+}
+
 export function createValidationPipe() {
-  return new ValidationPipe({
+  return new AppValidationPipe({
     whitelist: true,
     forbidNonWhitelisted: true,
     transform: true,
