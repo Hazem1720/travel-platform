@@ -8,7 +8,11 @@ import { createValidationPipe } from './common/pipes/validation.pipe';
 // Shared by main.ts and the e2e tests, so tests run the same pipeline as the app.
 // Security headers on every response (OWASP A05). Written by hand rather than
 // with helmet to add no dependency; Swagger UI still works with them.
-export function securityHeaders(_req: Request, res: Response, next: NextFunction) {
+export function securityHeaders(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('Referrer-Policy', 'no-referrer');

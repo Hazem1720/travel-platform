@@ -47,7 +47,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     // Errors raised by Express' body parser before Nest sees the request
     // (a body over the size limit, an unsupported charset or encoding).
     // They carry their own 4xx status; without this they became a 500.
-    const http = exception as { status?: number; type?: string; expose?: boolean };
+    const http = exception as {
+      status?: number;
+      type?: string;
+      expose?: boolean;
+    };
     if (
       typeof http?.status === 'number' &&
       http.status >= 400 &&
