@@ -861,7 +861,7 @@ As team leader I reviewed Hafez's blog PR with Claude and kept his module, route
 Date: 2026-11-18
 Student: Emad
 Tool: ChatGPT
-Related Requirements: GEN-09, GEN-10, BLG-05, BLG-06, BLG-07
+Related Requirement: GEN-09, GEN-10, BLG-05, BLG-06, BLG-07
 Prompt:
 Implement Emad's assigned comments, likes, reports and content moderation requirements from Team-Plan-Milestone-1. Create the comments and reports modules, including their controllers, services, DTOs, schemas and tests. Support creating, editing and deleting comments, liking and unliking posts, submitting reports, and admin moderation actions. Integrate with the existing project modules and audit service while following the established NestJS patterns.
 
@@ -911,13 +911,21 @@ Prompt:
 can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
 How the output was used:
 Claude added linked bookings to Moharm's itineraries as the team plan says: GET, POST /api/itineraries/:id/bookings and DELETE /api/itineraries/:id/bookings/:linkId. The user links their own Confirmed or Completed flight or hotel booking to a day; its total (cents / 100, a snapshot) feeds the budget through Moharm's budgetLines(): hotels under Accommodation, flights under Intercity transport, so every summary (by day, category, city group, converted, the PDF) includes it. Another user's booking or itinerary is 404, a PendingPayment one 400, linking the same booking twice 409. Deleting the day removes its links; the public itinerary view leaves linked bookings out (also from its budget), and cloning never copies them. Unit tests and an HTTP test against a real MongoDB with real bookings.
+================================================
 
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
 Related Requirement: FLT-28 (bonus, Memo's item, built at my request as team leader)
 Prompt:
 can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
 How the output was used:
 Claude added seat selection to Aabsy's flight bookings as the team plan says, in its own files (only the module registration in his module changes): a seat map per cabin derived from its seats (6 a row, 4 in Business and First), GET /api/flight-bookings/:id/seats with free, taken and my seats per flight, and PATCH /api/flight-bookings/:id/seat to choose or change a passenger's seat on a Confirmed booking or one awaiting payment, before departure (infants get none). A seatassignments collection with a unique index on (flight, cabin, seat) decides a race: one passenger gets the seat, the other 409. Seats of Expired or Cancelled bookings count as free without any hook in other people's code. Unit tests, and an HTTP test against a real MongoDB with two passengers choosing the same seat at the same moment.
+================================================
 
+================================================
+Date: 2026-11-19
 Student: Mohamad Amr Khallaf
 Tool: Claude Code
 Related Requirement: ITN-28
@@ -925,13 +933,21 @@ Prompt:
 do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
 How the output was used:
 My chapter says ITN-28 lives in Moharm's src/itineraries and to agree the change with him first. To avoid changing his code, Claude built it as a separate src/itinerary-pdf module whose controller adds GET /api/itineraries/:id/pdf and uses his exported ItinerariesService.findOwned (same ownership rule as GET /itineraries/:id, 404 for others) and summarizeByCurrency for the budget. The PDF (pdfkit, as Aabsy's e-ticket) lists every day with date and city, notes, activities with time and cost, budget entries, intercity transport, and the budget per category and in total per currency. Unit tests read the text inside the PDF. Live check with a TEST user and itinerary (deleted afterwards): owner 200 application/pdf download with the right totals, another user 404, no session 401, unknown id 404, and his GET /itineraries/:id still 200. Build, 788 unit tests and the read-only eslint check pass.
+================================================
 
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
 Related Requirement: GEN-01-B
 Prompt:
 do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
 How the output was used:
 My chapter says GEN-01-B extends Aabsy's NotificationsService and to agree the hook point with him. Claude kept the change in his code to one optional hook: a new global src/email module (nodemailer, SMTP settings only in .env, off without SMTP_HOST) is called from NotificationsService.create() after the notification is saved, not awaited and never throwing; a second optional hook in Hazem's createModerator() sends the moderator invitation, deliberately without the temporary password. Unit tests use a fake SMTP transport. Live check with a local SMTP test inbox (no outside account) and the Stripe sandbox, TEST data deleted afterwards: a hotel booking confirmation produced the email "Your booking is confirmed" with the reservation details; with the inbox stopped, the next booking was still confirmed and its in-app notification created, and the server only logged ECONNREFUSED. The run also found that recent Stripe CLI versions refuse stripe listen without --events, so the README command and the webhook's Swagger text were fixed, and it showed PAY-01's hold expiry confirming a booking whose payment had succeeded but whose webhook was missed. Build, 791 unit tests and the read-only eslint check pass.
+================================================
 
+================================================
+Date: 2026-11-19
 Student: Hazem Ahmed
 Tool: Claude Code
 Related Requirement: ITN-03, ITN-21, ACC-12, BLG-12 (bug fix found while testing the bonus items)
@@ -1440,4 +1456,24 @@ Prompt:
 do what u think is correct -> Yes, fix them
 How the output was used:
 Claude fixed the two intermittent failures in the plan suites. Case 15.12 counted confirmation emails right after the webhook answered, but the app sends emails in the background. Making the fake SMTP slow (200 ms, temporary) showed the same race under every suite, because actors.traveler() reads the verification link the same way. Instead of changing 45 outbox reads, createTestApp now tracks every email the app starts and holds each test response until those emails are in the outbox (test-only; no backend/src change); with the slow SMTP, 15-edge-cases (unchanged), 01-accounts, 07-payments, the auth suite and the harness all pass, while the original failed every case. Case 2.19 sent a file over 5 MB; Multer answers before the upload ends, so the client can see a connection reset. A reset now counts as refused only if no file was stored. Before this, the three merged test branches were deleted locally and on GitHub.
+================================================
+================================================
+Date: 2026-11-20
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: none (README documentation)
+Prompt:
+ok i want u to check if our readme is clean and professional and correct -> Yes, fix it
+How the output was used:
+Claude checked every claim in the root README against the code and found two wrong statements: the guards example added @UseGuards(JwtAuthGuard, RolesGuard) although both guards are global (auth.module.ts APP_GUARD) and no controller uses them, and it pointed to a frontend/ folder that does not exist yet. It also found outdated workflow rules (PR titles as [REQ-ID], commit examples without IDs, one team leader, no merge rules), a vague currency and date line, and no section on tests or CI. It rewrote the README: a short description of the platform, npm ci, the three required settings instead of a partial copy of .env.example, a Tests and CI section, the real branch, commit and PR rules (including --base develop, since the repository default branch is main), the guards example without @UseGuards, USD in integer cents and airport local times, and fenced code blocks. The Stripe, SMTP, seed and Atlas instructions were kept. No backend change.
+================================================
+================================================
+Date: 2026-11-20
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: none (AI usage log repair)
+Prompt:
+make sure AI_PROMPTS.txt dosent have any bad info or something thats not supposed to be there -> Yes, repair it
+How the output was used:
+Claude scanned the whole log for secrets (connection strings, Stripe keys, tokens, .env values), personal data, local paths, merge conflict markers and tone, and found none. A script that checks every entry's fields found one block where a merge had run five 2026-11-19 entries together (ITN-27, FLT-28, ITN-28, GEN-01-B and the ownerId fix), losing four Date lines, some Student and Tool lines and the separators, and one label typo ("Related Requirements:" in Emad's entry). Claude found each entry's author and date in git history, checked that no text was lost, and restored the missing headers and separators without changing any entry's words. The log now has 133 complete entries.
 ================================================
