@@ -187,10 +187,11 @@ describe('BLG-02 / BLG-08: browse published posts', () => {
     });
     const post = await service.findById(postId);
     expect(post.author).toEqual({ id: authorId, name: 'Sara' });
-    expect(comments.listForPost).toHaveBeenCalledWith(postId, {
-      page: 1,
-      limit: 10,
-    });
+    expect(comments.listForPost).toHaveBeenCalledWith(
+      postId,
+      { page: 1, limit: 10 },
+      undefined,
+    );
     expect(post.comments).toEqual({ data: [], meta: { total: 0 } });
   });
 
@@ -203,6 +204,55 @@ describe('BLG-02 / BLG-08: browse published posts', () => {
     );
     const { service } = setup({ found: { _id: postId, authorId } });
     await expect(service.findById(postId)).rejects.toThrow(NotFoundException);
+  });
+
+  it('GEN-10: only published, visible posts for visitors; the author also sees own drafts and hidden posts; an admin any hidden post', async () => {
+    const run = async (viewer?: any) => {
+      const t = setup({
+        found: { _id: postId, authorId, title: 'Paris' },
+        author: { name: 'Sara' },
+      });
+      // Answer every filter: this test checks which filter is sent.
+      t.posts.findOne.mockImplementation(() => ({
+        lean: async () => ({
+          _id: postId,
+          authorId,
+          title: 'Paris',
+          status: 'Published',
+        }),
+      }));
+      await t.service.findById(postId, viewer);
+      return t.posts.findOne.mock.calls[0][0];
+    };
+    expect(await run()).toMatchObject({
+      status: 'Published',
+      hidden: { $ne: true },
+    });
+    const own = await run({ id: String(authorId), role: Role.USER });
+    expect(own.$or).toEqual([
+      { status: 'Published', hidden: { $ne: true } },
+      { authorId: expect.objectContaining({ $in: expect.any(Array) }) },
+    ]);
+    const adm = await run({ id: 'admin-1', role: Role.ADMIN });
+    expect(adm).toEqual({ _id: postId, status: 'Published' });
+  });
+
+  it('a draft or hidden post shows no comments (the comment list is public)', async () => {
+    const t = setup({ author: { name: 'Sara' } });
+    t.posts.findOne.mockImplementation(() => ({
+      lean: async () => ({
+        _id: postId,
+        authorId,
+        title: 'Draft',
+        status: 'Draft',
+      }),
+    }));
+    const post = await t.service.findById(postId, {
+      id: String(authorId),
+      role: Role.USER,
+    } as any);
+    expect(t.comments.listForPost).not.toHaveBeenCalled();
+    expect(post.comments).toMatchObject({ data: [], meta: { total: 0 } });
   });
 });
 

@@ -1278,6 +1278,72 @@ Approved, with one change: refuse every host of the backend/.env cluster, whatev
 How the output was used:
 Claude replaced the guard's same-database check with a same-cluster check (sameCluster in test/e2e/uri-guard.ts): a URI is refused, with or without the flag, if any host:port matches a host of the .env URI (default port 27017; localhost and 127.0.0.1 count as one), or if both are on Atlas under the same cluster domain, which also links the mongodb+srv and standard forms. It matched by host and port rather than hostname so that a teammate whose .env points at a local mongod is not blocked from the in-memory server. Self-tests cover the .env database, another database, no database, other credentials and host order, a single host, the srv form, and a local .env. Plan line and README updated; the refusal shown through npm run test:e2e:full.
 ================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-06 (Swagger documentation of logout)
+Prompt:
+Can u handle the part that didnt pass in part 2
+How the output was used:
+Test plan case 2.16 (every protected route documents a 401) flagged POST /api/auth/logout: it is public by design (always 200) but declared @ApiCookieAuth, so Swagger showed it as protected. Claude removed the two Swagger cookie-auth lines and described the route as public; the route's behaviour is unchanged. Re-ran Part 2 of the test plan (20/20) before merging.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-10 (hidden content visible to its author and admins), BLG-03
+Prompt:
+Fix the problem in part 7 let all pass so fix then test and test part 8,9
+How the output was used:
+The Milestone 1 test plan (Part 9, case 9.14) found that the author of a hidden post got 404 on GET /api/posts/:id, although GEN-10 says hidden content stays visible to its author and admins: public routes never looked at the session cookie. Claude made the global JWT guard recognise a valid, current, active session on @Public routes without ever refusing the request or counting it as activity, and made GET /posts/:id show the author their own hidden posts and drafts and an admin any hidden post; visitors still see only published, visible posts. Unit tests for the guard and the service, and Part 9 of the test plan re-run.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-10 (hidden comments and reviews visible to their author and admins)
+Prompt:
+Ok in all tests we do if theres case need fix or handling handle it
+How the output was used:
+After the post fix (PR #254), Claude checked the other content types GEN-10 covers. Itineraries were already visible to their owner, but a hidden comment or review disappeared for its own author too. Claude added one helper (visibleTo in common/helpers/ownership.ts) used by GET /api/posts/:id/comments, the comments on a post's page and GET /api/hotels/:id/reviews: visitors see only visible items, the logged-in author also their own hidden ones (marked hidden: true), admins all of them; ratings are unchanged. Unit tests for the helper and a live check (test plan case 9.18) before merging.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: HTL-12 (price filter and sort use the cheapest qualifying room)
+Prompt:
+Fix any bug and test part 12
+How the output was used:
+Test plan case 12.23 found that hotel search priced a hotel at its cheapest free room even when that room could not hold the guests (3 guests in one room were priced at a 1-person room), so the price filter and sort could include or drop hotels wrongly. Claude added qualifyingRooms() in hotel-search.service.ts: a room qualifies if it, with the largest other free rooms up to the number of rooms asked for, holds every guest; fromPricePerNight is now the cheapest of those. Unit tests for the rule, and Part 12 of the test plan re-run on the branch.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-13 (backend validation), GEN-02 (validation error format)
+Prompt:
+i need to be 100% sure that i will get the full mark on milestone one so i want to pass any private test they will do
+How the output was used:
+Claude wrote a robustness sweep (test plan Part 13) that calls all 150 Swagger operations as every role with invalid, random and real ids, bad query strings and bodies broken one field at a time. It found that a JSON array sent as a PATCH body crashed five routes (500) and was accepted as a no-op on four others. The global validation pipe now rejects an array body with 400 "Validation failed" (details.body). Unit tests added; the sweep was re-run on the branch.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-18 (exchange rates fetched once a day and cached)
+Prompt:
+can i give u the acces and u make it manually
+How the output was used:
+During a manual Swagger check on Hazem's machine the budget summary answered 503 because FXRATES_API_KEY was empty and the service stopped before calling the API. FXRatesAPI's free tier answers without a key, so Claude changed ExchangeRatesService.refresh() to call it without api_key when no key is set (one warning in the log), still falling back to the cache and then 503 if the call fails. Unit tests updated; README notes the key is optional.
+================================================
 ================================================
 Date: 2026-11-19
 Student: Mohamad Amr Khallaf
