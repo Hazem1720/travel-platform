@@ -101,10 +101,15 @@ A script, `test/e2e/check-coverage.ts`, is run by `run.ts` after Jest. It reads 
    - change password needs the current one and a valid new one, and ends the other sessions (ACC-08); a profile edit saves nothing if any field is invalid (ACC-09);
    - cookies are `HttpOnly` and `SameSite=Lax` (`auth.service.ts:106`), and `Secure` when `COOKIE_SECURE` is not `false` (checked by overriding the config value in one test, since the e2e run uses plain http);
    - refresh works, and logout revokes the session;
-   - 5 failed logins lock the account, which unlocks after 15 minutes, and a successful login resets the counter; whether the 5th failure itself must show the lockout message is spec question #285 (ACC-05 stays partial);
+   - 5 failed logins lock the account, which unlocks after 15 minutes, and a successful login resets the counter; the 5th failure locks but still answers with the generic message, and attempts while locked get the lockout message (decided in #285);
    - after 30 idle minutes (`lastActivityAt` moved back), both `/me` and refresh answer 401;
    - a reset link works once, expires after 30 minutes, and a newer request makes it invalid;
    - the answer to "forgot password" is the same for unknown emails.
+   > **Status (2026-11-20):** suites 3 to 14 are covered by the team's Milestone 1 test plan suites in `backend/test/plan/` (#276 and later), not written as separate files here. A gap analysis compared each item below with what those suites assert:
+   > - 3 flight booking: `04-flight-booking`, `15-edge-cases` (15.1); 4 hotel booking: `05`, `06`; 5 payments: `07-payments`, `15-edge-cases`, `17-security` (17.18); 6–7 itineraries and providers: `03`, `05`, `08`, `18`; 8 exchange rates: `12b`; 9 uploads: `02` (2.19), `20-files`, `17-security` (17.14); 10–11 admin and notifications: `02`, `10`, `12b`, `19`; P2: `09`, `06` (6.22), `11`, `13`, `15`.
+   > - The gaps are in `backend/test/e2e/money-and-time.e2e-spec.ts`: the webhook and hold expiry racing (flights and hotels, 20 runs each), a webhook for less than the total, refund rounding (nearest cent, half up, as decided in #287), a New York departure date, the FX key never in a response, and an audit entry for every admin action.
+   > - Not covered: FX with no cached rates (the spec does not say what should happen) and the opt-in `stripe-live` suite.
+
 3. **`flight-booking`**:
    - search dates follow each airport's time zone (New York, London);
    - quote and hold in cents; 20 parallel holds on the last seats give exactly N winners;

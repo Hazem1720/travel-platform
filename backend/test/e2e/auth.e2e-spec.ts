@@ -257,16 +257,22 @@ describe('accounts and sessions', () => {
 
   // ---------------------------------------------------------------------
   describe('lockout', () => {
-    // ACC-05. Whether the 5th failure itself must show the lockout message
-    // is spec question #285, so no test asserts it.
+    // ACC-05, as decided in #285: the 5th failure locks the account but still
+    // answers with the generic message (it reveals nothing); every attempt
+    // while locked gets the lockout message.
     const fail = (email: string, times: number) =>
       (async () => {
         for (let i = 0; i < times; i++) await loginWith(email, 'Wr0ngPassword');
       })();
 
-    it('after 5 failed logins the account is locked for 15 minutes, even for the right password [partial: ACC-05]', async () => {
+    it('after 5 failed logins the account is locked for 15 minutes, even for the right password (ACC-05)', async () => {
       const { email } = await traveler(t);
-      await fail(email, 5);
+      await fail(email, 4);
+      const fifth = await loginWith(email, 'Wr0ngPassword');
+      expect([fifth.status, fifth.body.message]).toEqual([
+        401,
+        GENERIC_LOGIN_ERROR,
+      ]);
 
       const locked = await loginWith(email, TEST_PASSWORD);
       expect([locked.status, locked.body.message]).toEqual([423, LOCKED]);
@@ -281,7 +287,7 @@ describe('accounts and sessions', () => {
       await loginWith(email, TEST_PASSWORD).expect(200);
     });
 
-    it('a successful login resets the counter, so failures must be consecutive [partial: ACC-05]', async () => {
+    it('a successful login resets the counter, so failures must be consecutive (ACC-05)', async () => {
       const { email } = await traveler(t);
       await fail(email, 4);
       await loginWith(email, TEST_PASSWORD).expect(200);
