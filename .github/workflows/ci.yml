@@ -61,3 +61,32 @@ jobs:
           name: e2e-coverage
           path: backend/coverage/e2e-coverage.md
           if-no-files-found: ignore
+
+  # Test plan Part 16: many clients at once against the real app (searches,
+  # logins, races for the last seats and rooms). Separate job so it runs
+  # beside the main one instead of after it.
+  load:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Cache MongoDB binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('backend/test/e2e/global-setup.ts') }}
+
+      - name: Load test
+        run: npm run test:load

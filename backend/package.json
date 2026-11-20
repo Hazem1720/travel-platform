@@ -20,7 +20,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "test:e2e:full": "ts-node --transpile-only test/e2e/run.ts"
+    "test:e2e:full": "ts-node --transpile-only test/e2e/run.ts",
+    "test:load": "jest --config ./test/jest-load.json --runInBand --forceExit"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
