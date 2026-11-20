@@ -94,11 +94,14 @@ A script, `test/e2e/check-coverage.ts`, is run by `run.ts` after Jest. It reads 
    - Security on every create or update DTO:
      - extra fields such as `role`, `assignedProviderId` or `status` are rejected or have no effect;
      - `{"email":{"$gt":""}}` sent to login and search answers 400.
-2. **`auth`** (ACC-01…07, ACC-19):
-   - registering with a duplicate email answers 409;
-   - cookies are `HttpOnly` and `SameSite=Lax` (`auth.service.ts:106`), and `Secure` when `COOKIE_SECURE` is not `false`;
+2. **`auth`** (ACC-01, ACC-02, ACC-04 to ACC-09, ACC-19; there is no ACC-03, and ACC-07a, the admin reset, is in the admin suite):
+   - registration: every invalid form gets an error on its field, and a duplicate email (in any letter case) answers 409;
+   - the verification link is emailed, and the five booking and payment routes refuse an unverified account until it is opened (ACC-02);
+   - login works for every role and returns the role; a wrong password and an unknown email get the same message; a suspended account is told so only with the right password (ACC-04);
+   - change password needs the current one and a valid new one, and ends the other sessions (ACC-08); a profile edit saves nothing if any field is invalid (ACC-09);
+   - cookies are `HttpOnly` and `SameSite=Lax` (`auth.service.ts:106`), and `Secure` when `COOKIE_SECURE` is not `false` (checked by overriding the config value in one test, since the e2e run uses plain http);
    - refresh works, and logout revokes the session;
-   - 5 failed logins lock the account, which unlocks after 15 minutes;
+   - 5 failed logins lock the account, which unlocks after 15 minutes, and a successful login resets the counter; whether the 5th failure itself must show the lockout message is spec question #285 (ACC-05 stays partial);
    - after 30 idle minutes (`lastActivityAt` moved back), both `/me` and refresh answer 401;
    - a reset link works once, expires after 30 minutes, and a newer request makes it invalid;
    - the answer to "forgot password" is the same for unknown emails.
