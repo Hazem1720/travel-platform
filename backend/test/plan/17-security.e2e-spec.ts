@@ -358,14 +358,12 @@ describe('Test plan Part 17: security audit', () => {
     await tc(
       '17.11 stored script tags come back as JSON text, never as a web page',
       async () => {
-        const r = await U.agent
-          .post('/api/posts')
-          .send({
-            title: '<script>alert(1)</script>',
-            body: '<img src=x onerror=alert(1)>',
-            tags: ['xss'],
-            status: 'Published',
-          });
+        const r = await U.agent.post('/api/posts').send({
+          title: '<script>alert(1)</script>',
+          body: '<img src=x onerror=alert(1)>',
+          tags: ['xss'],
+          status: 'Published',
+        });
         check(r.status === 201, 'post created', r);
         const g = await t.http().get(`/api/posts/${r.body._id}`);
         check(
@@ -615,37 +613,33 @@ describe('Test plan Part 17: security audit', () => {
     await tc(
       '17.19 prices come from the server, never from the request',
       async () => {
-        const h = await V.agent
-          .post('/api/flight-bookings/hold')
-          .send({
-            outboundFlightId: flightB,
-            cabin: 'Economy',
-            passengers: [
-              {
-                type: 'adult',
-                fullName: 'TEST Cheap',
-                dateOfBirth: '1990-01-01',
-                passportNumber: 'A1234567',
-              },
-            ],
-            totalAmount: 1,
-            price: 1,
-          });
+        const h = await V.agent.post('/api/flight-bookings/hold').send({
+          outboundFlightId: flightB,
+          cabin: 'Economy',
+          passengers: [
+            {
+              type: 'adult',
+              fullName: 'TEST Cheap',
+              dateOfBirth: '1990-01-01',
+              passportNumber: 'A1234567',
+            },
+          ],
+          totalAmount: 1,
+          price: 1,
+        });
         check(h.status === 400, 'extra price fields refused (400)', h);
-        const ok = await V.agent
-          .post('/api/flight-bookings/hold')
-          .send({
-            outboundFlightId: flightB,
-            cabin: 'Economy',
-            passengers: [
-              {
-                type: 'adult',
-                fullName: 'TEST Cheap',
-                dateOfBirth: '1990-01-01',
-                passportNumber: 'A1234567',
-              },
-            ],
-          });
+        const ok = await V.agent.post('/api/flight-bookings/hold').send({
+          outboundFlightId: flightB,
+          cabin: 'Economy',
+          passengers: [
+            {
+              type: 'adult',
+              fullName: 'TEST Cheap',
+              dateOfBirth: '1990-01-01',
+              passportNumber: 'A1234567',
+            },
+          ],
+        });
         await V.agent
           .post(`/api/bookings/flight/${ok.body._id}/accept-policies`)
           .send({ accepted: true });

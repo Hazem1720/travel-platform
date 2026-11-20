@@ -67,14 +67,12 @@ describe('Test plan Part 6: hotel search, booking & reviews', () => {
     checkIn: string,
     checkOut: string,
   ) =>
-    who.agent
-      .post('/api/hotel-bookings')
-      .send({
-        hotelId,
-        checkIn,
-        checkOut,
-        rooms: rooms.map((r) => ({ childAges: [], ...r })),
-      });
+    who.agent.post('/api/hotel-bookings').send({
+      hotelId,
+      checkIn,
+      checkOut,
+      rooms: rooms.map((r) => ({ childAges: [], ...r })),
+    });
   async function paidStay(
     who: Actor,
     hotelId: string,
@@ -134,15 +132,13 @@ describe('Test plan Part 6: hotel search, booking & reviews', () => {
       rooms: [string, number, number][],
     ) => {
       const h = (
-        await adm.agent
-          .post('/api/hotels')
-          .send({
-            name,
-            address: '1 Nile St',
-            cityId: 'cairo',
-            countryCode: 'EG',
-            starClass: star,
-          })
+        await adm.agent.post('/api/hotels').send({
+          name,
+          address: '1 Nile St',
+          cityId: 'cairo',
+          countryCode: 'EG',
+          starClass: star,
+        })
       ).body._id;
       const mod = await hotelModerator(t, h);
       await mod.agent
@@ -158,15 +154,13 @@ describe('Test plan Part 6: hotel search, booking & reviews', () => {
         .expect(200);
       const ids: string[] = [];
       for (const [nm, occ, price] of rooms) {
-        const r = await mod.agent
-          .post(`/api/hotels/${h}/rooms`)
-          .send({
-            name: nm,
-            type: 'Room',
-            beds: occ,
-            maxOccupancy: occ,
-            pricePerNight: price,
-          });
+        const r = await mod.agent.post(`/api/hotels/${h}/rooms`).send({
+          name: nm,
+          type: 'Room',
+          beds: occ,
+          maxOccupancy: occ,
+          pricePerNight: price,
+        });
         const id = r.body._id ?? r.body.id;
         await mod.agent
           .post(`/api/hotels/${h}/rooms/${id}/availability`)

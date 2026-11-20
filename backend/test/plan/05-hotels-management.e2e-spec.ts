@@ -60,14 +60,12 @@ describe('Test plan Part 5: hotels & rooms management', () => {
     checkIn: string,
     checkOut: string,
   ) =>
-    who.agent
-      .post('/api/hotel-bookings')
-      .send({
-        hotelId,
-        checkIn,
-        checkOut,
-        rooms: [{ roomId, adults: 2, childAges: [] }],
-      });
+    who.agent.post('/api/hotel-bookings').send({
+      hotelId,
+      checkIn,
+      checkOut,
+      rooms: [{ roomId, adults: 2, childAges: [] }],
+    });
   async function paidStay(
     who: Actor,
     hotelId: string,
@@ -122,14 +120,12 @@ describe('Test plan Part 5: hotels & rooms management', () => {
     });
     let H = '';
     await tc('5.1', async () => {
-      const r = await adm.agent
-        .post('/api/hotels')
-        .send(
-          hotelBody('TEST Nile View', {
-            description: 'TEST',
-            amenities: ['wifi'],
-          }),
-        );
+      const r = await adm.agent.post('/api/hotels').send(
+        hotelBody('TEST Nile View', {
+          description: 'TEST',
+          amenities: ['wifi'],
+        }),
+      );
       check(r.status === 201, 'create hotel 201', r);
       H = r.body._id;
     });

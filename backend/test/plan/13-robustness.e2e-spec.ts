@@ -46,14 +46,12 @@ describe('Test plan Part 13: robustness sweep', () => {
     doc = buildSwaggerDocument(t.app);
     const rates: Record<string, number> = {};
     for (const c of SUPPORTED_CURRENCIES) rates[c] = 1;
-    await t
-      .model('ExchangeRate')
-      .create({
-        date: new Date().toISOString().slice(0, 10),
-        base: 'USD',
-        rates,
-        fetchedAt: new Date(),
-      });
+    await t.model('ExchangeRate').create({
+      date: new Date().toISOString().slice(0, 10),
+      base: 'USD',
+      rates,
+      fetchedAt: new Date(),
+    });
     const adm = await admin(t);
     const airline = await createAirline(t, {
       cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
@@ -69,49 +67,41 @@ describe('Test plan Part 13: robustness sweep', () => {
     } as any);
     const hotel = idOf(
       (
-        await adm.agent
-          .post('/api/hotels')
-          .send({
-            name: 'TEST Robust Hotel',
-            address: '1 St',
-            cityId: 'dubai',
-            countryCode: 'AE',
-            starClass: 4,
-          })
+        await adm.agent.post('/api/hotels').send({
+          name: 'TEST Robust Hotel',
+          address: '1 St',
+          cityId: 'dubai',
+          countryCode: 'AE',
+          starClass: 4,
+        })
       ).body,
     );
     const hotel2 = idOf(
       (
-        await adm.agent
-          .post('/api/hotels')
-          .send({
-            name: 'TEST Robust Hotel 2',
-            address: '2 St',
-            cityId: 'cairo',
-            countryCode: 'EG',
-            starClass: 3,
-          })
+        await adm.agent.post('/api/hotels').send({
+          name: 'TEST Robust Hotel 2',
+          address: '2 St',
+          cityId: 'cairo',
+          countryCode: 'EG',
+          starClass: 3,
+        })
       ).body,
     );
     const hotMod = await hotelModerator(t, hotel);
-    await hotMod.agent
-      .put(`/api/hotels/${hotel}/policies`)
-      .send({
-        checkInTime: '14:00',
-        checkOutTime: '12:00',
-        cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
-      });
+    await hotMod.agent.put(`/api/hotels/${hotel}/policies`).send({
+      checkInTime: '14:00',
+      checkOutTime: '12:00',
+      cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
+    });
     const room = idOf(
       (
-        await hotMod.agent
-          .post(`/api/hotels/${hotel}/rooms`)
-          .send({
-            name: '1',
-            type: 'Double',
-            beds: 2,
-            maxOccupancy: 2,
-            pricePerNight: 10000,
-          })
+        await hotMod.agent.post(`/api/hotels/${hotel}/rooms`).send({
+          name: '1',
+          type: 'Double',
+          beds: 2,
+          maxOccupancy: 2,
+          pricePerNight: 10000,
+        })
       ).body,
     );
     await hotMod.agent
@@ -121,20 +111,18 @@ describe('Test plan Part 13: robustness sweep', () => {
     const victim = await traveler(t, 'TEST Robust Victim');
     const fb = idOf(
       (
-        await u.agent
-          .post('/api/flight-bookings/hold')
-          .send({
-            outboundFlightId: String(flight._id),
-            cabin: 'Economy',
-            passengers: [
-              {
-                type: 'adult',
-                fullName: 'TEST Pax',
-                dateOfBirth: '1990-01-01',
-                passportNumber: 'A1234567',
-              },
-            ],
-          })
+        await u.agent.post('/api/flight-bookings/hold').send({
+          outboundFlightId: String(flight._id),
+          cabin: 'Economy',
+          passengers: [
+            {
+              type: 'adult',
+              fullName: 'TEST Pax',
+              dateOfBirth: '1990-01-01',
+              passportNumber: 'A1234567',
+            },
+          ],
+        })
       ).body,
     );
     await u.agent
@@ -143,25 +131,21 @@ describe('Test plan Part 13: robustness sweep', () => {
     const pay = (await u.agent.post(`/api/bookings/flight/${fb}/pay`)).body;
     const hb = idOf(
       (
-        await u.agent
-          .post('/api/hotel-bookings')
-          .send({
-            hotelId: hotel,
-            checkIn: '2099-12-05',
-            checkOut: '2099-12-07',
-            rooms: [{ roomId: room, adults: 1, childAges: [] }],
-          })
+        await u.agent.post('/api/hotel-bookings').send({
+          hotelId: hotel,
+          checkIn: '2099-12-05',
+          checkOut: '2099-12-07',
+          rooms: [{ roomId: room, adults: 1, childAges: [] }],
+        })
       ).body,
     );
     const it = idOf(
       (
-        await u.agent
-          .post('/api/itineraries')
-          .send({
-            title: 'TEST Robust trip',
-            countries: ['EG'],
-            startDate: '2099-12-10',
-          })
+        await u.agent.post('/api/itineraries').send({
+          title: 'TEST Robust trip',
+          countries: ['EG'],
+          startDate: '2099-12-10',
+        })
       ).body,
     );
     const day = await u.agent
@@ -169,13 +153,11 @@ describe('Test plan Part 13: robustness sweep', () => {
       .send({ cityId: 'cairo' });
     const itin = (await u.agent.get(`/api/itineraries/${it}`)).body;
     const dayId = idOf(itin.days?.[0] ?? day.body);
-    await u.agent
-      .post(`/api/itineraries/${it}/days/${dayId}/activities`)
-      .send({
-        name: 'TEST Museum',
-        time: '10:00',
-        cost: { amount: 500, currency: 'EGP' },
-      });
+    await u.agent.post(`/api/itineraries/${it}/days/${dayId}/activities`).send({
+      name: 'TEST Museum',
+      time: '10:00',
+      cost: { amount: 500, currency: 'EGP' },
+    });
     const bud = await u.agent
       .post(`/api/itineraries/${it}/days/${dayId}/budgets`)
       .send({ category: 'food', amount: 90, currency: 'EUR' });
@@ -192,14 +174,12 @@ describe('Test plan Part 13: robustness sweep', () => {
     const itin2 = (await u.agent.get(`/api/itineraries/${it}`)).body;
     const post = idOf(
       (
-        await u.agent
-          .post('/api/posts')
-          .send({
-            title: 'TEST Robust post',
-            body: 'TEST body',
-            tags: ['robust'],
-            status: 'Published',
-          })
+        await u.agent.post('/api/posts').send({
+          title: 'TEST Robust post',
+          body: 'TEST body',
+          tags: ['robust'],
+          status: 'Published',
+        })
       ).body,
     );
     const comment = idOf(
@@ -296,7 +276,7 @@ describe('Test plan Part 13: robustness sweep', () => {
     path: string,
     variant: 'real' | 'random' | 'invalid',
   ): string {
-    const pick = (name: string, seg: string) => {
+    const pick = (name: string) => {
       if (variant === 'invalid') return name === 'type' ? 'zzz' : 'not-an-id';
       if (name === 'type')
         return path.includes('/admin/providers')
@@ -335,7 +315,7 @@ describe('Test plan Part 13: robustness sweep', () => {
       for (const [re, v] of map) if (re.test(p) && v) return v;
       return oid();
     };
-    return path.replace(/\{(\w+)\}/g, (seg, name) => pick(name, seg));
+    return path.replace(/\{(\w+)\}/g, (_seg, name: string) => pick(name));
   }
   function send(
     who: Actor | null,

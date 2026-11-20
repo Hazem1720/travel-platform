@@ -115,13 +115,11 @@ describe('Test plan Part 7: payments & refunds', () => {
   it('runs cases 7.1-7.14 (PAY-01, PAY-03) [partial: PAY-02, PAY-04]', async () => {
     let B = '';
     await tc('7.1', async () => {
-      const h = await U.agent
-        .post('/api/flight-bookings/hold')
-        .send({
-          outboundFlightId: flightId,
-          cabin: 'Economy',
-          passengers: PAX,
-        });
+      const h = await U.agent.post('/api/flight-bookings/hold').send({
+        outboundFlightId: flightId,
+        cabin: 'Economy',
+        passengers: PAX,
+      });
       B = h.body._id;
       const p = await U.agent.get(`/api/bookings/flight/${B}/policies`);
       check(p.status === 200, 'policies 200', p);
@@ -388,16 +386,14 @@ describe('Test plan Part 7: payments & refunds', () => {
             'succeed',
           ),
         );
-        await t
-          .model(FlightBooking.name)
-          .updateOne(
-            { _id: b },
-            {
-              $set: {
-                'segments.0.departureAt': new Date(Date.now() + 86_400_000),
-              },
+        await t.model(FlightBooking.name).updateOne(
+          { _id: b },
+          {
+            $set: {
+              'segments.0.departureAt': new Date(Date.now() + 86_400_000),
             },
-          );
+          },
+        );
         const q = await U.agent.get(`/api/flight-bookings/${b}/cancellation`);
         const n = t.stripe.calls.filter(
           (x) => x.method === 'createRefund',

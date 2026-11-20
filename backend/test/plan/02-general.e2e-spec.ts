@@ -67,15 +67,13 @@ describe('Test plan Part 2: cross-cutting rules', () => {
     airModY = await airlineModerator(t, airlineY);
     flightX = await createFlight(t, { airlineId: airlineX });
     const hotel = (name: string) =>
-      adm.agent
-        .post('/api/hotels')
-        .send({
-          name,
-          address: '1 Nile St',
-          cityId: 'cairo',
-          countryCode: 'EG',
-          starClass: 4,
-        });
+      adm.agent.post('/api/hotels').send({
+        name,
+        address: '1 Nile St',
+        cityId: 'cairo',
+        countryCode: 'EG',
+        starClass: 4,
+      });
     hotelX = (await hotel('TEST Hotel X')).body._id;
     hotelY = (await hotel('TEST Hotel Y')).body._id;
     hotModX = await hotelModerator(t, hotelX);
@@ -110,14 +108,12 @@ describe('Test plan Part 2: cross-cutting rules', () => {
         ],
         [
           '409',
-          await anon()
-            .post('/api/auth/register')
-            .send({
-              name: 'TEST',
-              email: A.email,
-              password: 'Passw0rd1',
-              acceptTerms: true,
-            }),
+          await anon().post('/api/auth/register').send({
+            name: 'TEST',
+            email: A.email,
+            password: 'Passw0rd1',
+            acceptTerms: true,
+          }),
         ],
       ];
       for (const [code, res] of samples) {
@@ -147,14 +143,12 @@ describe('Test plan Part 2: cross-cutting rules', () => {
     });
 
     await tc('2.2', async () => {
-      const res = await A.agent
-        .post('/api/itineraries')
-        .send({
-          title: 'TEST',
-          countries: ['EG'],
-          startDate: '2099-01-01',
-          hacker: true,
-        });
+      const res = await A.agent.post('/api/itineraries').send({
+        title: 'TEST',
+        countries: ['EG'],
+        startDate: '2099-01-01',
+        hacker: true,
+      });
       check(res.status === 400, 'unknown field -> 400', res);
       check(
         JSON.stringify(res.body.details ?? {}).includes('hacker'),
@@ -168,14 +162,12 @@ describe('Test plan Part 2: cross-cutting rules', () => {
         .post('/api/itineraries')
         .send({ title: 123, countries: 'EG', startDate: 'not-a-date' });
       check(r1.status === 400, 'wrong types -> 400', r1);
-      const r2 = await anon()
-        .get('/api/flights/search')
-        .query({
-          from: 'CAI',
-          to: 'DXB',
-          date: '2099-13-45',
-          passengers: 'abc',
-        });
+      const r2 = await anon().get('/api/flights/search').query({
+        from: 'CAI',
+        to: 'DXB',
+        date: '2099-13-45',
+        passengers: 'abc',
+      });
       check(r2.status === 400, 'bad date / number in query -> 400', r2);
     });
 
@@ -233,13 +225,11 @@ describe('Test plan Part 2: cross-cutting rules', () => {
     });
 
     await tc('2.7', async () => {
-      const it = await A.agent
-        .post('/api/itineraries')
-        .send({
-          title: 'TEST private',
-          countries: ['EG'],
-          startDate: '2099-01-01',
-        });
+      const it = await A.agent.post('/api/itineraries').send({
+        title: 'TEST private',
+        countries: ['EG'],
+        startDate: '2099-01-01',
+      });
       check(it.status === 201, 'A creates an itinerary', it);
       const id = it.body._id ?? it.body.id;
       for (const [m, path] of [
@@ -285,12 +275,10 @@ describe('Test plan Part 2: cross-cutting rules', () => {
     });
 
     await tc('2.8', async () => {
-      const f = await airModY.agent
-        .patch(`/api/flights/${flightX._id}`)
-        .send({
-          departureLocal: '2099-12-02T11:00',
-          arrivalLocal: '2099-12-02T17:00',
-        });
+      const f = await airModY.agent.patch(`/api/flights/${flightX._id}`).send({
+        departureLocal: '2099-12-02T11:00',
+        arrivalLocal: '2099-12-02T17:00',
+      });
       check(f.status === 403, "airline Y edits airline X's flight -> 403", f);
       const c = await airModY.agent
         .post(`/api/flights/${flightX._id}/cabins`)
@@ -333,13 +321,11 @@ describe('Test plan Part 2: cross-cutting rules', () => {
 
     await tc('2.10', async () => {
       for (let i = 1; i <= 12; i++) {
-        const r = await A.agent
-          .post('/api/posts')
-          .send({
-            title: `TEST post ${i}`,
-            body: 'TEST body text',
-            status: 'Published',
-          });
+        const r = await A.agent.post('/api/posts').send({
+          title: `TEST post ${i}`,
+          body: 'TEST body text',
+          status: 'Published',
+        });
         check(r.status === 201, `post ${i} created`, r);
       }
       const p1 = await anon().get('/api/posts').query({ page: 1 });
@@ -474,15 +460,13 @@ describe('Test plan Part 2: cross-cutting rules', () => {
     await tc('2.15', async () => {
       const code = (await t.model(Airline.name).findById(airlineX).lean<any>())
         .code;
-      const past = await airModX.agent
-        .post('/api/flights')
-        .send({
-          flightNumber: `${code}778`,
-          from: 'CAI',
-          to: 'DXB',
-          departureLocal: '2020-01-01T10:00',
-          arrivalLocal: '2020-01-01T14:00',
-        });
+      const past = await airModX.agent.post('/api/flights').send({
+        flightNumber: `${code}778`,
+        from: 'CAI',
+        to: 'DXB',
+        departureLocal: '2020-01-01T10:00',
+        arrivalLocal: '2020-01-01T14:00',
+      });
       check(
         past.status === 400 || past.status === 409,
         'past flight refused',
@@ -498,15 +482,13 @@ describe('Test plan Part 2: cross-cutting rules', () => {
           maxKgPerBag: 23,
         });
       check(neg.status === 400, 'negative price refused', neg);
-      const same = await airModX.agent
-        .post('/api/flights')
-        .send({
-          flightNumber: `${code}779`,
-          from: 'CAI',
-          to: 'CAI',
-          departureLocal: '2099-01-01T10:00',
-          arrivalLocal: '2099-01-01T12:00',
-        });
+      const same = await airModX.agent.post('/api/flights').send({
+        flightNumber: `${code}779`,
+        from: 'CAI',
+        to: 'CAI',
+        departureLocal: '2099-01-01T10:00',
+        arrivalLocal: '2099-01-01T12:00',
+      });
       check(same.status === 400, 'same airports refused', same);
     });
 

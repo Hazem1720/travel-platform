@@ -103,34 +103,28 @@ describe('Test plan Part 10: admin, audit & analytics', () => {
         ._id,
     );
     hotel = (
-      await adm.agent
-        .post('/api/hotels')
-        .send({
-          name: 'TEST Admin Hotel',
-          address: '1 St',
-          cityId: 'cairo',
-          countryCode: 'EG',
-          starClass: 4,
-        })
+      await adm.agent.post('/api/hotels').send({
+        name: 'TEST Admin Hotel',
+        address: '1 St',
+        cityId: 'cairo',
+        countryCode: 'EG',
+        starClass: 4,
+      })
     ).body._id;
     hot = await hotelModerator(t, hotel);
-    await hot.agent
-      .put(`/api/hotels/${hotel}/policies`)
-      .send({
-        checkInTime: '14:00',
-        checkOutTime: '12:00',
-        cancellationTiers: [],
-      });
+    await hot.agent.put(`/api/hotels/${hotel}/policies`).send({
+      checkInTime: '14:00',
+      checkOutTime: '12:00',
+      cancellationTiers: [],
+    });
     const room = (
-      await hot.agent
-        .post(`/api/hotels/${hotel}/rooms`)
-        .send({
-          name: '1',
-          type: 'Double',
-          beds: 2,
-          maxOccupancy: 2,
-          pricePerNight: 10000,
-        })
+      await hot.agent.post(`/api/hotels/${hotel}/rooms`).send({
+        name: '1',
+        type: 'Double',
+        beds: 2,
+        maxOccupancy: 2,
+        pricePerNight: 10000,
+      })
     ).body;
     roomId = String(room._id ?? room.id);
     await hot.agent
@@ -226,12 +220,10 @@ describe('Test plan Part 10: admin, audit & analytics', () => {
         'filter by status shows it',
         st,
       );
-      const n = await t
-        .model('Notification')
-        .countDocuments({
-          userId: new Types.ObjectId(V.id),
-          type: 'ACCOUNT_SUSPENDED',
-        });
+      const n = await t.model('Notification').countDocuments({
+        userId: new Types.ObjectId(V.id),
+        type: 'ACCOUNT_SUSPENDED',
+      });
       check(n === 1, 'suspension notification (GEN-01)');
       return `open session: ${me.status}, login: ${lg.status} "${lg.body.message}"`;
     });
@@ -287,14 +279,12 @@ describe('Test plan Part 10: admin, audit & analytics', () => {
       .post(`/api/flight-bookings/${b2}/cancel`)
       .send({ refundAmount: 20000 })
       .expect(200);
-    const hb = await V.agent
-      .post('/api/hotel-bookings')
-      .send({
-        hotelId: hotel,
-        checkIn: '2099-12-10',
-        checkOut: '2099-12-11',
-        rooms: [{ roomId, adults: 1, childAges: [] }],
-      });
+    const hb = await V.agent.post('/api/hotel-bookings').send({
+      hotelId: hotel,
+      checkIn: '2099-12-10',
+      checkOut: '2099-12-11',
+      rooms: [{ roomId, adults: 1, childAges: [] }],
+    });
     await V.agent
       .post(`/api/bookings/hotel/${hb.body._id}/accept-policies`)
       .send({ accepted: true })

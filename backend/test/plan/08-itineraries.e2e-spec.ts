@@ -62,14 +62,12 @@ describe('Test plan Part 8: itineraries', () => {
     for (const c of SUPPORTED_CURRENCIES)
       rates[c] = c === 'EGP' ? 50 : c === 'EUR' ? 0.9 : 1;
     rates.USD = 1;
-    await t
-      .model('ExchangeRate')
-      .create({
-        date: new Date().toISOString().slice(0, 10),
-        base: 'USD',
-        rates,
-        fetchedAt: new Date(),
-      });
+    await t.model('ExchangeRate').create({
+      date: new Date().toISOString().slice(0, 10),
+      base: 'USD',
+      rates,
+      fetchedAt: new Date(),
+    });
     A = await traveler(t, 'TEST A');
     B = await traveler(t, 'TEST B');
   }, 90_000);
@@ -93,13 +91,11 @@ describe('Test plan Part 8: itineraries', () => {
       who.agent.get(`/api/itineraries/${id}`);
     let I = '';
     await tc('8.1', async () => {
-      const r = await A.agent
-        .post('/api/itineraries')
-        .send({
-          title: 'TEST Egypt in winter',
-          countries: ['EG', 'FR'],
-          startDate: '2099-12-10',
-        });
+      const r = await A.agent.post('/api/itineraries').send({
+        title: 'TEST Egypt in winter',
+        countries: ['EG', 'FR'],
+        startDate: '2099-12-10',
+      });
       check(r.status === 201, 'create 201', r);
       I = idOf(r.body);
       check(r.body.visibility === 'Private', 'Private by default', r);
@@ -141,13 +137,11 @@ describe('Test plan Part 8: itineraries', () => {
         const r = await A.agent.post('/api/itineraries').send(body);
         check(r.status === 400, `${what} -> 400`, r);
       }
-      const ok = await A.agent
-        .post('/api/itineraries')
-        .send({
-          title: 'x'.repeat(100),
-          countries: ['EG'],
-          startDate: '2099-12-10',
-        });
+      const ok = await A.agent.post('/api/itineraries').send({
+        title: 'x'.repeat(100),
+        countries: ['EG'],
+        startDate: '2099-12-10',
+      });
       check(ok.status === 201, '100 characters is fine', ok);
     });
 
@@ -261,13 +255,11 @@ describe('Test plan Part 8: itineraries', () => {
 
     await tc('8.7', async () => {
       const base = `/api/itineraries/${I}/days/${days[1]}/activities`;
-      const r = await A.agent
-        .post(base)
-        .send({
-          name: 'TEST Egyptian Museum',
-          time: '10:00',
-          cost: { amount: 500, currency: 'EGP' },
-        });
+      const r = await A.agent.post(base).send({
+        name: 'TEST Egyptian Museum',
+        time: '10:00',
+        cost: { amount: 500, currency: 'EGP' },
+      });
       check(r.status === 201, 'add activity', r);
       const it = (await get(A, I)).body;
       const act = it.days[1].activities[0];
@@ -474,13 +466,11 @@ describe('Test plan Part 8: itineraries', () => {
         mine,
       );
       const priv = (
-        await A.agent
-          .post('/api/itineraries')
-          .send({
-            title: 'TEST secret',
-            countries: ['EG'],
-            startDate: '2099-12-10',
-          })
+        await A.agent.post('/api/itineraries').send({
+          title: 'TEST secret',
+          countries: ['EG'],
+          startDate: '2099-12-10',
+        })
       ).body;
       const no = await B.agent.post(`/api/itineraries/${idOf(priv)}/clone`);
       check(no.status === 404, 'cloning a private itinerary 404', no);
@@ -516,34 +506,28 @@ describe('Test plan Part 8: itineraries', () => {
 
     const adm = await admin(t);
     const hotel = (
-      await adm.agent
-        .post('/api/hotels')
-        .send({
-          name: 'TEST Cairo Inn',
-          address: '1 Nile St',
-          cityId: 'cairo',
-          countryCode: 'EG',
-          starClass: 4,
-        })
+      await adm.agent.post('/api/hotels').send({
+        name: 'TEST Cairo Inn',
+        address: '1 Nile St',
+        cityId: 'cairo',
+        countryCode: 'EG',
+        starClass: 4,
+      })
     ).body._id;
     const mod = await hotelModerator(t, hotel);
-    await mod.agent
-      .put(`/api/hotels/${hotel}/policies`)
-      .send({
-        checkInTime: '14:00',
-        checkOutTime: '12:00',
-        cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
-      });
+    await mod.agent.put(`/api/hotels/${hotel}/policies`).send({
+      checkInTime: '14:00',
+      checkOutTime: '12:00',
+      cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
+    });
     const room = (
-      await mod.agent
-        .post(`/api/hotels/${hotel}/rooms`)
-        .send({
-          name: '1',
-          type: 'Double',
-          beds: 2,
-          maxOccupancy: 2,
-          pricePerNight: 10000,
-        })
+      await mod.agent.post(`/api/hotels/${hotel}/rooms`).send({
+        name: '1',
+        type: 'Double',
+        beds: 2,
+        maxOccupancy: 2,
+        pricePerNight: 10000,
+      })
     ).body;
     const roomId = idOf(room);
     await mod.agent
@@ -587,14 +571,12 @@ describe('Test plan Part 8: itineraries', () => {
     let link = '';
     let hb = '';
     await tc('8.15', async () => {
-      const bk = await A.agent
-        .post('/api/hotel-bookings')
-        .send({
-          hotelId: hotel,
-          checkIn: '2099-12-21',
-          checkOut: '2099-12-23',
-          rooms: [{ roomId, adults: 2, childAges: [] }],
-        });
+      const bk = await A.agent.post('/api/hotel-bookings').send({
+        hotelId: hotel,
+        checkIn: '2099-12-21',
+        checkOut: '2099-12-23',
+        rooms: [{ roomId, adults: 2, childAges: [] }],
+      });
       check(bk.status === 201, 'A books the hotel', bk);
       hb = bk.body._id;
       await A.agent
@@ -628,26 +610,22 @@ describe('Test plan Part 8: itineraries', () => {
         .post(`/api/itineraries/${I}/bookings`)
         .send({ type: 'hotel', bookingId: hb, dayId: days[1] });
       check(twice.status === 409, 'twice 409', twice);
-      const bb = await B.agent
-        .post('/api/hotel-bookings')
-        .send({
-          hotelId: hotel,
-          checkIn: '2099-12-25',
-          checkOut: '2099-12-26',
-          rooms: [{ roomId, adults: 1, childAges: [] }],
-        });
+      const bb = await B.agent.post('/api/hotel-bookings').send({
+        hotelId: hotel,
+        checkIn: '2099-12-25',
+        checkOut: '2099-12-26',
+        rooms: [{ roomId, adults: 1, childAges: [] }],
+      });
       const other = await A.agent
         .post(`/api/itineraries/${I}/bookings`)
         .send({ type: 'hotel', bookingId: bb.body._id, dayId: days[1] });
       check(other.status === 404, "another user's booking 404", other);
-      const own = await A.agent
-        .post('/api/hotel-bookings')
-        .send({
-          hotelId: hotel,
-          checkIn: '2099-12-27',
-          checkOut: '2099-12-28',
-          rooms: [{ roomId, adults: 1, childAges: [] }],
-        });
+      const own = await A.agent.post('/api/hotel-bookings').send({
+        hotelId: hotel,
+        checkIn: '2099-12-27',
+        checkOut: '2099-12-28',
+        rooms: [{ roomId, adults: 1, childAges: [] }],
+      });
       const pend = await A.agent
         .post(`/api/itineraries/${I}/bookings`)
         .send({ type: 'hotel', bookingId: own.body._id, dayId: days[1] });

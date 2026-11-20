@@ -376,13 +376,11 @@ describe('Test plan Part 1: accounts & authentication', () => {
       check(weak.status === 400, 'weak new password refused', weak);
     });
     await tc('1.21', async () => {
-      const res = await cAgent
-        .patch('/api/users/me')
-        .send({
-          name: 'TEST Renamed',
-          phone: '+201001234567',
-          preferredCurrency: 'EUR',
-        });
+      const res = await cAgent.patch('/api/users/me').send({
+        name: 'TEST Renamed',
+        phone: '+201001234567',
+        preferredCurrency: 'EUR',
+      });
       check(res.status === 200, 'profile update 200', res);
       const me = await cAgent.get('/api/users/me');
       check(

@@ -96,27 +96,23 @@ describe('Test plan Part 11: end-to-end stories', () => {
     ret?: string,
     name = 'TEST Pax',
   ) {
-    const h = await who.agent
-      .post('/api/flight-bookings/hold')
-      .send({
-        outboundFlightId: out,
-        ...(ret ? { returnFlightId: ret } : {}),
-        cabin: 'Economy',
-        passengers: [pax(name)],
-      });
+    const h = await who.agent.post('/api/flight-bookings/hold').send({
+      outboundFlightId: out,
+      ...(ret ? { returnFlightId: ret } : {}),
+      cabin: 'Economy',
+      passengers: [pax(name)],
+    });
     if (h.status === 201)
       owned.push({ who, kind: 'flight-bookings', id: idOf(h.body) });
     return h;
   }
   async function stay(who: Actor, checkIn: string, checkOut: string) {
-    const r = await who.agent
-      .post('/api/hotel-bookings')
-      .send({
-        hotelId: hotel,
-        checkIn,
-        checkOut,
-        rooms: [{ roomId, adults: 1, childAges: [] }],
-      });
+    const r = await who.agent.post('/api/hotel-bookings').send({
+      hotelId: hotel,
+      checkIn,
+      checkOut,
+      rooms: [{ roomId, adults: 1, childAges: [] }],
+    });
     if (r.status !== 201)
       throw new Error(`stay ${r.status} ${JSON.stringify(r.body)}`);
     owned.push({ who, kind: 'hotel-bookings', id: idOf(r.body) });
@@ -151,35 +147,29 @@ describe('Test plan Part 11: end-to-end stories', () => {
     });
     airMod = await airlineModerator(t, airline);
     hotel = (
-      await adm.agent
-        .post('/api/hotels')
-        .send({
-          name: 'TEST Dubai Stay',
-          address: '1 Marina',
-          cityId: 'dubai',
-          countryCode: 'AE',
-          starClass: 4,
-        })
+      await adm.agent.post('/api/hotels').send({
+        name: 'TEST Dubai Stay',
+        address: '1 Marina',
+        cityId: 'dubai',
+        countryCode: 'AE',
+        starClass: 4,
+      })
     ).body._id;
     hotMod = await hotelModerator(t, hotel);
-    await hotMod.agent
-      .put(`/api/hotels/${hotel}/policies`)
-      .send({
-        checkInTime: '14:00',
-        checkOutTime: '12:00',
-        cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
-      });
+    await hotMod.agent.put(`/api/hotels/${hotel}/policies`).send({
+      checkInTime: '14:00',
+      checkOutTime: '12:00',
+      cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
+    });
     roomId = idOf(
       (
-        await hotMod.agent
-          .post(`/api/hotels/${hotel}/rooms`)
-          .send({
-            name: '1',
-            type: 'Double',
-            beds: 2,
-            maxOccupancy: 2,
-            pricePerNight: 10000,
-          })
+        await hotMod.agent.post(`/api/hotels/${hotel}/rooms`).send({
+          name: '1',
+          type: 'Double',
+          beds: 2,
+          maxOccupancy: 2,
+          pricePerNight: 10000,
+        })
       ).body,
     );
     await hotMod.agent
@@ -251,15 +241,12 @@ describe('Test plan Part 11: end-to-end stories', () => {
 
     await tc('S1 happy traveller', async () => {
       const email = testEmail('sara');
-      const reg = await t
-        .http()
-        .post('/api/auth/register')
-        .send({
-          name: 'TEST Sara',
-          email,
-          password: TEST_PASSWORD,
-          acceptTerms: true,
-        });
+      const reg = await t.http().post('/api/auth/register').send({
+        name: 'TEST Sara',
+        email,
+        password: TEST_PASSWORD,
+        acceptTerms: true,
+      });
       check(reg.status === 201, '1 register', reg);
       const v = await t
         .http()
@@ -267,16 +254,13 @@ describe('Test plan Part 11: end-to-end stories', () => {
         .query({ token: t.outbox.token(email, 'verify-email') });
       check(v.status === 200, '2 verify email', v);
       S = await login(t, email, TEST_PASSWORD);
-      const s = await t
-        .http()
-        .get('/api/flights/search')
-        .query({
-          from: 'CAI',
-          to: 'DXB',
-          date: '2099-12-10',
-          returnDate: '2099-12-14',
-          passengers: 1,
-        });
+      const s = await t.http().get('/api/flights/search').query({
+        from: 'CAI',
+        to: 'DXB',
+        date: '2099-12-10',
+        returnDate: '2099-12-14',
+        passengers: 1,
+      });
       check(
         JSON.stringify(s.body).includes(OUT) &&
           JSON.stringify(s.body).includes(BACK),
@@ -315,13 +299,11 @@ describe('Test plan Part 11: end-to-end stories', () => {
           'Confirmed',
         '9 hotel for the same dates, Confirmed',
       );
-      const it = await S.agent
-        .post('/api/itineraries')
-        .send({
-          title: 'TEST Dubai week',
-          countries: ['AE'],
-          startDate: '2099-12-10',
-        });
+      const it = await S.agent.post('/api/itineraries').send({
+        title: 'TEST Dubai week',
+        countries: ['AE'],
+        startDate: '2099-12-10',
+      });
       check(it.status === 201, '10 itinerary', it);
       const I = idOf(it.body);
       owned.push({ who: S, kind: 'itineraries', id: I });
@@ -552,16 +534,13 @@ describe('Test plan Part 11: end-to-end stories', () => {
         ),
         '5 guest notified',
       );
-      const s = await t
-        .http()
-        .get('/api/hotels/search')
-        .query({
-          city: 'dubai',
-          checkIn: '2099-12-27',
-          checkOut: '2099-12-28',
-          guests: 1,
-          minRating: 5,
-        });
+      const s = await t.http().get('/api/hotels/search').query({
+        city: 'dubai',
+        checkIn: '2099-12-27',
+        checkOut: '2099-12-28',
+        guests: 1,
+        minRating: 5,
+      });
       check(
         JSON.stringify(s.body).includes(hotel),
         '6 rating shows in search (min rating 5)',
@@ -572,24 +551,20 @@ describe('Test plan Part 11: end-to-end stories', () => {
     await tc('S6 bad content', async () => {
       const A = await traveler(t, 'TEST Author');
       const B = await traveler(t, 'TEST Troll');
-      const p = await A.agent
-        .post('/api/posts')
-        .send({
-          title: 'TEST my trip',
-          body: 'TEST nice',
-          status: 'Published',
-        });
+      const p = await A.agent.post('/api/posts').send({
+        title: 'TEST my trip',
+        body: 'TEST nice',
+        status: 'Published',
+      });
       const c = await B.agent
         .post(`/api/posts/${idOf(p.body)}/comments`)
         .send({ body: 'TEST rude words' });
       check(c.status === 201, '1 rude comment', c);
-      const r = await A.agent
-        .post('/api/reports')
-        .send({
-          targetType: 'comment',
-          targetId: idOf(c.body),
-          reason: 'TEST rude',
-        });
+      const r = await A.agent.post('/api/reports').send({
+        targetType: 'comment',
+        targetId: idOf(c.body),
+        reason: 'TEST rude',
+      });
       check(r.status === 201, '2 reported', r);
       const h = await adm.agent
         .patch(`/api/admin/reports/${idOf(r.body)}`)
@@ -613,13 +588,11 @@ describe('Test plan Part 11: end-to-end stories', () => {
       );
       const b = await hold(L, F);
       await payFlight(L, idOf(b.body));
-      const it = await L.agent
-        .post('/api/itineraries')
-        .send({
-          title: 'TEST Lena public trip',
-          countries: ['AE'],
-          startDate: '2099-12-10',
-        });
+      const it = await L.agent.post('/api/itineraries').send({
+        title: 'TEST Lena public trip',
+        countries: ['AE'],
+        startDate: '2099-12-10',
+      });
       await L.agent
         .patch(`/api/itineraries/${idOf(it.body)}`)
         .send({ visibility: 'Public' })

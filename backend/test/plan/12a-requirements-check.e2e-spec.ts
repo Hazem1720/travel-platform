@@ -346,15 +346,13 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
 
     // ---------- Flights ----------
     await tc('12.7', async () => {
-      const c = await air.agent
-        .post('/api/flights')
-        .send({
-          flightNumber: `${code}901`,
-          from: 'ZZZ',
-          to: 'DXB',
-          departureLocal: '2099-12-01T10:00',
-          arrivalLocal: '2099-12-01T14:00',
-        });
+      const c = await air.agent.post('/api/flights').send({
+        flightNumber: `${code}901`,
+        from: 'ZZZ',
+        to: 'DXB',
+        departureLocal: '2099-12-01T10:00',
+        arrivalLocal: '2099-12-01T14:00',
+      });
       const s = await t
         .http()
         .get('/api/flights/search')
@@ -412,15 +410,13 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
         const r = await air.agent.post(`/api/flights/${F}/cabins`).send(body);
         check(r.status === 400, `${what} -> 400`, r);
       }
-      const ok = await air.agent
-        .post(`/api/flights/${F}/cabins`)
-        .send({
-          category: 'Premium Economy',
-          totalSeats: 2,
-          price: 30000,
-          freeBags: 1,
-          maxKgPerBag: 23,
-        });
+      const ok = await air.agent.post(`/api/flights/${F}/cabins`).send({
+        category: 'Premium Economy',
+        totalSeats: 2,
+        price: 30000,
+        freeBags: 1,
+        maxKgPerBag: 23,
+      });
       check(ok.status === 201, 'Premium Economy accepted', ok);
     });
 
@@ -435,13 +431,11 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
         cabin: 'Economy',
         passengers: [adult()],
       });
-      await V.agent
-        .post('/api/flight-bookings/hold')
-        .send({
-          outboundFlightId: booked,
-          cabin: 'Economy',
-          passengers: [adult()],
-        });
+      await V.agent.post('/api/flight-bookings/hold').send({
+        outboundFlightId: booked,
+        cabin: 'Economy',
+        passengers: [adult()],
+      });
       const air1 = await air.agent
         .patch(`/api/flights/${booked}`)
         .send({ from: 'DXB', to: 'CAI' });
@@ -461,20 +455,16 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
         .post(`/api/flights/${cancelled}/cancel`)
         .send({})
         .expect(200);
-      const e1 = await air.agent
-        .patch(`/api/flights/${cancelled}`)
-        .send({
-          departureLocal: '2099-12-04T13:00',
-          arrivalLocal: '2099-12-04T18:00',
-        });
+      const e1 = await air.agent.patch(`/api/flights/${cancelled}`).send({
+        departureLocal: '2099-12-04T13:00',
+        arrivalLocal: '2099-12-04T18:00',
+      });
       check(refused(e1), 'Cancelled flight not editable', e1);
       const past = await flight({ dep: new Date(Date.now() - 2 * 3600_000) });
-      const e2 = await air.agent
-        .patch(`/api/flights/${past}`)
-        .send({
-          departureLocal: '2099-12-04T13:00',
-          arrivalLocal: '2099-12-04T18:00',
-        });
+      const e2 = await air.agent.patch(`/api/flights/${past}`).send({
+        departureLocal: '2099-12-04T13:00',
+        arrivalLocal: '2099-12-04T18:00',
+      });
       check(refused(e2), 'Departed flight not editable', e2);
       notes.push(
         `airports ${air1.status}, seats ${low.status}, cancelled ${e1.status}, departed ${e2.status}`,
@@ -484,20 +474,18 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
 
     await tc('12.10', async () => {
       const q = (bags: number) =>
-        U.agent
-          .post('/api/flight-bookings')
-          .send({
-            outboundFlightId: F,
-            cabin: 'Economy',
-            passengers: [
-              {
-                ...adult(),
-                extraBags: Array.from({ length: bags }, () => ({
-                  weightKg: 20,
-                })),
-              },
-            ],
-          });
+        U.agent.post('/api/flight-bookings').send({
+          outboundFlightId: F,
+          cabin: 'Economy',
+          passengers: [
+            {
+              ...adult(),
+              extraBags: Array.from({ length: bags }, () => ({
+                weightKg: 20,
+              })),
+            },
+          ],
+        });
       const one = await q(1);
       const two = await q(2);
       check(
@@ -554,30 +542,25 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
       });
       const s = JSON.stringify(
         (
-          await t
-            .http()
-            .get('/api/flights/search')
-            .query({
-              from: 'CAI',
-              to: 'DXB',
-              date: '2099-12-08',
-              passengers: 2,
-            })
+          await t.http().get('/api/flights/search').query({
+            from: 'CAI',
+            to: 'DXB',
+            date: '2099-12-08',
+            passengers: 2,
+          })
         ).body,
       );
       check(
         !s.includes(hidden) && !s.includes(small),
         'inactive airline and too few seats excluded',
       );
-      const late = await air.agent
-        .post('/api/flights')
-        .send({
-          flightNumber: `${code}950`,
-          from: 'DXB',
-          to: 'CAI',
-          departureLocal: '2099-12-06T01:30',
-          arrivalLocal: '2099-12-06T04:00',
-        });
+      const late = await air.agent.post('/api/flights').send({
+        flightNumber: `${code}950`,
+        from: 'DXB',
+        to: 'CAI',
+        departureLocal: '2099-12-06T01:30',
+        arrivalLocal: '2099-12-06T04:00',
+      });
       check(late.status === 201, 'create a 01:30 Dubai flight', late);
       await air.agent
         .post(`/api/flights/${late.body._id}/cabins`)
@@ -591,28 +574,22 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
         .expect(201);
       const on6 = JSON.stringify(
         (
-          await t
-            .http()
-            .get('/api/flights/search')
-            .query({
-              from: 'DXB',
-              to: 'CAI',
-              date: '2099-12-06',
-              passengers: 1,
-            })
+          await t.http().get('/api/flights/search').query({
+            from: 'DXB',
+            to: 'CAI',
+            date: '2099-12-06',
+            passengers: 1,
+          })
         ).body,
       );
       const on5 = JSON.stringify(
         (
-          await t
-            .http()
-            .get('/api/flights/search')
-            .query({
-              from: 'DXB',
-              to: 'CAI',
-              date: '2099-12-05',
-              passengers: 1,
-            })
+          await t.http().get('/api/flights/search').query({
+            from: 'DXB',
+            to: 'CAI',
+            date: '2099-12-05',
+            passengers: 1,
+          })
         ).body,
       );
       check(
@@ -640,14 +617,12 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
           .slice(0, 10),
         passportNumber: 'B1234567',
       };
-      const h = await U.agent
-        .post('/api/flight-bookings/hold')
-        .send({
-          outboundFlightId: out,
-          returnFlightId: ret,
-          cabin: 'Economy',
-          passengers: [adult(), infant],
-        });
+      const h = await U.agent.post('/api/flight-bookings/hold').send({
+        outboundFlightId: out,
+        returnFlightId: ret,
+        cabin: 'Economy',
+        passengers: [adult(), infant],
+      });
       check(
         h.status === 201 && h.body.segments.length === 2,
         'round trip: one booking, two segments',
@@ -703,54 +678,42 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
     });
 
     await tc('12.14', async () => {
-      const mm = await t
-        .http()
-        .get('/api/flights/search')
-        .query({
-          from: 'CAI',
-          to: 'DXB',
-          date: '2099-12-02',
-          passengers: 1,
-          minPrice: 5000,
-          maxPrice: 100,
-        });
+      const mm = await t.http().get('/api/flights/search').query({
+        from: 'CAI',
+        to: 'DXB',
+        date: '2099-12-02',
+        passengers: 1,
+        minPrice: 5000,
+        maxPrice: 100,
+      });
       check(mm.status === 400, 'min > max 400', mm);
-      const d = await t
-        .http()
-        .get('/api/flights/search')
-        .query({
-          from: 'CAI',
-          to: 'DXB',
-          date: '2099-12-02',
-          passengers: 1,
-          sort: 'duration:asc',
-        });
+      const d = await t.http().get('/api/flights/search').query({
+        from: 'CAI',
+        to: 'DXB',
+        date: '2099-12-02',
+        passengers: 1,
+        sort: 'duration:asc',
+      });
       check(d.status === 200, 'sort by duration', d);
-      const cab = await t
-        .http()
-        .get('/api/flights/search')
-        .query({
-          from: 'CAI',
-          to: 'DXB',
-          date: '2099-12-02',
-          passengers: 1,
-          cabin: 'Premium Economy',
-        });
+      const cab = await t.http().get('/api/flights/search').query({
+        from: 'CAI',
+        to: 'DXB',
+        date: '2099-12-02',
+        passengers: 1,
+        cabin: 'Premium Economy',
+      });
       check(
         JSON.stringify(cab.body).includes(F),
         'cabin-class filter (FLT-12c)',
         cab,
       );
-      const biz = await t
-        .http()
-        .get('/api/flights/search')
-        .query({
-          from: 'CAI',
-          to: 'DXB',
-          date: '2099-12-02',
-          passengers: 1,
-          cabin: 'First',
-        });
+      const biz = await t.http().get('/api/flights/search').query({
+        from: 'CAI',
+        to: 'DXB',
+        date: '2099-12-02',
+        passengers: 1,
+        cabin: 'First',
+      });
       check(
         !JSON.stringify(biz.body).includes(F),
         'a cabin the flight lacks excludes it',
@@ -833,12 +796,10 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
         .post('/api/flight-bookings/hold')
         .send({ outboundFlightId: d, cabin: 'Economy', passengers: [adult()] });
       check(refused(h), 'not bookable', h);
-      const e = await air.agent
-        .patch(`/api/flights/${d}`)
-        .send({
-          departureLocal: '2099-12-04T13:00',
-          arrivalLocal: '2099-12-04T18:00',
-        });
+      const e = await air.agent.patch(`/api/flights/${d}`).send({
+        departureLocal: '2099-12-04T13:00',
+        arrivalLocal: '2099-12-04T18:00',
+      });
       check(refused(e), 'not editable', e);
       const v = await t.http().get(`/api/flights/${d}`);
       check(
@@ -850,15 +811,13 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
     });
 
     await tc('12.18', async () => {
-      const r = await air.agent
-        .post('/api/flights')
-        .send({
-          flightNumber: `${code}960`,
-          from: 'CAI',
-          to: 'LHR',
-          departureLocal: '2099-12-07T10:00',
-          arrivalLocal: '2099-12-07T14:00',
-        });
+      const r = await air.agent.post('/api/flights').send({
+        flightNumber: `${code}960`,
+        from: 'CAI',
+        to: 'LHR',
+        departureLocal: '2099-12-07T10:00',
+        arrivalLocal: '2099-12-07T14:00',
+      });
       check(r.status === 201, 'CAI -> LHR created', r);
       const f = await t.model(Flight.name).findById(r.body._id).lean<any>();
       check(
@@ -890,36 +849,30 @@ describe('Test plan Part 12a: accounts, flights, hotels', () => {
       extra: Record<string, unknown> = {},
     ) => {
       const h = (
-        await adm.agent
-          .post('/api/hotels')
-          .send({
-            name,
-            address: '1 St',
-            cityId: 'cairo',
-            countryCode: 'EG',
-            starClass: 4,
-            ...extra,
-          })
+        await adm.agent.post('/api/hotels').send({
+          name,
+          address: '1 St',
+          cityId: 'cairo',
+          countryCode: 'EG',
+          starClass: 4,
+          ...extra,
+        })
       ).body._id;
       const mod = await hotelModerator(t, h);
-      await mod.agent
-        .put(`/api/hotels/${h}/policies`)
-        .send({
-          checkInTime: '15:00',
-          checkOutTime: '11:00',
-          cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
-        });
+      await mod.agent.put(`/api/hotels/${h}/policies`).send({
+        checkInTime: '15:00',
+        checkOutTime: '11:00',
+        cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
+      });
       const ids: string[] = [];
       for (const [nm, occ, price] of rooms) {
-        const r = await mod.agent
-          .post(`/api/hotels/${h}/rooms`)
-          .send({
-            name: nm,
-            type: 'Room',
-            beds: occ,
-            maxOccupancy: occ,
-            pricePerNight: price,
-          });
+        const r = await mod.agent.post(`/api/hotels/${h}/rooms`).send({
+          name: nm,
+          type: 'Room',
+          beds: occ,
+          maxOccupancy: occ,
+          pricePerNight: price,
+        });
         ids.push(idOf(r.body));
         await mod.agent
           .post(`/api/hotels/${h}/rooms/${idOf(r.body)}/availability`)

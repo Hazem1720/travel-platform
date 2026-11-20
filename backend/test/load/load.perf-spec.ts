@@ -164,39 +164,33 @@ describe('Test plan Part 16: load and performance', () => {
     for (let h = 0; h < 15; h++) {
       const id = String(
         (
-          await adm.agent
-            .post('/api/hotels')
-            .send({
-              name: `TEST Load Hotel ${h}`,
-              address: `${h} Load St`,
-              cityId: 'dubai',
-              countryCode: 'AE',
-              starClass: 3 + (h % 3),
-            })
+          await adm.agent.post('/api/hotels').send({
+            name: `TEST Load Hotel ${h}`,
+            address: `${h} Load St`,
+            cityId: 'dubai',
+            countryCode: 'AE',
+            starClass: 3 + (h % 3),
+          })
         ).body._id,
       );
       if (h === 0) hotelId = id;
       const mod = await hotelModerator(t, id);
-      await mod.agent
-        .put(`/api/hotels/${id}/policies`)
-        .send({
-          checkInTime: '14:00',
-          checkOutTime: '12:00',
-          cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
-        });
+      await mod.agent.put(`/api/hotels/${id}/policies`).send({
+        checkInTime: '14:00',
+        checkOutTime: '12:00',
+        cancellationTiers: [{ daysBefore: 0, refundPercent: 100 }],
+      });
       const rooms = h === 0 ? 10 : 3;
       for (let r = 0; r < rooms; r++) {
         const room = String(
           (
-            await mod.agent
-              .post(`/api/hotels/${id}/rooms`)
-              .send({
-                name: `${100 + r}`,
-                type: 'Double',
-                beds: 2,
-                maxOccupancy: 2,
-                pricePerNight: 9000 + h * 500,
-              })
+            await mod.agent.post(`/api/hotels/${id}/rooms`).send({
+              name: `${100 + r}`,
+              type: 'Double',
+              beds: 2,
+              maxOccupancy: 2,
+              pricePerNight: 9000 + h * 500,
+            })
           ).body._id,
         );
         await mod.agent
@@ -363,12 +357,10 @@ describe('Test plan Part 16: load and performance', () => {
             },
           }),
         );
-        const taken = await t
-          .model('HotelBooking')
-          .countDocuments({
-            hotelId,
-            status: { $in: ['PendingPayment', 'Confirmed'] },
-          });
+        const taken = await t.model('HotelBooking').countDocuments({
+          hotelId,
+          status: { $in: ['PendingPayment', 'Confirmed'] },
+        });
         check(
           s.codes[201] === 10,
           `exactly 10 bookings (${JSON.stringify(s.codes)})`,

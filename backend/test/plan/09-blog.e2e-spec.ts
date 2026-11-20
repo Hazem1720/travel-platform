@@ -238,13 +238,11 @@ describe('Test plan Part 9: blog, comments & reports', () => {
 
     let IT = '';
     await tc('9.7', async () => {
-      const it = await A.agent
-        .post('/api/itineraries')
-        .send({
-          title: 'TEST Luxor plan',
-          countries: ['EG'],
-          startDate: '2099-12-10',
-        });
+      const it = await A.agent.post('/api/itineraries').send({
+        title: 'TEST Luxor plan',
+        countries: ['EG'],
+        startDate: '2099-12-10',
+      });
       IT = idOf(it.body);
       await A.agent
         .patch(`/api/itineraries/${IT}`)
@@ -260,13 +258,11 @@ describe('Test plan Part 9: blog, comments & reports', () => {
         ),
         'shown on the post',
       );
-      const bit = await B.agent
-        .post('/api/itineraries')
-        .send({
-          title: 'TEST B private',
-          countries: ['EG'],
-          startDate: '2099-12-10',
-        });
+      const bit = await B.agent.post('/api/itineraries').send({
+        title: 'TEST B private',
+        countries: ['EG'],
+        startDate: '2099-12-10',
+      });
       const bad = await A.agent
         .patch(`/api/posts/${P}/itinerary`)
         .send({ itineraryId: idOf(bit.body) });
@@ -387,13 +383,11 @@ describe('Test plan Part 9: blog, comments & reports', () => {
         .post('/api/reports')
         .send({ targetType: 'itinerary', targetId: IT, reason: 'TEST spam' });
       check(it.status === 201, 'report an itinerary (GEN-09)', it);
-      const unknown = await A.agent
-        .post('/api/reports')
-        .send({
-          targetType: 'post',
-          targetId: String(new Types.ObjectId()),
-          reason: 'x',
-        });
+      const unknown = await A.agent.post('/api/reports').send({
+        targetType: 'post',
+        targetId: String(new Types.ObjectId()),
+        reason: 'x',
+      });
       check(unknown.status === 404, 'unknown item 404', unknown);
       const noReason = await A.agent
         .post('/api/reports')
@@ -468,13 +462,11 @@ describe('Test plan Part 9: blog, comments & reports', () => {
       const c2 = await B.agent
         .post(`/api/posts/${P}/comments`)
         .send({ body: 'TEST harmless' });
-      const rep = await A.agent
-        .post('/api/reports')
-        .send({
-          targetType: 'comment',
-          targetId: idOf(c2.body),
-          reason: 'TEST',
-        });
+      const rep = await A.agent.post('/api/reports').send({
+        targetType: 'comment',
+        targetId: idOf(c2.body),
+        reason: 'TEST',
+      });
       const r = await adm.agent
         .patch(`/api/admin/reports/${idOf(rep.body)}`)
         .send({ action: 'dismiss' });
@@ -512,46 +504,38 @@ describe('Test plan Part 9: blog, comments & reports', () => {
 
     await tc('9.17', async () => {
       const hotel = (
-        await adm.agent
-          .post('/api/hotels')
-          .send({
-            name: 'TEST Review Hotel',
-            address: '1 St',
-            cityId: 'cairo',
-            countryCode: 'EG',
-            starClass: 3,
-          })
+        await adm.agent.post('/api/hotels').send({
+          name: 'TEST Review Hotel',
+          address: '1 St',
+          cityId: 'cairo',
+          countryCode: 'EG',
+          starClass: 3,
+        })
       ).body._id;
       const mod = await hotelModerator(t, hotel);
-      await mod.agent
-        .put(`/api/hotels/${hotel}/policies`)
-        .send({
-          checkInTime: '14:00',
-          checkOutTime: '12:00',
-          cancellationTiers: [],
-        });
+      await mod.agent.put(`/api/hotels/${hotel}/policies`).send({
+        checkInTime: '14:00',
+        checkOutTime: '12:00',
+        cancellationTiers: [],
+      });
       const room = (
-        await mod.agent
-          .post(`/api/hotels/${hotel}/rooms`)
-          .send({
-            name: '1',
-            type: 'Double',
-            beds: 2,
-            maxOccupancy: 2,
-            pricePerNight: 10000,
-          })
+        await mod.agent.post(`/api/hotels/${hotel}/rooms`).send({
+          name: '1',
+          type: 'Double',
+          beds: 2,
+          maxOccupancy: 2,
+          pricePerNight: 10000,
+        })
       ).body;
       await mod.agent
         .post(`/api/hotels/${hotel}/rooms/${idOf(room)}/availability`)
         .send({ from: '2099-12-01', to: '2099-12-31' });
-      const bk = await A.agent
-        .post('/api/hotel-bookings')
-        .send({
-          hotelId: hotel,
-          checkIn: '2099-12-10',
-          checkOut: '2099-12-11',
-          rooms: [{ roomId: idOf(room), adults: 1, childAges: [] }],
-        });
+      const bk = await A.agent.post('/api/hotel-bookings').send({
+        hotelId: hotel,
+        checkIn: '2099-12-10',
+        checkOut: '2099-12-11',
+        rooms: [{ roomId: idOf(room), adults: 1, childAges: [] }],
+      });
       await A.agent
         .post(`/api/bookings/hotel/${bk.body._id}/accept-policies`)
         .send({ accepted: true })
@@ -583,13 +567,11 @@ describe('Test plan Part 9: blog, comments & reports', () => {
           .ratingCount === 1,
         'rated',
       );
-      const rep = await B.agent
-        .post('/api/reports')
-        .send({
-          targetType: 'review',
-          targetId: idOf(rv.body),
-          reason: 'TEST fake review',
-        });
+      const rep = await B.agent.post('/api/reports').send({
+        targetType: 'review',
+        targetId: idOf(rv.body),
+        reason: 'TEST fake review',
+      });
       check(rep.status === 201, 'report the review', rep);
       const del = await adm.agent
         .patch(`/api/admin/reports/${idOf(rep.body)}`)
@@ -627,46 +609,38 @@ describe('Test plan Part 9: blog, comments & reports', () => {
       );
       // GEN-10 for reviews.
       const hotel = (
-        await adm.agent
-          .post('/api/hotels')
-          .send({
-            name: 'TEST Hidden Review Hotel',
-            address: '1 St',
-            cityId: 'cairo',
-            countryCode: 'EG',
-            starClass: 3,
-          })
+        await adm.agent.post('/api/hotels').send({
+          name: 'TEST Hidden Review Hotel',
+          address: '1 St',
+          cityId: 'cairo',
+          countryCode: 'EG',
+          starClass: 3,
+        })
       ).body._id;
       const mod = await hotelModerator(t, hotel);
-      await mod.agent
-        .put(`/api/hotels/${hotel}/policies`)
-        .send({
-          checkInTime: '14:00',
-          checkOutTime: '12:00',
-          cancellationTiers: [],
-        });
+      await mod.agent.put(`/api/hotels/${hotel}/policies`).send({
+        checkInTime: '14:00',
+        checkOutTime: '12:00',
+        cancellationTiers: [],
+      });
       const room = (
-        await mod.agent
-          .post(`/api/hotels/${hotel}/rooms`)
-          .send({
-            name: '1',
-            type: 'Double',
-            beds: 2,
-            maxOccupancy: 2,
-            pricePerNight: 10000,
-          })
+        await mod.agent.post(`/api/hotels/${hotel}/rooms`).send({
+          name: '1',
+          type: 'Double',
+          beds: 2,
+          maxOccupancy: 2,
+          pricePerNight: 10000,
+        })
       ).body;
       await mod.agent
         .post(`/api/hotels/${hotel}/rooms/${idOf(room)}/availability`)
         .send({ from: '2099-12-01', to: '2099-12-31' });
-      const bk = await A.agent
-        .post('/api/hotel-bookings')
-        .send({
-          hotelId: hotel,
-          checkIn: '2099-12-20',
-          checkOut: '2099-12-21',
-          rooms: [{ roomId: idOf(room), adults: 1, childAges: [] }],
-        });
+      const bk = await A.agent.post('/api/hotel-bookings').send({
+        hotelId: hotel,
+        checkIn: '2099-12-20',
+        checkOut: '2099-12-21',
+        rooms: [{ roomId: idOf(room), adults: 1, childAges: [] }],
+      });
       await A.agent
         .post(`/api/bookings/hotel/${bk.body._id}/accept-policies`)
         .send({ accepted: true })

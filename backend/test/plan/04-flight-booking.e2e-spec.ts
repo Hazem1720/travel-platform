@@ -80,14 +80,12 @@ describe('Test plan Part 4: flight search & booking', () => {
     return String(f._id);
   }
   const hold = (who: Actor, out: string, pax = [adult()], ret?: string) =>
-    who.agent
-      .post('/api/flight-bookings/hold')
-      .send({
-        outboundFlightId: out,
-        ...(ret ? { returnFlightId: ret } : {}),
-        cabin: 'Economy',
-        passengers: pax,
-      });
+    who.agent.post('/api/flight-bookings/hold').send({
+      outboundFlightId: out,
+      ...(ret ? { returnFlightId: ret } : {}),
+      cabin: 'Economy',
+      passengers: pax,
+    });
   async function webhookSuccess() {
     const intent = t.stripe.lastIntent()!;
     const { payload, signature } = signedWebhook(
@@ -281,42 +279,36 @@ describe('Test plan Part 4: flight search & booking', () => {
       check(ok.status === 200, '2 adults + 1 child + 1 infant ok', ok);
     });
     await tc('4.6', async () => {
-      const q = await U.agent
-        .post('/api/flight-bookings')
-        .send({
-          outboundFlightId: F1,
-          cabin: 'Economy',
-          passengers: [adult('TEST A', { extraBags: [{ weightKg: 20 }] })],
-        });
+      const q = await U.agent.post('/api/flight-bookings').send({
+        outboundFlightId: F1,
+        cabin: 'Economy',
+        passengers: [adult('TEST A', { extraBags: [{ weightKg: 20 }] })],
+      });
       check(q.status === 200 || q.status === 201, 'quote ok', q);
       check(
         q.body.price?.total === 25000,
         `fare 20000 + 1 extra bag 5000 = 25000 (got ${q.body.price?.total})`,
         q,
       );
-      const tooMany = await U.agent
-        .post('/api/flight-bookings')
-        .send({
-          outboundFlightId: F1,
-          cabin: 'Economy',
-          passengers: [
-            adult('TEST A', {
-              extraBags: [{ weightKg: 20 }, { weightKg: 20 }, { weightKg: 20 }],
-            }),
-          ],
-        });
+      const tooMany = await U.agent.post('/api/flight-bookings').send({
+        outboundFlightId: F1,
+        cabin: 'Economy',
+        passengers: [
+          adult('TEST A', {
+            extraBags: [{ weightKg: 20 }, { weightKg: 20 }, { weightKg: 20 }],
+          }),
+        ],
+      });
       check(
         tooMany.status === 400,
         'more extra bags than allowed -> 400',
         tooMany,
       );
-      const heavy = await U.agent
-        .post('/api/flight-bookings')
-        .send({
-          outboundFlightId: F1,
-          cabin: 'Economy',
-          passengers: [adult('TEST A', { extraBags: [{ weightKg: 30 }] })],
-        });
+      const heavy = await U.agent.post('/api/flight-bookings').send({
+        outboundFlightId: F1,
+        cabin: 'Economy',
+        passengers: [adult('TEST A', { extraBags: [{ weightKg: 30 }] })],
+      });
       check(
         heavy.status === 400,
         'extra bag over the cabin weight -> 400',
@@ -324,52 +316,44 @@ describe('Test plan Part 4: flight search & booking', () => {
       );
     });
     await tc('4.7', async () => {
-      const kidAsAdult = await U.agent
-        .post('/api/flight-bookings')
-        .send({
-          outboundFlightId: F1,
-          cabin: 'Economy',
-          passengers: [adult('TEST Kid', { dateOfBirth: '2095-01-01' })],
-        });
+      const kidAsAdult = await U.agent.post('/api/flight-bookings').send({
+        outboundFlightId: F1,
+        cabin: 'Economy',
+        passengers: [adult('TEST Kid', { dateOfBirth: '2095-01-01' })],
+      });
       check(
         kidAsAdult.status === 400,
         'a 4-year-old typed as adult -> 400',
         kidAsAdult,
       );
-      const adultAsChild = await U.agent
-        .post('/api/flight-bookings')
-        .send({
-          outboundFlightId: F1,
-          cabin: 'Economy',
-          passengers: [adult(), { ...adult('TEST C'), type: 'child' }],
-        });
+      const adultAsChild = await U.agent.post('/api/flight-bookings').send({
+        outboundFlightId: F1,
+        cabin: 'Economy',
+        passengers: [adult(), { ...adult('TEST C'), type: 'child' }],
+      });
       check(
         adultAsChild.status === 400,
         'an adult typed as child -> 400',
         adultAsChild,
       );
-      const noPassport = await U.agent
-        .post('/api/flight-bookings')
-        .send({
-          outboundFlightId: F1,
-          cabin: 'Economy',
-          passengers: [
-            { type: 'adult', fullName: 'TEST A', dateOfBirth: '1990-01-01' },
-          ],
-        });
+      const noPassport = await U.agent.post('/api/flight-bookings').send({
+        outboundFlightId: F1,
+        cabin: 'Economy',
+        passengers: [
+          { type: 'adult', fullName: 'TEST A', dateOfBirth: '1990-01-01' },
+        ],
+      });
       check(noPassport.status === 400, 'missing passport -> 400', noPassport);
-      const infantAlone = await U.agent
-        .post('/api/flight-bookings')
-        .send({
-          outboundFlightId: F1,
-          cabin: 'Economy',
-          passengers: [
-            {
-              ...adult('TEST Baby', { dateOfBirth: '2099-06-01' }),
-              type: 'infant',
-            },
-          ],
-        });
+      const infantAlone = await U.agent.post('/api/flight-bookings').send({
+        outboundFlightId: F1,
+        cabin: 'Economy',
+        passengers: [
+          {
+            ...adult('TEST Baby', { dateOfBirth: '2099-06-01' }),
+            type: 'infant',
+          },
+        ],
+      });
       check(
         infantAlone.status === 400,
         'infant without an adult -> 400',

@@ -218,16 +218,14 @@ describe('Test plan Part 3: airlines & flights management', () => {
     });
 
     const mk = (n: string, day: string, extra: Record<string, unknown> = {}) =>
-      modX.agent
-        .post('/api/flights')
-        .send({
-          flightNumber: n,
-          from: 'CAI',
-          to: 'DXB',
-          departureLocal: `${day}T10:00`,
-          arrivalLocal: `${day}T15:00`,
-          ...extra,
-        });
+      modX.agent.post('/api/flights').send({
+        flightNumber: n,
+        from: 'CAI',
+        to: 'DXB',
+        departureLocal: `${day}T10:00`,
+        arrivalLocal: `${day}T15:00`,
+        ...extra,
+      });
     let F = '';
     await tc('3.8', async () => {
       const r = await mk('Q7101', '2099-12-01');
@@ -299,61 +297,51 @@ describe('Test plan Part 3: airlines & flights management', () => {
 
     let econId = '';
     await tc('3.11', async () => {
-      const e = await modX.agent
-        .post(`/api/flights/${F}/cabins`)
-        .send({
-          category: 'Economy',
-          totalSeats: 5,
-          price: 20000,
-          freeBags: 1,
-          maxKgPerBag: 23,
-        });
+      const e = await modX.agent.post(`/api/flights/${F}/cabins`).send({
+        category: 'Economy',
+        totalSeats: 5,
+        price: 20000,
+        freeBags: 1,
+        maxKgPerBag: 23,
+      });
       check(e.status === 201, 'Economy 201', e);
-      const b = await modX.agent
-        .post(`/api/flights/${F}/cabins`)
-        .send({
-          category: 'Business',
-          totalSeats: 2,
-          price: 60000,
-          freeBags: 2,
-          maxKgPerBag: 32,
-        });
+      const b = await modX.agent.post(`/api/flights/${F}/cabins`).send({
+        category: 'Business',
+        totalSeats: 2,
+        price: 60000,
+        freeBags: 2,
+        maxKgPerBag: 32,
+      });
       check(b.status === 201, 'Business 201', b);
-      const again = await modX.agent
-        .post(`/api/flights/${F}/cabins`)
-        .send({
-          category: 'Economy',
-          totalSeats: 5,
-          price: 20000,
-          freeBags: 1,
-          maxKgPerBag: 23,
-        });
+      const again = await modX.agent.post(`/api/flights/${F}/cabins`).send({
+        category: 'Economy',
+        totalSeats: 5,
+        price: 20000,
+        freeBags: 1,
+        maxKgPerBag: 23,
+      });
       check(refused(again), 'Economy twice refused', again);
-      const odd = await modX.agent
-        .post(`/api/flights/${F}/cabins`)
-        .send({
-          category: 'Super',
-          totalSeats: 5,
-          price: 20000,
-          freeBags: 1,
-          maxKgPerBag: 23,
-        });
+      const odd = await modX.agent.post(`/api/flights/${F}/cabins`).send({
+        category: 'Super',
+        totalSeats: 5,
+        price: 20000,
+        freeBags: 1,
+        maxKgPerBag: 23,
+      });
       check(odd.status === 400, 'category outside the set 400', odd);
       for (const bad of [
         { totalSeats: 0 },
         { totalSeats: 2.5 },
         { price: 0 },
       ]) {
-        const r = await modX.agent
-          .post(`/api/flights/${F}/cabins`)
-          .send({
-            category: 'First',
-            totalSeats: 2,
-            price: 90000,
-            freeBags: 2,
-            maxKgPerBag: 32,
-            ...bad,
-          });
+        const r = await modX.agent.post(`/api/flights/${F}/cabins`).send({
+          category: 'First',
+          totalSeats: 2,
+          price: 90000,
+          freeBags: 2,
+          maxKgPerBag: 32,
+          ...bad,
+        });
         check(r.status === 400, `${JSON.stringify(bad)} -> 400`, r);
       }
       const doc = await t.model(Flight.name).findById(F).lean<any>();
@@ -406,12 +394,10 @@ describe('Test plan Part 3: airlines & flights management', () => {
           'Confirmed',
         'booking Confirmed',
       );
-      const time = await modX.agent
-        .patch(`/api/flights/${id}`)
-        .send({
-          departureLocal: '2099-12-05T11:00',
-          arrivalLocal: '2099-12-05T16:00',
-        });
+      const time = await modX.agent.patch(`/api/flights/${id}`).send({
+        departureLocal: '2099-12-05T11:00',
+        arrivalLocal: '2099-12-05T16:00',
+      });
       check(time.status === 200, 'time change 200', time);
       const air = await modX.agent
         .patch(`/api/flights/${id}`)
@@ -496,13 +482,11 @@ describe('Test plan Part 3: airlines & flights management', () => {
     });
 
     await tc('3.18', async () => {
-      const held = await V.agent
-        .post('/api/flight-bookings/hold')
-        .send({
-          outboundFlightId: FC,
-          cabin: 'Economy',
-          passengers: [PAX('TEST V')],
-        });
+      const held = await V.agent.post('/api/flight-bookings/hold').send({
+        outboundFlightId: FC,
+        cabin: 'Economy',
+        passengers: [PAX('TEST V')],
+      });
       check(held.status === 201, 'V holds a seat', held);
       const mailsBefore = t.outbox.to(U.email).length;
       const r = await modX.agent.post(`/api/flights/${FC}/cancel`).send({});
@@ -551,12 +535,10 @@ describe('Test plan Part 3: airlines & flights management', () => {
         .post('/api/flight-bookings/hold')
         .send({ outboundFlightId: FC, cabin: 'Economy', passengers: [PAX()] });
       check(refused(h), 'cannot hold a cancelled flight', h);
-      const e = await modX.agent
-        .patch(`/api/flights/${FC}`)
-        .send({
-          departureLocal: '2099-12-07T12:00',
-          arrivalLocal: '2099-12-07T17:00',
-        });
+      const e = await modX.agent.patch(`/api/flights/${FC}`).send({
+        departureLocal: '2099-12-07T12:00',
+        arrivalLocal: '2099-12-07T17:00',
+      });
       check(refused(e), 'cannot edit a cancelled flight', e);
       return `hold ${h.status}, edit ${e.status}`;
     });
