@@ -3,17 +3,14 @@
 // an entry that is no longer needed, so this list only shrinks.
 // Started from the full M1 list minus what the first suites already name.
 export const REQUIREMENT_EXCLUSIONS: Record<string, string> = {
-  'ACC-05': 'pending suite',
+  'ACC-05': 'spec question #285',
   'ACC-07a': 'pending suite',
-  'ACC-08': 'pending suite',
-  'ACC-09': 'pending suite',
   'ACC-13': 'pending suite',
   'ACC-14': 'pending suite',
   'ACC-15': 'pending suite',
   'ACC-16': 'pending suite',
   'ACC-17': 'pending suite',
   'ACC-18': 'pending suite',
-  'ACC-19': 'pending suite',
   'FLT-01': 'pending suite',
   'FLT-02': 'pending suite',
   'FLT-03': 'pending suite',
@@ -87,8 +84,6 @@ export const REQUIREMENT_EXCLUSIONS: Record<string, string> = {
   'GEN-09': 'pending suite',
   'GEN-10': 'pending suite',
   'GEN-12': 'pending suite',
-  'ACC-02': 'pending suite',
-  'ACC-07': 'pending suite',
   'FLT-27': 'pending suite',
   'FLT-28': 'pending suite',
   'HTL-26': 'pending suite',
