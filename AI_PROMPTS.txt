@@ -1367,3 +1367,14 @@ Also: One place says the owner-only table matches 50 routes, another says 46 req
 How the output was used:
 Claude made the gate ignore [partial: ...] IDs and list them per requirement in e2e-coverage.md, and made setup requests (x-e2e-setup: 1 from actors.ts and the new fixtures setup() helper) count for nothing in the route gate, with self-tests for both. Titles now name only ACC-11 and ITN-20 as fully tested; the rest are [partial: ...]. 11 requirements and 14 routes went back to the exclusions as "pending suite". The "50" was a count Claude wrote without measuring; the table had 46 requests on 43 routes. It also found untested owner-only routes (posts, comments, reviews, favourites, notifications, and records of user A named in user B's request body) and added them: 64 rows on 56 routes, with a completeness check over every user route with an :id and a reviewed NOT_OWNER_ONLY list. A new row found that attaching another user's private itinerary to one's post answers 400, not 404; it reveals nothing (identical to a missing id), so Claude opened spec question #236 and kept BLG-13 excluded. Table tests now report every mismatch with its route (the harness URI and leak-scan tables too); a temporary isOwner() mutation showed 36 named mismatches in one failure, then was reverted.
 ================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-10, ACC-11 (access-control e2e suite, PR #235)
+Prompt:
+do those Mohamad's PR #235 (an extra access-control test suite) is still open ... merge it into develop before the release
+How the output was used:
+Claude merged develop into Mohamad's branch (AI_PROMPTS.txt conflict: develop's entries kept, the branch's appended). The suite then failed one check because its hidden comment and review were written by the "other user" it reads them as, and since PR #258 an author still sees their own hidden content (GEN-10). Claude made the post's author write them, so the check again proves a non-author cannot see them, and added a check that the author does.
+================================================
