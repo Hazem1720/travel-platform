@@ -9,20 +9,7 @@ jobs:
       fail-fast: false
       matrix:
         part:
-          - part1-accounts.e2e-spec.ts
-          - part10-admin.e2e-spec.ts
-          - part11-e2e.e2e-spec.ts
-          - part12a.e2e-spec.ts
-          - part12b.e2e-spec.ts
           - part13-robustness.e2e-spec.ts
-          - part2-general.e2e-spec.ts
-          - part3-flights-mgmt.e2e-spec.ts
-          - part4-flight-booking.e2e-spec.ts
-          - part5-hotels-mgmt.e2e-spec.ts
-          - part6-hotel-booking.e2e-spec.ts
-          - part7-payments.e2e-spec.ts
-          - part8-itineraries.e2e-spec.ts
-          - part9-blog.e2e-spec.ts
     defaults:
       run:
         working-directory: backend

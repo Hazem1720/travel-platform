@@ -195,7 +195,8 @@ describe('Test plan Part 13: robustness sweep', () => {
       inspect(anon, `${label} anon`);
       // Login answers 401 for wrong credentials, which is not a missing session.
       const isPublic = anon.status !== 401 || /^\/api\/auth\/(login|refresh|register|forgot|reset|verify)/.test(path);
-      if (isPublic && op.security?.length) problems.swagger.push(`${label} is public but shows a lock`);
+      // Refresh is reached without an access token but needs the refresh cookie, so its lock is right.
+      if (isPublic && op.security?.length && path !== '/api/auth/refresh') problems.swagger.push(`${label} is public but shows a lock`);
       if (!isPublic && !op.security?.length) problems.swagger.push(`${label} needs login but shows no lock`);
 
       // 2. Each role with real, random and invalid ids.
