@@ -1378,3 +1378,14 @@ do those Mohamad's PR #235 (an extra access-control test suite) is still open ..
 How the output was used:
 Claude merged develop into Mohamad's branch (AI_PROMPTS.txt conflict: develop's entries kept, the branch's appended). The suite then failed one check because its hidden comment and review were written by the "other user" it reads them as, and since PR #258 an author still sees their own hidden content (GEN-10). Claude made the post's author write them, so the check again proves a non-author cannot see them, and added a check that the author does.
 ================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-13 (security and robustness), test plan Parts 16-17
+Prompt:
+Check those: performance or load testing (hundreds of users at once) and formal security testing (a penetration test)
+How the output was used:
+Claude wrote a load test (Part 16: 100 logins at once, 2,000-request search bursts, 20 s of mixed traffic, 100 users racing for 40 seats and 10 rooms) and an OWASP Top 10 security test (Part 17: forged tokens, cookies, injection, mass assignment, path traversal, uploads, webhook replay, data exposure) plus npm audit. Load passed. Security found: no security headers and X-Powered-By: Express (now set by hand, no new dependency); a 2 MB body answered 500 instead of 413 (the error filter now maps body-parser errors); mongoose 8.24.5 had a high advisory (updated to 8.24.10). The remaining moderate advisory in @nestjs/core needs a major upgrade to 12 and was left for after the milestone.
+================================================
