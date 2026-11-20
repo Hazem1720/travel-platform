@@ -158,28 +158,14 @@ export function collectRoutes(app: INestApplication): RouteInfo[] {
     );
 
   const declared = new Map<string, { isPublic: boolean; roles: string[] }>();
-  for (const mod of app.get(ModulesContainer).values()) {
-    for (const wrapper of mod.controllers.values()) {
-      const ctrl = wrapper.metatype as any;
-      if (!ctrl?.prototype) continue;
-      for (const name of Object.getOwnPropertyNames(ctrl.prototype)) {
-        const handler = ctrl.prototype[name];
-        if (name === 'constructor' || typeof handler !== 'function') continue;
-        const verb = Reflect.getMetadata(METHOD_METADATA, handler);
-        if (verb === undefined) continue;
-        const path = joinPath(
-          'api',
-          Reflect.getMetadata(PATH_METADATA, ctrl),
-          Reflect.getMetadata(PATH_METADATA, handler),
-        );
-        const meta = (key: string) =>
-          Reflect.getMetadata(key, handler) ?? Reflect.getMetadata(key, ctrl);
-        declared.set(`${RequestMethod[verb]} ${path}`, {
-          isPublic: meta(IS_PUBLIC_KEY) === true,
-          roles: meta(ROLES_KEY) ?? [],
-        });
-      }
-    }
+  for (const [key, { controller, method }] of routeHandlers(app)) {
+    const handler = controller.prototype[method];
+    const meta = (k: string) =>
+      Reflect.getMetadata(k, handler) ?? Reflect.getMetadata(k, controller);
+    declared.set(key, {
+      isPublic: meta(IS_PUBLIC_KEY) === true,
+      roles: meta(ROLES_KEY) ?? [],
+    });
   }
 
   const doc = buildSwaggerDocument(app);
@@ -204,6 +190,37 @@ export function collectRoutes(app: INestApplication): RouteInfo[] {
       declared: !!meta,
     };
   });
+}
+
+// The controller class and method behind each declared route, keyed like
+// RouteInfo.key ("GET /api/hotels/:id"), for suites that inspect a
+// handler's metadata (for example its @Body DTO).
+export function routeHandlers(
+  app: INestApplication,
+): Map<string, { controller: any; method: string }> {
+  const out = new Map<string, { controller: any; method: string }>();
+  for (const mod of app.get(ModulesContainer).values()) {
+    for (const wrapper of mod.controllers.values()) {
+      const ctrl = wrapper.metatype as any;
+      if (!ctrl?.prototype) continue;
+      for (const name of Object.getOwnPropertyNames(ctrl.prototype)) {
+        const handler = ctrl.prototype[name];
+        if (name === 'constructor' || typeof handler !== 'function') continue;
+        const verb = Reflect.getMetadata(METHOD_METADATA, handler);
+        if (verb === undefined) continue;
+        const path = joinPath(
+          'api',
+          Reflect.getMetadata(PATH_METADATA, ctrl),
+          Reflect.getMetadata(PATH_METADATA, handler),
+        );
+        out.set(`${RequestMethod[verb]} ${path}`, {
+          controller: ctrl,
+          method: name,
+        });
+      }
+    }
+  }
+  return out;
 }
 
 function joinPath(...parts: (string | string[] | undefined)[]) {

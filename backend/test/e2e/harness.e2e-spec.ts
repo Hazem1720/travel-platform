@@ -1,6 +1,12 @@
 import { SchedulerRegistry } from '@nestjs/schedule';
 import * as express from 'express';
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'fs';
+import {
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'fs';
 import { createConnection } from 'mongoose';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -14,7 +20,7 @@ import { checkCoverage } from './check-coverage';
 import { HitLine, recorder } from './recorder';
 import { HITS_PREFIX } from './run-dir';
 import { findSensitiveKeys, isValidationErrorBody } from './sensitive-keys';
-import { assertSafeTestUri } from './uri-guard';
+import { assertSafeTestUri, UriGuardOptions } from './uri-guard';
 
 // Self-test of the e2e harness (E2E_PLAN.md section 1). These tests check
 // the test tooling, not a requirement, so their titles name no REQ-ID.
@@ -94,16 +100,32 @@ describe('e2e harness', () => {
     const noFlag = { allowAtlas: false, sharedUri: shared };
     const withFlag = { allowAtlas: true, sharedUri: shared };
 
+    // What the guard says about a URI, in one word, so a table of cases is
+    // checked in one assertion that lists every mismatch with its URI.
+    const verdict = (uri: string, options: UriGuardOptions) => {
+      try {
+        assertSafeTestUri(uri, options);
+        return 'accepted';
+      } catch (err) {
+        const m = (err as Error).message;
+        if (m.includes('shared cluster')) return 'shared cluster';
+        if (m.includes(refusedRemote)) return 'not local';
+        return m;
+      }
+    };
+    const verdicts = (uris: string[], options: UriGuardOptions) =>
+      uris.map((uri) => `${uri}: ${verdict(uri, options)}`);
+    const all = (uris: string[], word: string) =>
+      uris.map((uri) => `${uri}: ${word}`);
+
     it('accepts only 127.0.0.1 and localhost without E2E_ALLOW_ATLAS=1', () => {
-      for (const ok of [
+      const local = [
         'mongodb://127.0.0.1:27017/e2e',
         'mongodb://localhost:27017/e2e',
         'mongodb://LOCALHOST/e2e',
         'mongodb://127.0.0.1:27017,localhost:27018/e2e?replicaSet=rs0',
-      ]) {
-        expect(() => assertSafeTestUri(ok, noFlag)).not.toThrow();
-      }
-      for (const remote of [
+      ];
+      const remote = [
         // A separate Atlas cluster, in both forms.
         'mongodb+srv://u:p@throwaway.zz999.mongodb.net/e2e',
         'mongodb://ac-t-00-00.zz999.mongodb.net:27017/e2e?ssl=true',
@@ -116,23 +138,24 @@ describe('e2e harness', () => {
         'mongodb://localhost.attacker.example:27017/e2e',
         // A mongodb+srv name is never local, even if it says localhost.
         'mongodb+srv://localhost/e2e',
-      ]) {
-        expect(() => assertSafeTestUri(remote, noFlag)).toThrow(refusedRemote);
-      }
+      ];
+      expect(verdicts([...local, ...remote], noFlag)).toEqual([
+        ...all(local, 'accepted'),
+        ...all(remote, 'not local'),
+      ]);
     });
 
     it('with E2E_ALLOW_ATLAS=1, accepts a separate throwaway cluster', () => {
-      for (const separate of [
+      const separate = [
         'mongodb+srv://u:p@throwaway.zz999.mongodb.net/e2e',
         'mongodb://ac-t-00-00.zz999.mongodb.net:27017/e2e?ssl=true',
         'mongodb://10.0.0.5:27017/e2e',
-      ]) {
-        expect(() => assertSafeTestUri(separate, withFlag)).not.toThrow();
-      }
+      ];
+      expect(verdicts(separate, withFlag)).toEqual(all(separate, 'accepted'));
     });
 
     it('refuses every host of the backend/.env cluster, whatever the database, even with E2E_ALLOW_ATLAS=1', () => {
-      for (const uri of [
+      const sameCluster = [
         // The .env database itself.
         shared,
         // Another database name on the same cluster.
@@ -148,32 +171,30 @@ describe('e2e harness', () => {
         'mongodb://ac-shard-00-01.abc12.mongodb.net/e2e',
         // The mongodb+srv form of the same cluster (same Atlas domain).
         'mongodb+srv://u:p@cluster0.abc12.mongodb.net/e2e',
-      ]) {
-        for (const options of [noFlag, withFlag]) {
-          expect(() => assertSafeTestUri(uri, options)).toThrow(
-            'this is the shared cluster from backend/.env',
-          );
-        }
-      }
+      ];
+      expect([
+        ...verdicts(sameCluster, noFlag),
+        ...verdicts(sameCluster, withFlag),
+      ]).toEqual([
+        ...all(sameCluster, 'shared cluster'),
+        ...all(sameCluster, 'shared cluster'),
+      ]);
     });
 
     it('matches the .env cluster by host and port, so a local .env never blocks the in-memory server', () => {
       const localShared = 'mongodb://localhost:27017/travel';
-      expect(() =>
-        assertSafeTestUri('mongodb://127.0.0.1:61234/e2e', {
-          allowAtlas: false,
-          sharedUri: localShared,
-        }),
-      ).not.toThrow();
-      for (const uri of [
+      const options = { allowAtlas: true, sharedUri: localShared };
+      const sameServer = [
         'mongodb://localhost:27017/e2e',
         'mongodb://localhost/other',
         'mongodb://127.0.0.1:27017/e2e',
-      ]) {
-        expect(() =>
-          assertSafeTestUri(uri, { allowAtlas: true, sharedUri: localShared }),
-        ).toThrow('this is the shared cluster from backend/.env');
-      }
+      ];
+      expect(
+        verdicts(['mongodb://127.0.0.1:61234/e2e', ...sameServer], options),
+      ).toEqual([
+        'mongodb://127.0.0.1:61234/e2e: accepted',
+        ...all(sameServer, 'shared cluster'),
+      ]);
     });
 
     it('refuses a missing or malformed URI and never prints the URI it refuses', () => {
@@ -391,10 +412,17 @@ describe('e2e harness', () => {
         // No statusCode at all.
         ['a plain details object', { details: { passwordHash: 'h' } }],
       ];
-      for (const [name, body] of leaks) {
-        const keys = findSensitiveKeys(body).map((f) => f.key);
-        expect({ name, keys }).toEqual({ name, keys: ['passwordHash'] });
-      }
+      // One assertion for the whole table: a failure lists every shape.
+      expect(
+        leaks.map(
+          ([name, body]) =>
+            `${name}: ${
+              findSensitiveKeys(body)
+                .map((f) => f.key)
+                .join(', ') || 'nothing found'
+            }`,
+        ),
+      ).toEqual(leaks.map(([name]) => `${name}: passwordHash`));
     });
 
     it('a passwordHash in any other details object fails the run', async () => {
@@ -446,6 +474,80 @@ describe('e2e harness', () => {
           'sensitive key "passwordHash" at details.passwordHash in the response of GET /not-a-list (400)',
           'sensitive key "passwordHash" at details.user.passwordHash in the response of GET /nested (400)',
         ]);
+      } finally {
+        rmSync(runDir, { recursive: true, force: true });
+      }
+    });
+
+    it('counts neither [partial: ...] IDs nor setup requests as coverage', () => {
+      const runDir = mkdtempSync(join(tmpdir(), 'travel-e2e-gate-'));
+      try {
+        const route = {
+          key: 'GET /api/example',
+          method: 'GET',
+          path: '/api/example',
+          isPublic: true,
+          roles: [],
+          inSwagger: true,
+          declared: true,
+        };
+        writeFileSync(join(runDir, 'routes-1.json'), JSON.stringify([route]));
+        // Only a setup request reached the route.
+        writeFileSync(
+          join(runDir, 'hits-1.jsonl'),
+          JSON.stringify({
+            kind: 'hit',
+            route: route.key,
+            status: 200,
+            setup: true,
+          }) + '\n',
+        );
+        const jestJson = join(runDir, 'jest.json');
+        writeFileSync(
+          jestJson,
+          JSON.stringify({
+            testResults: [
+              {
+                assertionResults: [
+                  {
+                    status: 'passed',
+                    fullName: 'a check (ACC-11) [partial: GEN-10, BLG-02]',
+                  },
+                ],
+              },
+            ],
+          }),
+        );
+        const result = checkCoverage({
+          runDir,
+          jestJson,
+          requirementExclusions: {},
+          routeExclusions: {},
+          reportFile: join(runDir, 'report.md'),
+        });
+        const about = (id: string) =>
+          result.problems.filter((p) => p.startsWith(`requirement ${id} `));
+        expect({
+          ACC11: about('ACC-11'),
+          GEN10: about('GEN-10'),
+          BLG02: about('BLG-02'),
+          route: result.problems.filter((p) => p.startsWith('route ')),
+        }).toEqual({
+          ACC11: [],
+          GEN10: [
+            'requirement GEN-10 (M1) is named in no passing test and not excluded',
+          ],
+          BLG02: [
+            'requirement BLG-02 (M1) is named in no passing test and not excluded',
+          ],
+          route: ['route GET /api/example: no 2xx'],
+        });
+        expect(result.report).toContain(
+          '- **GEN-10**\n  - a check (ACC-11) [partial: GEN-10, BLG-02]',
+        );
+        expect(result.report).toContain(
+          '1 setup requests (x-e2e-setup) not counted',
+        );
       } finally {
         rmSync(runDir, { recursive: true, force: true });
       }
