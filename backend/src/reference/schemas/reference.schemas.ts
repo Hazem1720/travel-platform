@@ -1,0 +1,57 @@
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { HydratedDocument } from 'mongoose';
+
+// The provided datasets use text identifiers (cairo, EG, CAI, att-1).
+// We keep them as the _id so every team and the final evaluation match.
+
+@Schema({ collection: 'countries' })
+export class Country {
+  @Prop({ type: String }) _id: string; // e.g. EG
+  @Prop({ required: true }) name: string;
+  @Prop({ required: true }) currency: string;
+}
+export const CountrySchema = SchemaFactory.createForClass(Country);
+export type CountryDocument = HydratedDocument<Country>;
+
+@Schema({ collection: 'cities' })
+export class City {
+  @Prop({ type: String }) _id: string; // e.g. cairo
+  @Prop({ required: true }) name: string;
+  @Prop({ type: String, ref: 'Country', required: true, index: true })
+  countryCode: string;
+}
+export const CitySchema = SchemaFactory.createForClass(City);
+export type CityDocument = HydratedDocument<City>;
+
+@Schema({ collection: 'airports' })
+export class Airport {
+  @Prop({ type: String }) _id: string; // IATA code, e.g. CAI
+  @Prop({ required: true }) name: string;
+  @Prop({ type: String, ref: 'City', required: true, index: true })
+  cityId: string;
+  @Prop({ type: String, ref: 'Country', required: true }) countryCode: string;
+  // FLT-02, GEN-06: every airport has an IANA time zone, e.g. Africa/Cairo.
+  @Prop({ type: String, required: true }) timeZone: string;
+}
+export const AirportSchema = SchemaFactory.createForClass(Airport);
+export type AirportDocument = HydratedDocument<Airport>;
+
+@Schema({ collection: 'attractions' })
+export class Attraction {
+  @Prop({ type: String }) _id: string; // e.g. att-1
+  @Prop({ required: true }) name: string;
+  @Prop({ type: String, ref: 'City', required: true, index: true })
+  cityId: string;
+}
+export const AttractionSchema = SchemaFactory.createForClass(Attraction);
+export type AttractionDocument = HydratedDocument<Attraction>;
+
+// GEN-12, ITN-18: the supported currencies, one per currency of the official
+// countries dataset, with the countries that use it (EUR: DE and FR).
+@Schema({ collection: 'currencies' })
+export class Currency {
+  @Prop({ type: String }) _id: string; // ISO 4217 code, e.g. EGP
+  @Prop({ type: [String], default: [] }) countries: string[];
+}
+export const CurrencySchema = SchemaFactory.createForClass(Currency);
+export type CurrencyDocument = HydratedDocument<Currency>;

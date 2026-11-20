@@ -1,2 +1,1402 @@
 AI PROMPT LOG - append new entries at the END, never edit other people's entries.
 Format: Date, Student, Tool, Related Requirement, Prompt, How the output was used.
+================================================
+Date: 2026-10-15
+Student: Hazem
+Tool: Claude
+Related Requirement: Core setup, ACC-01 to ACC-12
+Prompt:
+Plan Milestone 1, split it across 8 members, set up the repo, NestJS foundation, MongoDB Atlas, guards and auth endpoints.
+How the output was used:
+Used the team split, setup steps and code for the foundation and auth modules, and tested them in Swagger.
+================================================
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-12, FLT-02, ACC-18, ACC-01
+Prompt:
+Fix audit findings CR-1, MI-5 and MI-7 on branch fix/GEN-12-seed-official-data: replace the seed CSVs with the official datasets exactly, make the airport time zone required, remove FALLBACK_TIME_ZONES, add npm seed scripts, and make the admin seed enforce the password rule.
+How the output was used:
+Kept the generated CSVs (copied from Mock Data.xlsx), the seed validation module and its unit tests, the seed-admin changes and the npm scripts. Checked the CSVs against the official sheets, then ran npm run build and npm test (all passing) before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-13, ACC-11
+Prompt:
+Fix audit finding CR-4 on branch fix/GEN-13-global-auth-guard: register JwtAuthGuard and RolesGuard as global APP_GUARDs, add a @Public() decorator, mark register/login/refresh public, and add a test that fails if a route is neither @Public nor guarded.
+How the output was used:
+Kept the decorator, guard changes, global registration and the route-protection test. Also made logout and the GET / health check public. Checked that the test fails when the global JwtAuthGuard is removed, then ran npm run build and npm test (all passing) before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-04, ACC-05, ACC-06, ACC-08, ACC-19, GEN-13
+Prompt:
+Fix audit findings IM-5, IM-6, IM-7, IM-8, MI-1 and MI-2 on branch fix/ACC-04-auth-hardening: Secure cookies by default, env validation schema, 15-minute access token with a sessionVersion revoked on logout and password change, atomic lockout counter, dummy-hash login timing, and cookie type checks. Do not do MI-4.
+How the output was used:
+Kept the env validation, cookie, lockout, timing and sessionVersion changes and their unit tests, split into one commit per finding. MI-4 (per-device sessions) was left as a follow-up. Ran npm run build and npm test (all passing) before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-02, GEN-05, GEN-12, ACC-09
+Prompt:
+Fix audit findings MI-3, IM-10 and IM-11 on branch fix/GEN-02-validation-and-pagination: map Mongoose errors to 400, return field-keyed validation details, add a supported-currency list, and cap the page size at 10.
+How the output was used:
+Kept the validation pipe factory, the filter changes, the currency list (taken from the official countries dataset) and the page size cap, with unit tests for each. Ran npm run build and npm test (all passing) before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-01, ACC-04, ACC-06, ACC-13, ACC-19, GEN-13
+Prompt:
+Fix audit finding IM-12 on branch test/ACC-auth-tests-and-swagger: unit tests for lockout, idle expiry, password rule, assertOwnsProvider and the exception filter; make the e2e test use the main.ts bootstrap; add @ApiResponse examples on all existing routes; add cookie auth in Swagger.
+How the output was used:
+Kept the shared app setup, the Swagger response examples and cookie security schemes (which also fixed a scheme-name mismatch), the e2e suite and the new unit tests. Ran npm run build, npm test and npm run test:e2e, including the database flow against a local throwaway MongoDB, all passing, before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-13, ITN-18, GEN-12, ACC-01
+Prompt:
+Fix audit findings IM-1, IM-4, IM-14, IM-15, IM-19, MI-6, MI-9, MI-11, MI-12 and MI-14 on branch chore/repo-hygiene: fix tracker IDs, name the official sources, reorder CODEOWNERS, fix the templates, complete .env.example, fix the ACC-03 reference, add .gitignore/.gitattributes/CI/backend README, make the issue scripts dry-run by default, apply Prettier, and add the IM-9 and MI-9 items to conventions.md as PROPOSED, needing team approval.
+How the output was used:
+Kept all changes, one commit per finding. The tracker was checked against the official sheet (all 115 rows match). The official PDF and sheets were not committed because the repository is public; that is left to the team leader. Ran npm run build, npm test, npm run test:e2e and the read-only eslint check (0 problems) before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-18, GEN-12, FLT-01, FLT-30
+Prompt:
+Update chore/repo-hygiene for the latest develop: merge develop, resolve the requirements-tracker.csv/.xlsx conflict by keeping Hazem's PR #134 owner changes and re-applying only the NEW-xx to official ID fixes, update CODEOWNERS for airlines/ and flights/, run build and tests, commit, and push only chore/repo-hygiene.
+How the output was used:
+Kept the merge resolution. The tracker keeps #134 unchanged plus the 12 ID fixes, and was checked against the official sheet and against the xlsx member sheets. CODEOWNERS kept PR #135's single rule (my choice when asked), because Hazem is already covered. Ran npm run build, npm test, npm run test:e2e and the read-only eslint check before committing.
+================================================
+
+================================================
+Date: 2026-11-08
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-04, HTL-18, ACC-11, FLT-23, GEN-11
+Prompt:
+Settle the 17 PROPOSED items in docs/api/conventions.md (approve all recommendations: USD platform currency, room-night locks, price snapshots, per-minute hold expiry with lazy checks, flight Completed after last arrival, 404 for other users' private resources, FL-/HT- booking references, and the ten items that restate official requirements) and merge them without waiting for Hazem.
+How the output was used:
+Approved all 17 as acting lead. Moved each decision into the matching section of conventions.md, removed the PROPOSED section, and added a decision record. Checked that every earlier rule is still present.
+================================================
+
+================================================
+Date: 2026-11-09
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-13
+Prompt:
+(Pasted the full `npm audit` output for backend/: 50 vulnerabilities, 2 critical, 19 high.)
+How the output was used:
+Ran the non-breaking npm audit fix, then added package.json overrides that pin patched releases (same major) of the libraries Nest 10 locks: express, body-parser, qs, multer, lodash, file-type, js-yaml (swagger) and uuid (schedule). Production audit went from 18 (1 critical, 9 high) to 5 moderate, all one @nestjs/core SSE advisory that does not apply (no SSE endpoints) and needs Nest 12. Did not run npm audit fix --force. Checked with build, unit tests, e2e, lint and live auth checks against a local DB.
+================================================
+
+================================================
+Date: 2026-11-09
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-11, HTL-12, HTL-15
+Prompt:
+Rebalance the work: Hasan is the lightest after the flight items moved to Hazem and Rawda is one of the heaviest. Move the hotel search group off Rawda, giving some to me (Memo) and some to Hasan.
+How the output was used:
+Claude weighed each member's remaining M1 load by the Complexity column and proposed HTL-11 to Memo (it shares the room-availability query with HTL-16/HTL-18) and HTL-12, HTL-15 to Hasan. Kept that split. Updated the tracker CSV, the Tracker sheet, the per-member sheets and the Summary cache in the xlsx, plus the owner label, assignee and Owner line of issues #62, #63, #64. Pending Hazem's approval in the PR.
+================================================
+
+================================================
+Date: 2026-11-10
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-22, ACC-02, ACC-07, FLT-27, FLT-28, GEN-01-B, BON-01, ITN-27, ITN-28, BLG-13, BON-02
+Prompt:
+Modify the work distribution: move HTL-22 to Aabsy and give all the bonus items to me (Memo).
+How the output was used:
+Claude checked the dependency column for the moved items: HTL-22 reads the hotel bookings from HTL-17, so it fits with the booking-side work. Claude updated requirements-tracker.csv/.xlsx (Owner column, member sheets and Summary counts) and the owner labels, assignees and Owner lines on the GitHub issues, then verified the xlsx sheets match the csv. I chose the split; Claude made the edits.
+================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-11
+Prompt:
+Gave Claude the team plan (Milestone 1) and the project description and asked it to do my Phase 1 (foundations) part only, without touching anyone else's work: start with the ACC-11 assertOwner() helper in common/helpers.
+How the output was used:
+Claude wrote assertOwner(resourceUserId, user, message) that throws 404 for anyone but the owner (no admin or moderator exception, they use ACC-17/FLT-29/HTL-22), plus isOwner() for query filters, with unit tests for the owner, another user, ObjectId vs string ids and missing owners. I reviewed the 404 rule against conventions.md before merging.
+================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-09, HTL-10, FLT-26, PAY-03
+Prompt:
+Phase 1 of my team-plan chapter: ship the shared cancellation-tier helper in common/helpers/cancellation-tiers.ts (CancellationTierDto, a unique daysBefore check, refundPercent(tiers, daysRemaining)) so Rawda, Memo and Aabsy can reuse it. The PUT /airlines/:id/cancellation-policy route comes later with the airline work.
+How the output was used:
+Claude wrote CancellationTierDto, CancellationPolicyDto with a @UniqueDaysBefore() validator, a CancellationTier sub-schema for the Airline and Hotel schemas, refundPercent() and refundAmount() in integer cents, with unit tests for the plan's cases (tiers 30/7/0: 45->100, 30->100, 10->50, 3->0, no tiers->0; duplicate daysBefore, refundPercent 101 or -1 and daysBefore 1.5 rejected). I checked the tier rule against the official FLT-09 text.
+================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-06, FLT-03, FLT-11, FLT-26
+Prompt:
+Phase 1 of my team-plan chapter: ship the shared time-zone helper common/helpers/time-zone.ts with localToUtc(local, timeZone) and utcToLocal(date, timeZone), handling daylight saving, so Aabsy can build search, details and the e-ticket against it.
+How the output was used:
+The plan suggested luxon, but package installs were not possible in the session, so Claude used the Intl API built into Node instead (no new dependency, no lock-file change). It added localToUtc (400 for malformed input, unknown zones and times skipped by a DST change; first occurrence for repeated times), utcToLocal, utcOffset, toZonedTime for flight responses, localDayRangeUtc for search by local date, and localDaysUntil for refund tiers, with unit tests for Cairo, Dubai and Berlin including the March and October DST changes. I checked the results against the plan's test cases.
+================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-02
+Prompt:
+Phase 1 of my team-plan chapter: FLT-02, a public paginated GET /api/airports with optional ?search over the seeded airports (IATA code, name, city, country, IANA time zone), plus an exported assertAirportExists(code) for FLT-03 and Aabsy's search.
+How the output was used:
+Claude added src/airports (controller, service, DTOs, module) reading the global reference models, with city and country names joined in, search escaped as literal text, sort by code or name, and assertAirportExists() returning the airport (with its time zone) or 400. Registered the module in app.module.ts and added 'GET /airports' to PUBLIC_ROUTES. Unit tests cover the mapping, search, sorting, pagination and unknown codes; I tested the route in Swagger.
+================================================
+
+================================================
+Date: 2026-11-14
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-01
+Prompt:
+Phase 1 of my team-plan chapter: FLT-01, a new src/airlines module. Admin creates an airline (name, unique uppercase code), anyone can view it, and only the moderator assigned to that airline edits it (assertOwnsProvider). Schema per conventions.md: name, code, logo, isActive, extraBagPrice, maxExtraBags, cancellationTiers. Ship early because Hasan's ACC-13 needs real airline ids.
+How the output was used:
+Claude wrote the Airline schema (reusing the shared CancellationTier sub-schema), CreateAirlineDto/UpdateAirlineDto, AirlinesService (exported with the model for ACC-13, ACC-15 and FLT-11) and the controller with POST (admin), GET :id (public) and PATCH :id (own moderator), Swagger examples and unit tests. The logo upload route waits for Hasan's GEN-08 upload utility and comes in a follow-up PR. I tested the routes in Swagger with TEST data.
+================================================
+
+================================================
+Date: 2026-11-15
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-11, FLT-09, GEN-06, FLT-02, FLT-01
+Prompt:
+Check Hazem's five open PRs (#146 to #150) and, if they are correct, merge them.
+How the output was used:
+Claude read each diff against conventions.md and the requirement text, merged all five together on a temporary branch, and ran the build, tests (167 passed), e2e tests and typecheck. It then updated each branch with develop and merged the PRs in order (#146, #147, #148, #149, #150). Its merge of AI_PROMPTS.txt (a union merge) dropped the header lines of the GEN-06, FLT-09 and ACC-11 entries, so Claude rebuilt the log from the original feature commits in this follow-up; no entry text was changed.
+================================================
+
+================================================
+Date: 2026-11-15
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-08, GEN-01, GEN-07, ACC-13, ACC-15, ACC-16, ACC-14, ACC-07a, HTL-15, HTL-12, ACC-17, ACC-12, FLT-06, FLT-29, HTL-20, HTL-21, HTL-23, HTL-24, FLT-25, FLT-26, HTL-22
+Prompt:
+Distribute all of Hasan's work in the first four phases of the team plan to Memo, Aabsy and Hazem, and give Hasan all of our phase 5 work. Update what needs to be updated (the team plan PDF and git), and remove what is already done from the PDF (I think only Hazem's phase 1).
+How the output was used:
+Claude proposed a split that keeps each item near its module and evens the weighted load: Aabsy takes the shared services (GEN-08, GEN-01, GEN-07), Hazem the moderator accounts and suspensions (ACC-13, ACC-15, ACC-16), Memo the account list, password reset and hotel search extras (ACC-14, ACC-07a, HTL-15, HTL-12), and Hasan every phase 5 item. It moved the owners in the tracker CSV and xlsx (member sheets and Summary counts too), set FLT-02 to Done and FLT-01, FLT-09 and GEN-06 to In Progress after PRs #146-#150, and rebuilt the team plan PDF: finished requirements are no longer listed and partly done ones show only what is left. I reviewed the split before it was shared with the team.
+================================================
+
+================================================
+Date: 2026-11-15
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: GEN-08
+Prompt:
+Explain the project and my chapter of the team plan, then build GEN-08 with me and explain each file: a shared upload utility in src/uploads that accepts only JPG and PNG (checked from the file's first bytes, not the extension or mimetype), at most 5 MB each, with a maxCount per route (5 for posts, activities and hotels, 1 for an airline logo), stores files on the server and serves them by URL, with a Swagger multipart example the team can copy.
+How the output was used:
+Claude wrote image-file.ts (5 MB limit, IMAGE_LIMITS, magic-byte check for PNG and JPG, assertValidImage and assertImageLimit), the @ImageUpload(field, maxCount) decorator (multer in memory, its 413 and "unexpected field" errors turned into 400s in the shared format, plus @ApiConsumes and @ApiBody for Swagger), a global UploadsModule with UploadsService.save(files) (random UUID names in backend/uploads, returns /api/uploads/... URLs), remove(url) and a public GET /api/uploads/:file that only serves names the service generated. POST /api/uploads/images (logged-in users, up to 5) shows the rules in Swagger. backend/uploads/ was added to .gitignore and 'GET /uploads/:file' to PUBLIC_ROUTES. Unit and HTTP tests cover a 1 MB PNG, a 6 MB JPG, a GIF, a text file renamed to .png, six files, no file and unsafe file names. I reviewed each file with Claude's explanation before committing.
+================================================
+
+================================================
+Date: 2026-11-16
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: GEN-11
+Prompt:
+Finish the parts of my chapter that depend on no one, starting with GEN-11's first small PR: common/enums/booking-status.enum.ts with PendingPayment, Confirmed, Completed, Expired and Cancelled, assertTransition(from, to) allowing only PendingPayment to Confirmed or Expired and Confirmed to Completed or Cancelled, and generateBookingReference('FL' | 'HT'). Explain each part.
+How the output was used:
+Claude wrote the BookingStatus enum (values as in conventions.md), the BOOKING_TRANSITIONS table, canTransition() and assertTransition() (409 Conflict for any other change, with a comment showing how to put the old status in the update filter so two requests cannot both change it), and generateBookingReference() using crypto.randomInt for 8 uppercase letters or digits after FL- or HT-. Unit tests check the 4 allowed transitions, all 21 forbidden ones, the message, the reference format and 10,000 references without a repeat. The expiry and Completed jobs come later with FLT-22.
+================================================
+
+================================================
+Date: 2026-11-16
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: GEN-01, GEN-07
+Prompt:
+Build GEN-01 and GEN-07 from my team-plan chapter in one PR and explain each part while doing it: a global NotificationsService.create(userId, type, message, data?) with the six notification types and the user routes (list newest first, unread count, mark one read, mark all read, 404 for another user's notification), and a global, append-only AuditService.log({ adminId, action, targetType, targetId, details }) with GET /api/admin/audit-logs for admins, filtered by action, admin and date range.
+How the output was used:
+Claude wrote src/notifications (schema with readAt null meaning unread, NotificationType enum, service, controller with GET /notifications, GET /notifications/unread-count, PATCH /notifications/read-all and PATCH /notifications/:id/read; every query filters by the logged-in user) and src/audit (AuditAction and AuditTargetType enums, schema hooks that make every Mongoose update or delete on the audit log fail, AuditService with only log() and list(), and the admin-only list route with inclusive from/to dates). Both modules are @Global() and registered in app.module.ts. Unit tests use mocked models, as in the existing modules, and cover the owner filter, 404 for another user's notification, 11 notifications giving 2 pages, the filters, from after to (400) and the blocked updates and deletes. I reviewed each file with Claude's explanation before committing.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-01, GEN-08, GEN-01, GEN-07, GEN-11
+Prompt:
+Finish testing and completing Rawda's and Aabsy's phase 1 work, and merge everything after making sure it is correct and tested.
+How the output was used:
+Claude reviewed #154, #155 and #157 against the team plan and conventions.md and merged the latest develop into each branch. The conflicts were in AI_PROMPTS.txt, app.module.ts and route-guards.spec.ts, and both sides were kept. It found that HTL-01 was missing the hotel photo routes, so it added POST /hotels/:id/images (at most 5 in total, checked in one conditional update, and saved files are removed if the push fails) and DELETE /hotels/:id/images/:imageId, both moderator-only with assertOwnsProvider. It used the GEN-08 upload utility and added unit tests. It also fixed the indentation in room.schema.ts. I ran the build, unit and e2e tests before pushing.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-08, GEN-01, GEN-07, GEN-11, FLT-11, FLT-12, FLT-15, FLT-19, FLT-21, HTL-01, HTL-03, HTL-04, HTL-09, HTL-10
+Prompt:
+Revise everything and make sure it is up to date with GitHub, then update the tracker statuses for merged work.
+How the output was used:
+Claude compared the tracker with the merged and open PRs. It set GEN-08 to Done (#153). It set the items in open PRs to In Review when the PR completes them (#154 GEN-01/GEN-07, #157 HTL-01/03/04/09/10) and to In Progress when the PR is partial or a draft (#155 GEN-11, #156 FLT-11/12/15/19/21). It also added the PR links in requirements-tracker.csv and .xlsx (Tracker sheet, owner sheets and Summary counts). ACC-11, FLT-01, FLT-09 and GEN-06 were left In Progress because their PRs say the routes follow later. I checked the PR descriptions and the Summary counts before committing.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-04
+Prompt:
+Start PAY-04 (my first phase 1 item): add PLATFORM_CURRENCY (default USD) to the config validation and .env.example, export it, and give the team helpers so every price, payment and refund is stored as integer cents in that one currency (conventions.md, "Money").
+How the output was used:
+Claude Code added backend/src/common/helpers/money.ts: platformCurrency() (USD unless PLATFORM_CURRENCY is set), isPlatformCurrency() (case-insensitive, for the Stripe webhook check in PAY-01), stripeCurrency(), isCents(), the IsCents(min) DTO decorator and platformCurrencyProp() for the currency field of price snapshots, Payment and Refund records (defaults to the platform currency and refuses any other). env.validation.ts now accepts only a supported currency for PLATFORM_CURRENCY, and .env.example sets USD with a warning never to change it once prices are stored. I reviewed the code, chose to read the setting when called (not at import) so it sees backend/.env, and kept other members' modules unchanged. Unit tests added in money.spec.ts and env.validation.spec.ts; npm run build, npm test (311 passed) and npm run test:e2e passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-11
+Prompt:
+Start my next phase 1 item: the RoomLock schema (one document per room per night, unique on roomId + date, kind Held / Booked / Blocked, bookingId, expiresAt for Held) and HotelAvailabilityService.freeRooms(hotelId, checkIn, checkOut), so Rawda (HTL-02, HTL-05, HTL-06, HTL-08) and Moharm (ITN-25) can build on them. Follow conventions.md "Overlap safety" and the team plan's HTL-11 notes.
+How the output was used:
+Claude Code added src/hotel-bookings: the RoomLock schema with its unique (roomId, date) index, HotelBookingsModule (registered before HotelsModule so GET /hotels/search will come before GET /hotels/:id), and HotelAvailabilityService with freeRooms, freeRoomsByHotel (for search), lockNights (all-or-nothing ordered insert that deletes its own locks on a duplicate key and answers 409, clearing expired holds first), confirmHeld, releaseBooking and unblock, plus the stayNights and coversStay helpers. I reviewed the design, kept Rawda's Room schema unchanged (her HTL-04 range format is read as is), and added a 366-night limit per call so one request cannot create thousands of locks. 20 unit tests were added. A temporary test against a throwaway Atlas database (travel-platform-e2e-roomlocks, dropped afterwards, never committed) checked the unique index, five parallel holds with exactly one winner, multi-room rollback, expired holds, blocking and confirming. npm run build, npm test (311 passed) and npm run test:e2e passed. The search route itself (GET /hotels/search) follows in a later PR.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-23
+Prompt:
+Start my next phase 1 item: the Review schema (HTL-23, schema only, with the GEN-10 hidden flag) so Rawda (HTL-02), Hafez (GEN-09, GEN-10) and Hasan (the HTL-23 and HTL-24 routes) can build on it. Follow conventions.md ("Ratings and reviews", "Reports and hidden content") and the team plan.
+How the output was used:
+Claude Code added backend/src/hotel-bookings/schemas/review.schema.ts: hotelId, bookingId (unique, one review per reservation), userId, rating (whole number 1-5), text (optional, trimmed, max 1000 characters) and hidden (default false), with timestamps and an index for a hotel's visible reviews newest first. The model is registered and exported by HotelBookingsModule. I reviewed it and left the routes and the rating recalculation to Hasan (HTL-23 owner). 9 unit tests were added. A temporary test against a throwaway Atlas database (travel-platform-e2e-reviews, dropped afterwards, never committed) checked that three parallel reviews of one reservation give exactly one success and two duplicate-key errors, and that the newest-first list of visible reviews uses the index. npm run build, npm test (340 passed) and npm run test:e2e passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-01
+Prompt:
+Start my last phase 1 item: the payments contract stub (PAY-01) so Aabsy (FLT-23) and Hasan (refunds for FLT-06, FLT-26, HTL-21) can build against it. Use the team plan's contract: payments.registerHandler('flight' | 'hotel', { getPayable, confirm, expire }), createPayment, confirmBooking, releaseInventory and refund(type, bookingId, amount), as in conventions.md.
+How the output was used:
+Claude Code added backend/src/payments: payment-handler.ts (PaymentBookingType, PaymentStatus, RefundStatus, PayableBooking, the PaymentHandler interface, CreatedPayment, RefundResult), PaymentsService (handler registry; getPayableFor with the shared PAY-01 rules: 404 for a missing or another user's booking, 409 when not PendingPayment or the hold expired, 400 until policies are accepted; confirmBooking and releaseInventory call the handler; refund returns null for 0 cents) and PaymentsModule, registered in app.module.ts. The Stripe steps (createPayment, refund of a positive amount) answer 501 until PAY-01 and PAY-03. I reviewed the contract, chose to keep the payability checks in Payments so flights and hotels follow the same rules, and added userId to createPayment for the ownership check. 17 unit tests were added, including one showing that a handler registered from another module reaches the same PaymentsService. npm run build, npm test (357 passed) and npm run test:e2e passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-01
+Prompt:
+Build ITN-01 (create, edit and delete an itinerary) in src/itineraries, following conventions.md and my chapter of the team plan. Show me the plan first so I can review it against the requirement before any code is written. Role: users only — not moderators or admins.
+How the output was used:
+Claude Code proposed a plan, which I checked against the official requirement and the project description (section 8.8), then built src/itineraries: the Itinerary schema (ownerId, title up to 100 characters, countries, startDate as UTC midnight, visibility Private by default, the GEN-10 hidden flag, embedded days capped at 60, and clonedFrom for ITN-21), CreateItineraryDto and UpdateItineraryDto (only title, countries and startDate; unknown fields give 400), ItinerariesService (countries checked against the seeded countries collection, assertOwner on every edit and delete so other users get 404, delete removes only the one document so clones survive) and ItinerariesController (POST, PATCH and DELETE /api/itineraries, @Roles(Role.USER), Swagger examples with the requirement ID). The model and service are exported for Hafez (BLG-12, GEN-09, GEN-10) and Memo (BON-02). I chose "users only" for the role. 17 unit tests were added. npm run build, npm test (374 passed) and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-03
+Prompt:
+Build ITN-03: list my itineraries and view one, following conventions.md and the team plan.
+How the output was used:
+Claude Code added GET /api/itineraries (my itineraries: title, countries, start date, number of days and visibility, most recently updated first, 10 per page) and GET /api/itineraries/:id (the full itinerary, 404 for another user's). 4 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-20
+Prompt:
+Build ITN-20: add a visibility toggle (Public / Private) to PATCH /itineraries/:id, following conventions.md and the team plan.
+How the output was used:
+Claude Code added an optional visibility field (Public or Private) to PATCH /api/itineraries/:id, for the owner only (others get 404). Public search and the public view (ITN-21) read only Public itineraries, so setting Private removes it at once. 4 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-05
+Prompt:
+Build ITN-05: add, edit and delete days on an itinerary, with the 60-day limit, following conventions.md and the team plan.
+How the output was used:
+Claude Code added POST /api/itineraries/:id/days and PATCH /api/itineraries/:id/days/:dayId (DaysService, DaysController). The city must be a seeded city; day numbers and dates are computed from the position and the start date (itinerary.view.ts), never stored, so changing the start date moves every date. The 60-day limit is in the update filter, so two requests at once cannot pass it. GET /api/itineraries/:id now shows numbered, dated days. 7 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-07
+Prompt:
+Build ITN-07: delete a day and all its contents, following conventions.md and the team plan.
+How the output was used:
+Claude Code added DELETE /api/itineraries/:id/days/:dayId. The day and its contents are removed in one update; the remaining days are renumbered and re-dated automatically because numbers and dates are computed from position, and budget totals are computed from the remaining days. Shared test fixtures moved to itinerary.fixtures-spec.ts. 2 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-08
+Prompt:
+Build ITN-08: reorder days with an optimistic concurrency check, following conventions.md and the team plan.
+How the output was used:
+Claude Code added PATCH /api/itineraries/:id/days/reorder { dayId, newPosition } (declared before :dayId so "reorder" is not read as a day id). Position 0 or beyond the last day gives 400. The new order is saved only if the itinerary has not changed since it was read (updatedAt in the filter), otherwise 409, so a day added at the same moment is never lost. Numbers, dates and city groups follow the order. 5 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-09
+Prompt:
+Build ITN-09: group consecutive days in the same city and show those groups in the itinerary response, following conventions.md and the team plan.
+How the output was used:
+Claude Code added cityGroups() in itinerary.view.ts: consecutive days in the same city become one group { cityId, fromDay, toDay, dayCount }, shown as cityGroups in GET /api/itineraries/:id and in every day route's response. Every day already requires a city (schema and DTO). The group budget subtotal is added with the budget summary (ITN-14). 3 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-10
+Prompt:
+Build ITN-10: add, edit and delete activities on a day (name, description, optional HH:mm time, optional cost, images for ITN-12), following conventions.md and the team plan. Store cost amounts in the currency's main unit with up to 2 decimals — not integer cents — because these are multi-currency planning figures that are never charged through the payment system.
+How the output was used:
+Claude Code added embedded activities on each day (name, description, optional HH:mm time, optional cost { amount >= 0, supported currency }, images for ITN-12), POST /api/itineraries/:id/days/:dayId/activities, PATCH /api/activities/:id and DELETE /api/activities/:id (ActivitiesService with array-filter updates). The /api/activities/:id routes find the itinerary holding the activity and answer 404 to anyone but its owner. I chose to store budget amounts in the currency's main unit with up to 2 decimals (they are planning figures in many currencies, never charged). 8 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-16
+Prompt:
+Build ITN-16: intercity transport costs embedded in the itinerary (mode, cities, amount, currency, day), following conventions.md and the team plan.
+How the output was used:
+Claude Code added embedded transport costs (mode flight/train/bus/car/ferry, fromCityId, toCityId, amount >= 0, supported currency, dayId) with POST /api/itineraries/:id/transport-costs, PATCH and DELETE /api/transport-costs/:id (TransportCostsService). Cities must be seeded and the day must belong to this itinerary (400 otherwise); other users get 404. Deleting a day (ITN-07) now also deletes its transport costs. 6 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-14
+Prompt:
+Build ITN-14: budget entries per day and a budget summary (by category, by day, by city group), following conventions.md and the team plan.
+How the output was used:
+Claude Code added embedded budget entries per day (food, accommodation, in_city_transport, activities; amount >= 0 in a supported currency), POST /api/itineraries/:id/days/:dayId/budgets, PATCH and DELETE /api/budgets/:id, and GET /api/itineraries/:id/budget-summary (budget.summary.ts). The summary gives totals by category and by day, counting activity costs under Activities and intercity transport (ITN-16) as its own line, plus each city group's subtotal (ITN-09), which also appears in the itinerary details. Totals are kept per currency here; ITN-18 converts them. I checked one itinerary by hand in a unit test. 6 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-12
+Prompt:
+Build ITN-12: upload and delete images on an activity (at most 5, JPG/PNG, using Aabsy's GEN-08 upload utility), following conventions.md and the team plan.
+How the output was used:
+Claude Code added POST /api/activities/:id/images and DELETE /api/activities/:id/images/:imageId (ActivityImagesService) using Aabsy's shared upload utility (GEN-08: @ImageUpload, UploadsService; JPG or PNG, 5 MB, GIFs rejected). At most 5 images per activity: the limit is checked first and again inside the update's filter, and saved files are deleted if a parallel upload filled the slots. Deleting an image or an activity deletes the files, unless a clone (ITN-21) still uses them. 6 unit tests were added. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-18
+Prompt:
+Build ITN-18: exchange rates module (FXRatesAPI, cached daily) and convert the budget summary to the user's preferred currency, following conventions.md and the team plan.
+How the output was used:
+Claude Code added src/exchange-rates: the ExchangeRate collection (one document per day: date, base USD, rates) and ExchangeRatesService, which fetches FXRatesAPI with FXRATES_API_KEY from backend/.env (ConfigService only) once a day (cron at 01:00 UTC) and on first need, caches the rates, uses the latest cached rates when the API is down (and waits 10 minutes before retrying), and answers 503 only if nothing was ever cached. GET /api/itineraries/:id/budget-summary now converts every amount to the user's preferred currency (ACC-09) and shows rateDate and ratesAreOld, keeping the totals in the original currencies under original. Booking prices are not converted (PAY-04). 8 unit tests were added, including the API being down with a wrong key. npm run build, npm test and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-21
+Prompt:
+Build ITN-21: public search and view of Public itineraries, and clone (registered users only), following conventions.md and the team plan. The clone must share image URLs with the original rather than copying the files — ITN-12's reference counting already handles cleanup when either copy is deleted.
+How the output was used:
+Claude Code added PublicItinerariesService and PublicItinerariesController: GET /api/itineraries/public/search (guests too; keyword matches the title, a country name or code, or a city name; filters minDays/maxDays, country, city; minDays above maxDays gives 400), GET /api/itineraries/public/:id (read-only with author, numbered days, activities and budget) and POST /api/itineraries/:id/clone (registered users only). Only Public, not hidden (GEN-10) itineraries by authors who are not deactivated (ACC-12) are shown; anything else is 404, so setting Private (ITN-20) removes it at once. The clone is a deep copy with new ids of days, activities, budgets and transport costs, Private, with clonedFrom crediting the author, and independent of the original. The public controller is registered before the :id routes, and both public routes were added to PUBLIC_ROUTES in src/auth/route-guards.spec.ts as the team plan says. I reviewed the clone sharing image URLs; ITN-12 keeps a file while any copy uses it. 6 unit tests were added. npm run build, npm test (439 passed) and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-25
+Prompt:
+Build ITN-25: hotel availability for an itinerary city group (check-in/out from the group's days), following conventions.md and the team plan. Memo's hotel search route is not merged yet, so use the available part of HTL-11 (HotelAvailabilityService.freeRoomsByHotel) as a stand-in. Leave a TODO so it is easy to swap for the real search route once it ships, ensuring both endpoints always agree.
+How the output was used:
+Claude Code added GET /api/itineraries/:id/hotels?groupIndex&guests&rooms (ItineraryHotelsService): check-in is the city group's first day and check-out the day after its last day. Memo's hotel search route (HTL-11) is not in develop yet, so it uses the part of HTL-11 that is merged, HotelAvailabilityService.freeRoomsByHotel, over the city's active hotels, with a guests/rooms capacity check, cheapest first. I left a note to replace this with one call to Memo's search service once GET /hotels/search is merged, so the two always return the same hotels. 4 unit tests were added. npm run build, npm test (443 passed) and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-17
+Student: Ziad Moharam
+Tool: Claude Code
+Related Requirement: ITN-26
+Prompt:
+Build ITN-26: flight search for an itinerary (origin airport, destinations from the first day's city, Aabsy's FLT-11 behind a contract with 501 until it ships), following conventions.md and the team plan.
+How the output was used:
+Claude Code added GET /api/itineraries/:id/flights?origin&roundTrip (ItineraryFlightsService): the origin must be a listed airport (Hazem's AirportsService.assertAirportExists), the destinations are every airport in the city of the first day, the outbound date is the start date and, with roundTrip=true, the return date is the last day's date. Aabsy's flight search (FLT-11, FLT-12) is not in develop yet (only its query DTO is on a branch, and there is no Flight schema), so the search goes through a FLIGHT_SEARCH contract: until Aabsy's service is provided for it, the route answers 501 with the computed search, as Memo did for Stripe. Wiring it later is one provider line in ItinerariesModule. 5 unit tests were added. npm run build, npm test (448 passed), npm run test:e2e (Swagger checks, 8 passed, database flow skipped) and eslint on the new files passed.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-11, ITN-25
+Prompt:
+Do what is still open from Ziad's PR except Aabsy's work: build my HTL-11 hotel search route and switch Ziad's ITN-25 to it, as the team plan says.
+How the output was used:
+Claude wrote GET /api/hotels/search (public, paginated): city or country, checkIn, checkOut, guests and rooms (default 1); 400 for checkOut not after checkIn, checkIn in the past, no or an unknown city or country. It lists active hotels with at least `rooms` free rooms (from HotelAvailabilityService.freeRoomsByHotel) whose largest occupancies cover the guests, cheapest first, with fromPricePerNight and freeRoomCount. The logic is in HotelSearchService.search(), exported from HotelBookingsModule, and ITN-25 now calls it instead of its own copy (Ziad's module; he was told in the PR). Unit tests cover the plan's cases (rooms of 2 and 3: 5 guests in 2 rooms listed, 6 guests or 3 rooms not; yesterday and checkOut = checkIn give 400). npm run build, npm test (457 passed), npm run test:e2e and the read-only eslint check on the changed files passed. Not yet tried in Swagger against Atlas (this computer's IP is not on the Atlas access list).
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-01, ACC-04, ACC-05, ACC-06, ACC-08, ACC-09, ACC-18, ACC-19, FLT-02, GEN-12, ACC-11, FLT-01, FLT-09, GEN-06
+Prompt:
+Look at the team plan PDF. Earlier I asked Claude to remove the work already done from the PDF, but that was wrong: if any feature is missing from the plan PDF, put it back in the PDF under the one responsible for it.
+How the output was used:
+Claude compared the PDF text with the tracker and found 10 requirements missing (Hazem's finished accounts work ACC-01, ACC-04, ACC-05, ACC-06, ACC-08, ACC-09, ACC-18, ACC-19, plus FLT-02 and GEN-12) and 4 of Hazem's cards cut down to "what is left" (ACC-11, FLT-01, FLT-09, GEN-06). It rebuilt the PDF from the 15 November sources with the owner changes kept: every requirement is listed again in its owner's chapter, finished ones under "Already done or Milestone 2 only", the four partly done cards show their full scope with a status line, and Hazem's phase 1 is back in the phase table marked merged. Statuses come from the tracker after PR #162. Checked that all 115 requirement texts appear in the new PDF exactly once. The tracker was not changed.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-01, ITN-03, ITN-05, ITN-07, ITN-08, ITN-09, ITN-10, ITN-12, ITN-14, ITN-16, ITN-18, ITN-20, ITN-21, ITN-25, ITN-26
+Prompt:
+Test Ziad's (Moharm's) PR #163 and merge it, then do what is still open except Aabsy's work: update the tracker, test it against the shared database, and note that Memo and Hazem are both team leaders.
+How the output was used:
+Claude checked out the PR merged with the latest develop and ran npm run build, npm test (448 passed), npm run test:e2e and the read-only eslint check (the PR's files are clean; 4 prettier errors in common/helpers already exist on develop). It reviewed the routes for @Roles, DTO validation, owner checks (404 for other users), public-search filters and the FXRatesAPI key, found no blocker, and I merged the PR. It then marked ITN-01 to ITN-21 Done and ITN-25 and ITN-26 In Progress in the tracker CSV and xlsx (Moharm sheet and Summary counts too), with the PR link, test evidence and the remaining blockers. The live test against Atlas could not run because this computer's IP is not on the Atlas access list.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-11, ITN-25, ITN-01
+Prompt:
+I have access to MongoDB Atlas now: test Ziad's itinerary routes and my HTL-11 search against the shared database, then merge #164 and #165.
+How the output was used:
+Claude ran the backend against Atlas and walked through Ziad's ITN routes with two TEST users (42 of 42 checks passed; ITN-18 answers 503 because FXRATES_API_KEY is empty, as designed). For HTL-11 it inserted TEST hotels, rooms and room locks directly (there are no hotels in Atlas yet), and 17 of 17 checks passed, including ITN-25 returning the same hotels as GET /hotels/search. The live test showed the reference cities include New York and London, so it changed the past check-in rule from the UTC date to the local date of the city's airport time zone, with tests. All TEST users, itineraries, hotels, rooms and locks were deleted afterwards. I merged #164; this branch marks HTL-11 and ITN-25 Done.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-08, GEN-06, ITN-21
+Prompt:
+Phase 1 is finished: test everything that is merged, make sure it works and is ready for the next phase, and also test anything we already built from the next phases, in the best way.
+How the output was used:
+Claude listed every route in develop (56 Swagger operations), ran the build, unit, e2e and lint checks, and wrote live test scripts that run against the backend on the shared Atlas database with TEST accounts it created directly in the database (admin, two hotel moderators, two airline moderators, users): 182 API checks (accounts, lockout, cookies, idle expiry, change password, roles, airports, airlines, hotels, policies, photos, rooms, ranges, search, uploads, notifications, audit log, unique indexes), 19 service checks of the room-night locks (10 parallel holds on one room: exactly 1 wins; all-or-nothing multi-room holds; expiry, confirm, release, blocking), plus the itinerary (42) and hotel search (17) checks. It found one bug: a file sent in the wrong form field gave 500 on every upload route, because multer 2 renamed its error message and Nest 10 matches the old one; it fixed it by matching multer's error code, with an HTTP test. It also applied prettier to the 4 lint errors in common/helpers and added the only missing Swagger success example (GET /itineraries/public/:id) from a real response. All 260 live checks pass on the fixes, and every TEST record and uploaded file was deleted afterwards. I reviewed the findings and the three PRs.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-14
+Prompt:
+Hazem needs ACC-14 for his phase 2 work (ACC-13, ACC-15, ACC-16 go in the same admin module). Build it.
+How the output was used:
+Claude created src/admin (AdminModule, registered in app.module.ts) with a comment telling Hazem and Hasan to add their own controllers there, and GET /api/admin/accounts in admin-accounts.controller.ts: admin only, 10 per page, newest first, ?search on name or email (escaped regex, case-insensitive), ?role and ?status validated as enums, ?sort by name, email or createdAt. The service selects only name, email, role, status, assignedProviderId and createdAt, so no password, token, lockout or session fields leave the server. Unit tests cover the plan's cases (role=pilot and limit=11 give 400, search matches name and email, both filters together, literal search text, sort whitelist). npm run build, npm test (469 passed), npm run test:e2e and the read-only eslint check pass, and a live test on Atlas with TEST accounts passed 17 of 17 checks (11 matching users give pages of 10 and 1; a normal user gets 403, no login 401); the TEST accounts were deleted.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-03, FLT-04, FLT-30, GEN-06
+Prompt:
+Start my phase 2 (inventory) from the team plan, my part only: the flight inventory Aabsy books against. FLT-03 create a flight (local times stored in UTC, the 4 rejection rules, airline from the session), FLT-04 cabins from the fixed set, FLT-30 Scheduled/Cancelled/Departed with isBookable(), and GEN-06 local times in every flight response.
+How the output was used:
+Claude added src/flights: the Flight schema with embedded cabins (the contract in Part B3), POST /api/flights, GET /api/airlines/:id/flights (own airline), POST /api/flights/:id/cabins with one conditional update so a category cannot be added twice, a per-minute job that sets Departed, isBookable()/bookableFilter()/availableSeats() for Aabsy and Memo, and FlightsService.toViews() that returns each time in UTC and in its airport's zone. A unique index on (airline, number, local departure date) gives 409. Unit tests cover the plan's "Test when done" cases (CAI to DXB times, same airports, arrival before departure across zones, past departure, duplicate, cabin 409/400/403). I tested the routes in Swagger.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-08, FLT-09, FLT-01
+Prompt:
+Phase 2, my airline routes: FLT-08 PUT /airlines/:id/baggage-policy, the FLT-09 route PUT /airlines/:id/cancellation-policy using the merged tier helper, and the FLT-01 logo upload now that Aabsy's GEN-08 is merged (one image, replaces and deletes the old file). Only the airline's own moderator.
+How the output was used:
+Claude added BaggagePolicyDto (extraBagPrice integer cents > 0, maxExtraBags whole number >= 0), the two PUT routes (the tiers validated by the shared CancellationPolicyDto) and POST /airlines/:id/logo with the shared @ImageUpload('logo', IMAGE_LIMITS.AIRLINE_LOGO) and UploadsService (the old logo file is deleted; the new file is deleted again if saving fails). Unit tests cover the plan's cases (0, -1, 1.5 rejected, 403 for another airline's moderator, logo replaced). I tested the routes in Swagger.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-05
+Prompt:
+Phase 2, FLT-05 on top of the flight inventory PR: the airline moderator edits departure/arrival times (and airports while there is no booking) of their own Scheduled flights, and cabin prices and seat counts. Seats never below booked + held as one conditional update; a time change notifies only Confirmed passengers (GEN-01). Aabsy's booking module is not merged yet, so do not import it.
+How the output was used:
+Claude added PATCH /api/flights/:id and PATCH /api/flights/:id/cabins/:cabinId. The seat rule is a single findOneAndUpdate whose $expr checks the cabin's bookedSeats + heldSeats against the new total, so a hold at the same moment cannot slip in. Bookings are read through a small FLIGHT_BOOKINGS_READER contract (hasBookings, confirmedUserIds) that Aabsy's module will provide; until then booked or held seats lock the airports and nobody is notified. Unit tests cover 409 below booked + held, airports locked by a booking, edits of Cancelled or Departed flights (400), and one notification per Confirmed passenger on a time change. I reviewed the contract before sharing it with Aabsy.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-13, ACC-15, ACC-16
+Prompt:
+Phase 2, my admin routes in src/admin: ACC-13 POST /admin/moderators (name, email, role, providerId, temporaryPassword; the provider must exist for that role; mustChangePassword), ACC-15 suspend and reactivate moderators plus deactivate and reactivate airlines and hotels, ACC-16 the same suspend routes for users. Audit log and notifications for every action. Keep it out of Memo's admin module.
+How the output was used:
+Claude added AdminAccountsModule with its own controller and service: POST /admin/moderators (bcrypt hash, assignedProviderId, mustChangePassword true, no password fields in the response, 404 if the airline or hotel for that role does not exist, 409 on a duplicate email), PATCH /admin/accounts/:id/suspend|reactivate (status and sessionVersion in one conditional update so sessions end at once, admins cannot be suspended, 409 if already in that state), and PATCH /admin/airlines|hotels/:id/deactivate|reactivate (isActive, moderators notified with PROVIDER_SUSPENDED). Each action writes an AuditService row. Unit tests cover the plan's cases; I tested the routes in Swagger with TEST accounts.
+================================================
+
+================================================
+Date: 2026-11-16
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-11, FLT-12, FLT-15, FLT-19, FLT-21
+Prompt:
+Finish everything in my chapter that does not depend on anyone. Hazem's Flight schema (FLT-03, FLT-04) is not in develop yet, so build the flight rules that need no schema: passenger types by age on the departure date, the passenger mix, seats needed, the price calculation (infants 10%, baggage fee = extra bags x extraBagPrice), the search criteria and sort, and the search and quote DTOs, with the "Test when done" cases from my chapter as unit tests. Explain each part.
+How the output was used:
+Claude wrote src/flight-bookings/flight-booking.rules.ts (CabinCategory and PassengerType enums, ageOn, passengerTypeForAge, seatsNeeded, assertPassengerMix, assertPassengers, assertSearchCriteria, parseFlightSort, priceInRange, fareFor, assertExtraBags and priceBooking, the one price function the summary, the hold and the payment will share) and the FlightSearchQueryDto and FlightQuoteDto. Errors use the GEN-02 field format (for example passengers.1.dateOfBirth). Unit tests cover the chapter's cases: a 13-year-old "child", adults=0, 2 infants with 1 adult, the same airport twice, returnDate before date, minPrice above maxPrice, 100/200/300 with 200-300 giving 2, 2 adults and 1 infant in a 200 USD cabin costing 420 USD, too many or too heavy bags. Decisions to confirm with the team: extra bags apply to every segment of a round trip, the same cabin is used both ways, and the search takes adults/children/infants instead of a single passengers count. The routes come once Hazem's Flight schema is merged.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-11
+Prompt:
+Hazem's flights are merged. Build my items one at a time, starting with FLT-11, show me what you are doing and commit after every chunk so we can go back if something breaks: GET /api/flights/search (public) for Scheduled flights of active airlines on a local date at the departure airport with enough free seats, 400 for unknown or identical airports, and 200 with "No flights found" when nothing matches. Reuse Hazem's helpers.
+How the output was used:
+Claude merged develop into my branch (keeping both sides of AI_PROMPTS.txt and restoring the header of my GEN-01/GEN-07 entry), switched my rules to Hazem's CabinCategory, added ?passengers next to ?adults&children&infants (passengerCounts(), mixing them is 400), and wrote FlightSearchService: assertAirportExists for both airports, localDayRangeUtc for the local day's UTC window, Hazem's bookableFilter and availableSeats, inactive airlines excluded, only cabins with enough seats, airline name/code/logo added, paginated 10 per page, and findOptions() exported for Moharm's ITN-26. FlightSearchController adds the public GET /api/flights/search with Swagger docs; FlightBookingsModule is registered before FlightsModule, and the route is in PUBLIC_ROUTES. Unit and HTTP tests cover the chapter's cases (00:30 Cairo on 2 Dec found on 2 Dec and not on 1 Dec, 3 free seats for 4 passengers not listed, infants take no seat, inactive airlines excluded, same or unknown airport 400, no match message, pagination). Claude explained each chunk before I moved on.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-12
+Prompt:
+Continue with my items one at a time and give me a progress tracker after each commit. FLT-12 in the search: round trip with ?returnDate listing outbound and return options separately, the optional ?cabin filter, and passenger types (adults and children pay the fare and take a seat, infants pay 10% and take none).
+How the output was used:
+Claude added faresTotal(counts, cabinFare) to the rules (checked against priceBooking so both always agree), made findOptions() take one criteria object { from, to, date, passengers, cabin } for Moharm's ITN-26, filtered cabins by ?cabin, added totalFare to each cabin in the results (2 adults and 1 infant in a 200 USD cabin: 42000 cents), and added returnFlights: the reversed route on returnDate (the local date at the return's departure airport) as its own paged list with its own "No flights found", or null for one way. Swagger shows the new fields. Tests cover the 420 USD case, the cabin filter, the reversed route and Dubai's local day, separate empty messages and returnDate before date (400). Claude reported each commit with a progress tracker.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-15
+Prompt:
+Next item, FLT-15: filter the flight search by an inclusive minimum and maximum price while keeping the other criteria, 400 when min is above max, and sort by price, duration or departure time. Tracker after each commit.
+How the output was used:
+Claude added lowestPrice to each result (the chosen cabin's price per seat, or the cheapest cabin with enough seats), filtered on it with the existing priceInRange rule, and sorted the whole result before paging with parseFlightSort (price, duration as arrival minus departure in UTC, or departure; :asc or :desc; ties by earliest departure; unknown sort is 400). minPrice, maxPrice and sort are also part of the findOptions() criteria for Moharm. Swagger documents the new parameters and field. Tests cover 100/200/300 with 200-300 giving 2, min above max (400), every sort order both ways, an unknown sort and the chosen cabin's price.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-17
+Prompt:
+Next item, FLT-17: a public flight details page with the airline, flight number, airports, local departure and arrival times, duration, every cabin with price, seats remaining and baggage allowance, and the airline's cancellation policy. Tracker after each commit.
+How the output was used:
+Claude wrote FlightDetailsService: Hazem's toViews() for local times, duration and every cabin (availableSeats = total - booked - held, freeBags, maxKgPerBag), plus the airline (name, code, logo, extraBagPrice, maxExtraBags) and its cancellation tiers sorted by daysBefore. Unknown or invalid ids, Cancelled flights (the plan's suggestion) and flights of inactive airlines answer 404; a departed flight is shown as Departed and not bookable. GET /api/flights/:id is public, declared after GET /flights/search in the same controller, and listed in PUBLIC_ROUTES. Tests use Hazem's real toViews() with Cairo and Dubai time zones, and an HTTP test checks that /flights/search is never read as an id.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-11, FLT-12, FLT-15, FLT-17
+Prompt:
+Review PR #156. Then: fix them myself (the review findings on Aabsy's flight search PR).
+How the output was used:
+Claude reviewed PR #156 merged with develop (build, 610 tests and lint passed) and found four problems, which it fixed on the PR branch in separate commits: round-trip returnFlights used the outbound ?page, so a new ?returnPage pages them on their own; a same-day round trip listed flights back that leave before the outbound lands, now left out; minPrice/maxPrice only checked the cheapest cabin, now each cabin's price per seat is checked and cabins outside the range are left out; the public search and details showed bookedSeats and heldSeats, now only availableSeats (publicCabin(), PublicCabinDto). It also made one airline query per flight list instead of two, and marked FLT-11/12/15/17 In Review in the tracker. A review point about reusing Hazem's fieldError() was dropped: Aabsy's version is the one that matches the shared error format. I checked each change and the new tests before pushing; Aabsy's original code is otherwise unchanged.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-11, FLT-12, FLT-15, FLT-17, FLT-19, FLT-21, FLT-22, FLT-23, ACC-13, ACC-15, ACC-16, FLT-01, FLT-03, FLT-04, FLT-05, FLT-08, FLT-09, FLT-30, GEN-06
+Prompt:
+Yes, fix the tracker (after merging #156: bring the rows from #156 and from Hazem's #169 to #172 up to date).
+How the output was used:
+Claude checked on GitHub which issues #156 and #169 to #172 closed and which spec files each PR added, then updated 19 rows in the CSV and the xlsx (Tracker sheet, Hazem's and Aabsy's sheets, Summary counts recounted from the Tracker sheet): 14 to Done with their PR link and test file, FLT-12 and FLT-19/21/22/23 to In Review with #175. A script checked that the official columns, owners, milestones and notes did not change and that the CSV and the Tracker sheet match row for row; the Summary counts for the other members came out unchanged, which confirmed the recount.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-07a
+Prompt:
+ok now i need to do whats left of my phase 2 work i think one requirment. (Then, after checking that the code and the team plan use admin/accounts for every other account route:) Yes, build it.
+How the output was used:
+Claude found that ACC-07a was the only phase 2 item left in my chapter of the team plan and built it at POST /api/admin/accounts/:id/reset-password instead of the plan's admin/users path, because every other account route in the code and in the plan uses admin/accounts. ResetPasswordDto reuses PASSWORD_REGEX; AccountPasswordService stores the bcrypt hash, sets mustChangePassword, clears refreshTokenHash and bumps sessionVersion in one update (conventions.md, "Temporary passwords"), refuses admin accounts with 403, and writes a PASSWORD_RESET audit row without the password. It reuses Hazem's toManagedAccount() and ACCOUNT_NOT_FOUND. Unit tests cover the plan's cases. Claude also ran a live check on a local server against the shared database with a TEST admin and a TEST user (19 checks: weak password 400, malformed id 400, unknown id 404, admin target 403, normal user 403, no login 401, reset 200, old session 401, temporary login then 403 on /users/me, change-password then 200) and deleted both accounts and the audit row afterwards.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-15
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way
+How the output was used:
+Claude planned phase 3 as four PRs (HTL-15, HTL-12, HTL-16 with HTL-18, PAY-02) and built HTL-15 first: GET /api/hotels/:id/rooms/available, a public route in its own controller that calls my HotelAvailabilityService.freeRooms() from HTL-11 and returns each free room's type, beds, maxOccupancy, pricePerNight, nights and totalPrice in USD cents, with the same date rules as the hotel search and 404 for an unknown or inactive hotel. Unit tests use the real availability service with an in-memory lock store and cover the plan's cases (a Booked and a Blocked night leave only the third room, expired holds count as free, past check-in and bad dates are 400). A live check on a local server against the shared database with a TEST hotel, rooms and locks passed 11 checks; the test data was deleted. It also marks ACC-07a Done in the tracker after #177.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-12
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way (second item: HTL-12)
+How the output was used:
+Claude extended my HTL-11 HotelSearchService.search() with optional minPrice, maxPrice, minRating and sort criteria, so GET /api/hotels/search filters by the price per night of the cheapest free room (inclusive), by minimum average rating (unrated hotels excluded when it is set) and sorts by price or rating with :asc or :desc. Moharm's ITN-25 call is unchanged because the new criteria are optional. Unit tests cover the plan's cases (50/80/120 USD with 80-120 giving 2, minRating=4 hiding an unrated hotel, both sort orders, min above max and minRating=6 giving 400). A live check on a local server against the shared database with four TEST hotels passed 10 checks; the test data was deleted.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-16, HTL-18
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way (third item: HTL-16 with HTL-18, one PR because the plan says the booking request performs the hold and there is no draft status)
+How the output was used:
+Claude built POST /api/hotel-bookings and the HotelBooking schema following the same shape as Aabsy's FlightBooking (#175): HotelHoldService validates the request (one adult per reservation, child ages 0-17, maxOccupancy per room, same hotel, dates), takes a price snapshot (sum of nights x price per room), locks every room night together with my HotelAvailabilityService.lockNights() (all or nothing on the unique index) and creates the reservation as PendingPayment for 10 minutes. HotelBookingJobs expires overdue holds every minute through PaymentsService.releaseInventory(), and HotelPaymentHandler is registered as the 'hotel' handler (confirm is left for HTL-17). Unit tests cover the rules, the hold and the expiry. A live check on a local server against the shared database passed 21 checks, including two users holding the same room at the same moment (one 201, one 409, one set of locks), a Blocked night making the whole request 409 with nothing held, a later price change not altering the total, and the minute job expiring a hold and freeing the room. All test data was deleted.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-02
+Prompt:
+now i want u to do my phase 3 requirments one by one give each one of them their time and their tests and dont just do them together except if any is linked together do them in the professional way (fourth item: PAY-02)
+How the output was used:
+Claude built PAY-02 in my payments module: GET /api/bookings/:type/:id/policies and POST /api/bookings/:type/:id/accept-policies (the acceptance checkbox, accepted must be true). PaymentsService checks the owner (404), the status and the hold (409) once for both booking types, and the PaymentHandler contract gains optional getPolicies() and acceptPolicies(), so Aabsy's open flight PR (#175) still compiles; a type without them answers 501. The hotel handler returns the hotel's cancellation tiers and check-in/check-out times and stores policiesAcceptedAt once while the reservation is PendingPayment and held. Payment already answers 400 until it is set (getPayableFor). Unit tests cover the plan's cases; a live check on a local server against the shared database with a TEST hotel and reservation passed 18 checks, and the test data was deleted. The flight side (airline cancellation tiers and baggage policy) is left for FlightPaymentHandler once #175 is merged.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: BLG-05, BLG-06, BLG-07, GEN-09, GEN-10
+Prompt:
+ok now i want to change something in the plan and the team i want u to add a new teammate called emad and give him my work from phase 4 and any two requirements from hasans work ... (then) no i have a better idea take from hafez what do u think ... (then) i think thats not enough he will get a deduction or what if yes give him more from hafez
+How the output was used:
+Claude advised against giving Emad my phase 4 (PAY-01 is High complexity and blocks Aabsy's FLT-23 and all of Hasan's cancellations two days before the deadline) and against Hasan's items (all but ACC-12, which Hasan started, wait on FLT-23 or HTL-17). It checked the project description: it sets no per-member quota, but Git history must show meaningful contributions, so two items looked thin. I chose to move five of Hafez's items (13, none started) to Emad: comments and likes (BLG-05, BLG-06, BLG-07) and reports and moderation (GEN-09, GEN-10). Claude updated the tracker CSV and xlsx (Owner column, an Emad sheet, Emad in the Owner list, the Summary) with a script that checked nothing else changed, updated comments in hotel-bookings and itineraries that named Hafez for GEN-09/GEN-10, and set PAY-02 to In Progress (hotel side merged in #181).
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-19, FLT-21
+Prompt:
+Next items, FLT-19 and FLT-21: POST /api/flight-bookings for registered users with each passenger's full name, date of birth and passport/ID number and optional extra bags up to the airline's maximum, returning the booking summary (flights, passengers, baggage, total) before payment, using the same price function the hold will use. Tracker after each commit.
+How the output was used:
+Claude wrote FlightQuoteService.quote(): it loads the outbound flight and an optional return (404 for unknown or Cancelled, 409 once departed; the return must fly the reversed route and leave after the outbound lands, else 400), checks each passenger's type against the date of birth on the outbound local departure date, rejects inactive airlines (404), a missing cabin (400) and too few free seats (409 with the seats left), and prices everything with priceBooking() (infants 10%, extra bags x the airline's extraBagPrice per segment, limited by maxExtraBags and the cabin's maxKgPerBag). The summary has each segment (airline, airports, local times, cabin, fare, baggage allowance), the passengers, the counts, the seats needed and the price breakdown. FlightBookingsController adds POST /api/flight-bookings for Role.USER, answering 200 because nothing is created, with Swagger examples for 400/401/403/404/409. Tests cover the chapter's cases (13-year-old "child", too many and too heavy bags, the fee added, 420 USD) plus round trips, missing cabins, seats, inactive airlines and client-sent totals.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-22, GEN-11
+Prompt:
+Next item, FLT-22: when a user proceeds to payment, atomically reserve the seats only if enough remain and create a PendingPayment booking held for 10 minutes; expire it and release the seats if unpaid; concurrent requests must never book more seats than exist. Also GEN-11's flight jobs, the FlightBooking contract for Hasan and Hazem, and the flight payment handler for Memo. Tracker after each commit.
+How the output was used:
+Claude wrote the FlightBooking schema (segments with the price snapshot, passengers, totalAmount, status, expiresAt, policiesAcceptedAt, a partial unique index on reference) and FlightHoldService: it releases expired holds on the same flights through PaymentsService.releaseInventory(), quotes with the FLT-21 function, then reserves each segment with one updateOne whose $expr checks totalSeats - bookedSeats - heldSeats >= seats and $inc adds the seats (arrayFilters on the cabin), giving the seats back if the return segment or the insert fails; expire() changes only a PendingPayment booking, so a second call does nothing. FlightBookingJobs expires due holds and marks Confirmed bookings Completed after their last segment lands, every minute. FlightBookingsReaderService answers hasBookings, confirmedUserIds (under Hazem's FLIGHT_BOOKINGS_READER token) and hasUpcomingConfirmed (Hasan); FlightPaymentHandler gives Memo getPayable and expire and is registered at startup; the module is @Global. POST /api/flight-bookings/hold (Role.USER, 201) is documented in Swagger. Claude ran MongoDB 8 locally: test/flight-hold.e2e-spec.ts (runs with E2E_MONGODB_URI) shows 1 seat with 2 simultaneous holds giving one 409 and heldSeats 1, 40 holds on 10 seats giving exactly 10, a full return releasing the outbound seats, expiry, the Completed job and the reader. It also ran the real server and went through register, login, search, details, quote and hold over HTTP.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Mostafa Abuelabbas
+Tool: Claude (claude.ai)
+Related Requirement: FLT-23
+Prompt:
+Last item, FLT-23: after a successful payment set the flight booking to Confirmed, turn the held seats into booked seats, generate a unique booking reference, show a confirmation page, send an in-app notification and offer a downloadable e-ticket PDF. Tracker after each commit, then open the pull requests.
+How the output was used:
+Claude added pdfkit (the plan's suggestion; npm audit unchanged) and FlightConfirmationService: confirm() returns at once for an already Confirmed booking (Stripe may repeat events), throws 409 for Expired or Cancelled ones so Payments can refund, changes PendingPayment to Confirmed with an FL- reference in one conditional update (retrying on the rare duplicate reference), moves heldSeats to bookedSeats only after winning that update, and sends BOOKING_CONFIRMED without letting a failed notification undo the booking. The flight payment handler's confirm() now calls it. GET /api/flight-bookings/:id shows the owner's booking with local times (404 for anyone else) and GET /api/flight-bookings/:id/e-ticket returns a PDF with the reference, flights, local times, passenger names and total (400 unless Confirmed; passport numbers left out). The Swagger e2e check found that @ApiProduces hid the 401 example, so the PDF type was moved to the 200 response. Unit tests cover each case and read the text inside the PDF; against MongoDB, the full flow through Memo's real PaymentsService (webhook sent twice, one notification, 2 held -> 2 booked), an Expired booking refused, and payment and expiry at the same moment with exactly one winning.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-22
+Prompt:
+can we fix it for him (the AI_PROMPTS.txt merge conflict on Aabsy's PR #175)
+How the output was used:
+Claude merged develop into feature/FLT-19-flight-quote. Git's line merge had interleaved the two sides' entries in AI_PROMPTS.txt, so it rebuilt the end of the file instead: develop's version first, then Aabsy's three entries (FLT-19/FLT-21, FLT-22/GEN-11, FLT-23) whole, and checked that every block keeps its header and closing line. No code changed in the merge. Build, unit tests and the read-only eslint check passed on the merged branch before it was pushed.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-12, FLT-19, FLT-21, FLT-22, FLT-23
+Prompt:
+Review #175 ... can we fix it for him ... Merge it ... (then) Yes, do it (open the tracker PR marking these five Done)
+How the output was used:
+After #175 was merged, Claude set FLT-12, FLT-19, FLT-21, FLT-22 and FLT-23 to Done in requirements-tracker.csv and .xlsx (Tracker sheet, Aabsy's sheet, Summary) with each one's spec files as test evidence, and a note on FLT-12 that cancelling a round trip as a whole comes with Hasan's FLT-26. A script edited only the Status, Test evidence and Blocker / notes cells, checked that the CSV and the Tracker sheet match row for row and that the other parts of the xlsx are unchanged, and recounted the Summary from the Tracker sheet: only Aabsy's row (12 of 12 done) and the Total (59 of 104) changed. All six issues of #175 were already closed by the merge.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-01
+Prompt:
+what do i do now ... how do i setup the env ... can u do step 2 for me (install the Stripe CLI) ... Start PAY-01
+How the output was used:
+Claude installed the Stripe CLI with winget (I approved the download and licence and authorised it for my "memo sandbox" in the browser) and wrote the webhook secret from `stripe listen --print-secret` into backend/.env without showing it. It then built PAY-01: POST /api/bookings/:type/:id/pay creates a Stripe PaymentIntent for the booking total (one idempotency key per booking, so a retry after a declined card reuses it) and returns the clientSecret; POST /api/payments/webhook verifies the Stripe signature on the raw body and confirms the booking only on payment_intent.succeeded, after checking amount and currency; failed and canceled events mark the payment Failed or Expired; a payment for a booking that can no longer be confirmed is refunded in full. A Payment schema stores only the PaymentIntent id, amount, currency and status with the booking and user. Hold expiry now cancels the PaymentIntent first and confirms instead if Stripe says it already succeeded. StripeGateway is the only Stripe caller; env.validation refuses live keys. Unit tests use a fake Stripe and Payment model, and the signature tests use Stripe's own test-header helper. Three test files that build PaymentsService by hand (two of mine, Aabsy's flight-hold e2e) now pass the model and gateway. Live test against the shared database with TEST data and the Stripe sandbox: pay before accepting policies 400; test Visa -> webhook -> Confirmed with an FL- reference, seat booked, notification; declined card -> Failed, retry returned the same PaymentIntent and then confirmed; hold expired during payment -> PaymentIntent cancelled at Stripe, booking and payment Expired, seat released, /pay 409; forged webhook 400. All TEST data was deleted afterwards. Build, 759 unit tests and the read-only eslint check pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-02
+Prompt:
+is all my work in phase 3 done? ... Yes, add them (the two flight PAY-02 methods)
+How the output was used:
+Claude checked the team plan: my phase 3 is HTL-16, HTL-18, PAY-02, HTL-15 and HTL-12, all Done except PAY-02, whose flight side was missing; Aabsy had not answered the comment on #175 asking who adds it. With the deadline a day away I asked Claude to add it. It added getPolicies and acceptPolicies to Aabsy's FlightPaymentHandler, following my hotel version: the outbound airline is the provider and its cancellation tiers apply to the whole booking (FLT-12a), baggage shows its extra-bag price and limit and each booked cabin's free bags and weight; acceptance is stored once, only while PendingPayment within the hold. The handler now also takes the Flight and Airline models, so Aabsy's flight-hold e2e passes them. Unit tests cover a round trip with two airlines, unknown ids and the acceptance rules. Live check on the shared database with TEST data (deleted afterwards): policies 200 with the airline's tiers and baggage, accepted:false 400, accept 200 and again 200 keeping the first time, stored in the booking, 401 without a session and 404 for another user. Build, 742 unit tests and the read-only eslint check pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-17
+Prompt:
+Start HTL-17
+How the output was used:
+Claude followed my chapter of the team plan (confirm(): Confirmed, Held locks to Booked, HT- reference with a unique index and retry, BOOKING_CONFIRMED notification; GET /api/hotel-bookings/:id). Before writing it, it found that lockNights clears other reservations' expired Held locks, so a payment arriving after the hold could have confirmed a reservation whose night was already taken. confirm() therefore checks that all rooms x nights are Booked for the reservation; if not, it expires it, frees its nights and answers 409, so PAY-01 refunds in full. The confirmation page uses assertOwner (404 for others) and adds the hotel's address and check-in/check-out times. Unit tests cover confirming, a repeated event, Expired and Cancelled refused, a lost night, a failed notification and ownership; an old HTL-18 test that expected 501 now checks the hand-over. Live test with the Stripe sandbox and TEST hotel, rooms and users (deleted afterwards): 2 rooms x 3 nights paid with the test Visa -> Confirmed, HT- reference, 6 nights Booked, notification with the details; one held night deleted before paying -> Expired, nights freed, no notification, and Stripe shows a full refund; the page answers 401 without a session and 404 for another user. Build, 771 unit tests and the read-only eslint check pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-03
+Prompt:
+Start PAY-03
+How the output was used:
+Claude followed my chapter of the team plan and the contract Hasan already builds against (PaymentsService.refund(type, bookingId, amount), 0 cents creates nothing). It added a Refund schema (booking, user, payment, Stripe refund id, amount, currency, status Pending/Refunded/Failed); refund() refunds part or all of the booking's succeeded payment through the Stripe Refunds API, never more than what is left, creates the record first so its id is the idempotency key, and records a Stripe error as Failed instead of throwing so a cancellation never half-fails. Stripe's refund webhook events move the status on (never back to Pending; Refunded to Failed when the bank rejects it) and tell the user when it fails. Users get a REFUND_ISSUED notification; GET /api/refunds/:id shows their own refund (404 for others); the booking details list their refunds (my hotel route, and a refunds field in Aabsy's flight controller). PAY-01's full refund for a payment that cannot be confirmed now uses the same path, so it is recorded. Unit tests use the fake Stripe and an in-memory model. Live test (Stripe sandbox, TEST hotel, rooms and users, deleted afterwards), calling the real refund() from the built app as Hasan's cancellations will: 0% -> no record; 50% -> 450.00 USD refund Refunded at Stripe, notification, shown on GET /refunds/:id (another user 404) and on the reservation details; more than what is left -> 409; a card whose refund the bank rejects (pm_card_refundFail) -> Refunded, then the webhook set Failed and told the user. Build, 777 unit tests and the read-only eslint check pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: PAY-03
+Prompt:
+merge (PR #190) ... Yes, open it (a tracker PR marking PAY-03 Done)
+How the output was used:
+After #190 was merged and issue #75 closed, Claude set PAY-03 to Done in requirements-tracker.csv and .xlsx (Tracker sheet, my sheet, Summary) with the same checked script as before: only the Status cell changed, the CSV and the Tracker sheet match row for row, the other parts of the xlsx are unchanged, and the Summary recount changed only my row (12 of 12 mandatory done) and the Total.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: BON-02
+Prompt:
+can i work on some of the bonus right now without waiting for the rest of the work especially hasans as he didnt start at all ... Start BON-02
+How the output was used:
+Claude checked the team plan (my bonus items may start once my own mandatory work is merged, which it is) and the project description (mandatory requirements come first; bonus never replaces them), listed which of my bonus items do not depend on Hasan or Hafez, and suggested BON-02 as the smallest while I talk to Hasan about his mandatory items. It built a new src/favourites module as my chapter suggests: POST /api/favourites saves an active hotel or a public itinerary (Moharm's findPublic decides what is public), GET /api/favourites lists them with the shared pagination (an entry that is no longer available stays listed without details), DELETE /api/favourites/:id removes my own. Unit tests cover the plan's checks. Live check with TEST hotels, itineraries and users (deleted afterwards): hotel and public itinerary saved and listed; private itinerary 404; same hotel twice 409; inactive hotel 404; bad type, sort or page size 400; itinerary made private shows available:false without details; another user's delete 404; 401 without a session. Build, 784 unit tests and the read-only eslint check pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: BLG-01, BLG-02, BLG-03, BLG-04, BLG-08, BLG-09, BLG-10, BLG-12 (review of Hafez's PR #188)
+Prompt:
+now hafez and emad make the pull req of their work on phase 2 i want u to check that all correct and no conflict and if their is problem fix it or make it from the begging if need and test them and if all test paseed correctly merge them
+How the output was used:
+As team leader I reviewed Hafez's blog PR with Claude and kept his module, routes and tests as the base. Claude fixed what stopped it from working: the build failed (the author page called PublicItinerariesService.findByAuthor, which does not exist; it now reads public, visible itineraries itself); the public routes were missing from the route-guards allowlist (the failing suite); GET /posts?tag= and ?search= were rejected by the strict validation pipe (new PostListQueryDto); the create/update body accepted any image URL, which deleting the post would then have deleted from the server (images now come only from the upload route, BLG-10/GEN-08); publishing a draft never set publishedAt; search included posts by deactivated authors and sorted every match in memory (now one aggregation: likes + comments, then newest, "No results found" when empty); another user's post was 403 on the image routes and 404 elsewhere (now 404 everywhere, ACC-11); tags are lower-cased and de-duplicated; writing routes are for the user role. Unit tests were rewritten for the new code, and the whole flow was tested over HTTP against a real MongoDB on a temporary CI branch before merging.
+================================================
+
+================================================
+Date: 2026-11-18
+Student: Emad
+Tool: ChatGPT
+Related Requirements: GEN-09, GEN-10, BLG-05, BLG-06, BLG-07
+Prompt:
+Implement Emad's assigned comments, likes, reports and content moderation requirements from Team-Plan-Milestone-1. Create the comments and reports modules, including their controllers, services, DTOs, schemas and tests. Support creating, editing and deleting comments, liking and unliking posts, submitting reports, and admin moderation actions. Integrate with the existing project modules and audit service while following the established NestJS patterns.
+
+How the output was used:
+Created the comments and reports modules, DTOs, schemas, controllers, services and unit tests; registered both modules in AppModule. Built the backend, ran all 709 tests successfully, and checked the assigned files with ESLint.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: BLG-05, BLG-06, BLG-07, GEN-09, GEN-10 (review of Emad's PR #183)
+Prompt:
+now hafez and emad make the pull req of their work on phase 2 i want u to check that all correct and no conflict and if their is problem fix it or make it from the begging if need and test them and if all test paseed correctly merge them
+How the output was used:
+As team leader I reviewed Emad's comments, likes and moderation PR with Claude and kept his modules, routes and tests. Claude resolved the AI_PROMPTS.txt and app.module.ts conflicts with develop (Hafez's blog), and added what was missing to connect the two: a public GET /posts/:id/comments (visible comments, oldest first, deactivated authors as "Deleted user"), the first page of comments on the post page, and removal of a post's comments and likes when the post is deleted by its author or an admin (with its images). Moderation now closes every open report on an item it hides or deletes and records the resolution, the admin and the time; deleting a review recalculates the hotel's rating; an admin can read hidden content (GET /admin/content/:type/:id). Roles moved from the class to each route so the public list can exist. Tests were added for each change and the whole flow was run over HTTP against a real MongoDB on a temporary CI branch before merging.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-12, GEN-13
+Prompt:
+ok can u do my work that left
+How the output was used:
+Claude checked what was still open on my two cross-cutting requirements. GEN-12: reference data was only loaded by a manual script and currencies were not stored. Now the server seeds countries, cities, airports, attractions and a new currencies collection (one per currency of the official countries, with the countries that use it) every time it starts, idempotently and after validating every row (SEED_REFERENCE_ON_START=false turns it off; npm run seed:reference uses the same service), and public GET /api/reference/countries, /cities?country=, /attractions?city= and /currencies list them. GEN-13: added an application-wide test that walks every controller and fails if any request body or query is not a validated DTO class, checks the global pipe rejects unknown fields (e.g. a self-assigned role), that password and refresh-token hashes are never selected, and scans the code so every place that writes a password writes a bcrypt hash. Tested with unit tests and against a real MongoDB on a temporary CI branch before merging. ACC-10 is M2 only (a frontend redirect) and stays for Milestone 2.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-26 (finishing Moharm's requirement at my request as team leader)
+Prompt:
+TN-26 flight search from an itinerary can u do this and test it then merge it
+How the output was used:
+Moharm's GET /api/itineraries/:id/flights answered 501 until Aabsy's flight search was merged. Claude connected it to FlightSearchService.findOptions (the method Aabsy wrote for ITN-26): one FLT-11 search per airport of the first day's city, merged and sorted, with FLT-12's round trip (return flights after the earliest outbound arrival). The outbound date defaults to the start date and the return to the last day's date, and both can now be overridden as the requirement says ("defaults to"); adults, children, infants, cabin and sort work as in GET /api/flights/search, with ?page and ?returnPage; the response has the same shape as the flight search plus the search that was run. Aabsy's toPage and byFlightSort were exported for this. Moharm's tests were rewritten for the real search, and the route was tested against a real MongoDB with real flights on a temporary CI branch before merging.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-27 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude added linked bookings to Moharm's itineraries as the team plan says: GET, POST /api/itineraries/:id/bookings and DELETE /api/itineraries/:id/bookings/:linkId. The user links their own Confirmed or Completed flight or hotel booking to a day; its total (cents / 100, a snapshot) feeds the budget through Moharm's budgetLines(): hotels under Accommodation, flights under Intercity transport, so every summary (by day, category, city group, converted, the PDF) includes it. Another user's booking or itinerary is 404, a PendingPayment one 400, linking the same booking twice 409. Deleting the day removes its links; the public itinerary view leaves linked bookings out (also from its budget), and cloning never copies them. Unit tests and an HTTP test against a real MongoDB with real bookings.
+
+Related Requirement: FLT-28 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude added seat selection to Aabsy's flight bookings as the team plan says, in its own files (only the module registration in his module changes): a seat map per cabin derived from its seats (6 a row, 4 in Business and First), GET /api/flight-bookings/:id/seats with free, taken and my seats per flight, and PATCH /api/flight-bookings/:id/seat to choose or change a passenger's seat on a Confirmed booking or one awaiting payment, before departure (infants get none). A seatassignments collection with a unique index on (flight, cabin, seat) decides a race: one passenger gets the seat, the other 409. Seats of Expired or Cancelled bookings count as free without any hook in other people's code. Unit tests, and an HTTP test against a real MongoDB with two passengers choosing the same seat at the same moment.
+
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-28
+Prompt:
+do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
+How the output was used:
+My chapter says ITN-28 lives in Moharm's src/itineraries and to agree the change with him first. To avoid changing his code, Claude built it as a separate src/itinerary-pdf module whose controller adds GET /api/itineraries/:id/pdf and uses his exported ItinerariesService.findOwned (same ownership rule as GET /itineraries/:id, 404 for others) and summarizeByCurrency for the budget. The PDF (pdfkit, as Aabsy's e-ticket) lists every day with date and city, notes, activities with time and cost, budget entries, intercity transport, and the budget per category and in total per currency. Unit tests read the text inside the PDF. Live check with a TEST user and itinerary (deleted afterwards): owner 200 application/pdf download with the right totals, another user 404, no session 401, unknown id 404, and his GET /itineraries/:id still 200. Build, 788 unit tests and the read-only eslint check pass.
+
+Related Requirement: GEN-01-B
+Prompt:
+do them (the bonus items that do not depend on anyone: ITN-28 then GEN-01-B)
+How the output was used:
+My chapter says GEN-01-B extends Aabsy's NotificationsService and to agree the hook point with him. Claude kept the change in his code to one optional hook: a new global src/email module (nodemailer, SMTP settings only in .env, off without SMTP_HOST) is called from NotificationsService.create() after the notification is saved, not awaited and never throwing; a second optional hook in Hazem's createModerator() sends the moderator invitation, deliberately without the temporary password. Unit tests use a fake SMTP transport. Live check with a local SMTP test inbox (no outside account) and the Stripe sandbox, TEST data deleted afterwards: a hotel booking confirmation produced the email "Your booking is confirmed" with the reservation details; with the inbox stopped, the next booking was still confirmed and its in-app notification created, and the server only logged ECONNREFUSED. The run also found that recent Stripe CLI versions refuse stripe listen without --events, so the README command and the webhook's Swagger text were fixed, and it showed PAY-01's hold expiry confirming a booking whose payment had succeeded but whose webhook was missed. Build, 791 unit tests and the read-only eslint check pass.
+
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-03, ITN-21, ACC-12, BLG-12 (bug fix found while testing the bonus items)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+A live test against a real MongoDB showed that itineraries store ownerId as the user id string (their schema type does not cast it), while three queries looked for an ObjectId: GET /api/itineraries (ITN-03, my itineraries) always answered 0, public itinerary search did not leave out deactivated authors (ACC-12, ITN-21), and the author page (BLG-12) never listed the author's itineraries. Claude added idInAnyForm()/idsInAnyForm() to the ownership helpers and used them in those three queries, so they match both the stored strings and ObjectIds, with no data migration; the other itinerary queries already used the string and were left unchanged. Tests updated, and checked live on the temporary CI branch.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-02, ACC-07 (bonus, Memo's items, built at my request as team leader on Memo's GEN-01-B email module)
+Prompt:
+can u check memos bonus on review and test them then start the rest that doesnt depend on hasan work then test them all and check there is no any conflict or problem then merge
+How the output was used:
+Claude built both on Memo's EmailService (two new email types) in my auth module. ACC-02: a new account is unverified and gets a single-use verification link (24 hours; only its SHA-256 hash is stored); GET /api/auth/verify-email?token= verifies it (reuse or expiry: 400), POST /api/auth/resend-verification replaces it, and holding or paying for a flight or hotel booking answers 403 until verified (a @RequireVerifiedEmail() check in the global guard). Accounts from before ACC-02, admins and moderators count as verified; with email off (no SMTP) new accounts start verified, so nothing breaks without a test inbox. ACC-07: POST /api/auth/forgot-password always gives the same answer; for an existing account it emails a link to FRONTEND_URL/reset-password that expires after 30 minutes and is replaced by a newer request; POST /api/auth/reset-password sets the new password once (a used, older or expired link is 400), signs out every session and clears a lockout. Unit tests, and an HTTP test against a real MongoDB with a real SMTP test inbox (Mailpit) on a temporary CI branch.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ITN-28, GEN-01-B, ACC-02, ACC-07, ITN-27, FLT-28, BLG-13, BON-02
+Prompt:
+Yes, merge both (#194, #195) ... Yes, sync tracker
+How the output was used:
+Before merging, Claude saw that #195's head was a commit it had not tested and found that Hazem had pushed to it; it then found that Hazem had already merged #194 and #195, plus ACC-02/ACC-07 (#206), ITN-27 (#205), FLT-28 (#204) and BLG-13 (#203), so nothing was merged twice. It checked develop (build, 918 unit tests, eslint) and that the email hooks were intact. For the tracker sync its script refused to run because the CSV and the xlsx disagreed on develop: when #194's branch was updated, the binary xlsx kept the other side's version and lost ITN-28 In Review and BON-02 Done, while the CSV merged line by line. Claude aligned the two files and set the eight rows to Done in both, with PR links and test files; Owner stays Memo (a credit question for Hazem and me), and the rows Hazem built say so in Blocker / notes. The Summary now shows 8 of my 11 bonus items done.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: BLG-01, BLG-02, BLG-03, BLG-04, BLG-05, BLG-06, BLG-07, BLG-08, BLG-09, BLG-10, BLG-12, GEN-09, GEN-10, HTL-02, HTL-05, HTL-06, HTL-08, ACC-11, ITN-26, GEN-12, GEN-13
+Prompt:
+i think there is some extra issues that i dont know where they came from they are marked as not started ... Yes, sync tracker
+How the output was used:
+Claude compared the project board, the GitHub issues, the tracker and the official sheet. No issue was extra: the 12 Not Started on the board (ACC-10, GEN-02 to GEN-05, GEN-14 to GEN-17, FLT-27, HTL-26, BON-01) are all in the official sheet and were created with the rest on 2026-10-17. The tracker was behind the board instead, so Claude synced 21 rows from the merged PRs and their tests: Hafez's blog items (#188) and Emad's comments, likes and reports (#183) to Done, Rawda's HTL-02/05/06/08 to In Review (#215), and ACC-11 (#146), ITN-26 (#199), GEN-12 and GEN-13 (#197 and earlier) to Done. Hasan's 11 rows were left to his own PR #218. Claude also added scripts/sync-tracker-xlsx.py (standard library only), which copies the CSV's team columns into the xlsx Tracker and owner sheets and recomputes the Summary, refusing to run if official columns or owners disagree; run on develop's files first, it found nothing to change, which confirmed it reproduces the existing Summary exactly.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-05, GEN-02, ITN-27
+Prompt:
+yes check for both issues of ml1 ... Yes, do both
+How the output was used:
+Claude audited the 45 GET routes on develop and the list routes in the 11 open PRs for GEN-05, and the validation pipe and error filter for GEN-02. GEN-02's backend part was already complete (details per field, nested paths, database errors in the same shape), so the tracker marks it In Progress with only the M2 frontend left. For GEN-05 every list used PaginationQueryDto and paginated() except GET /itineraries/:id/bookings (ITN-27), which returned every linked booking; Claude paginated it (10 per page, limit above 10 is 400, no sort), kept the budget counting all links, made POST and DELETE answer with the first page in the same { data, meta } shape, and added unit tests for paging and for the query DTO through the real validation pipe. Build, 920 unit tests and eslint passed. The other gap, availableRooms on the hotel details page in Rawda's #215, was raised as a comment on that PR instead of changing her code.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-05, GEN-02
+Prompt:
+now i think this wasnt supposed to be in issues what do u think i think these things must be in a rules file or something and also the frontend issues tell me what do u think ... Yes, do both
+How the output was used:
+Claude recommended keeping one issue per requirement (the project PDF asks for requirement IDs in GitHub issues for traceability) but handling GEN-02 and GEN-05 as rules: written in docs/api/conventions.md and enforced by tests, with the issue pointing to both. It added common/pagination/pagination-routes.spec.ts: every GET route must be listed as a list (query built on PaginationQueryDto with limit at most 10, and a documented { data, meta } response) or as not a list with a reason, so a new unpaginated list fails CI. Routes from open PRs are pre-listed so their CI does not break. Claude checked the test fails when a route is unlisted or a list loses its pagination query, and passes with each of the 11 open PRs merged in. Build, 926 unit tests and eslint passed. It also moved the seven M2-only frontend issues to a GitHub "Milestone 2" milestone so they leave the Milestone 1 view.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-15, ACC-07a, PAY-01 (matching the endpoint tables of the project description)
+Prompt:
+now project description has been modified from the uni so i send u the new one the yellow is the new modification so i want u to check what should we change and all the requierment of milestone 1 need and what we we finish is correct according to this modifications and if there is any issue need to change or modify and check the project board all are required for milestone 1 only
+How the output was used:
+Claude compared the description's endpoint tables (section 8, with the yellow changes), the reviewed requirements sheet and the airports dataset with the code. The requirement texts and datasets are unchanged. Three finished routes did not match the tables: ACC-15 provider deactivation is now PATCH /api/admin/providers/:type/:id/deactivate and /reactivate (:type hotel or airline, a yellow change; replaces /admin/airlines/:id/... and /admin/hotels/:id/...), ACC-07a is now POST /api/admin/users/:id/reset-password (was /admin/accounts/:id/...), and PAY-01 gained POST /api/payments, POST /api/payments/:id/retry and GET /api/payments/:id on top of Memo's PaymentsService (POST /bookings/:type/:id/pay stays). Unit tests and a live HTTP check on a temporary CI branch.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-20
+Prompt:
+okay i want to begin with my work, tell me what it is and tell me do i need anything to do first so we start clean with no problems ... Yes, start HTL-20
+How the output was used:
+Claude first checked that my setup was clean (latest develop, packages, a baseline test run) and listed my phase 5 items with what each one reuses. For HTL-20 it read Memo's HotelBooking schema, the confirmation page (GET /hotel-bookings/:id) and the team's list pattern (ITN-03), then added my own controller and service under the same /hotel-bookings prefix, as the module comment asks: GET /api/hotel-bookings?group=upcoming|past|cancelled, 10 per page. Upcoming = Confirmed stays whose check-out date has not passed (soonest check-in first) plus holds still waiting for payment; Past = Completed stays and Confirmed stays whose check-out has passed (so a finished stay leaves Upcoming even before the HTL-23 Completed job exists), most recent first; Cancelled = most recently cancelled first; Expired holds appear in no tab. Each row shows reference, hotel, rooms, dates, guests (totals over all rooms), total and status; the details stay on Memo's GET /hotel-bookings/:id. One aggregation reads only the user's reservations and uses the { userId, status, createdAt } index. 21 unit tests cover the tab rules (including the check-out day and dead holds), sorting, paging, the fields and the query validation. Live check against a throwaway local MongoDB in Docker (never the shared database): two test users and 19 reservations covering every status; each tab, the 11-row Cancelled list over two pages, the other user's booking never shown, 401 without a session, 400 for an unknown group, limit 11 or a sort parameter, and GET /hotel-bookings/:id still 200 for the owner and 404 for another user. Build, lint and all 879 unit tests pass. I reviewed the code and the tab rules before committing.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-25
+Prompt:
+Yes, start FLT-25
+How the output was used:
+Claude built FLT-25 the same way as my HTL-20, on Mostafa's FlightBooking schema: my own MyFlightBookingsController and MyFlightBookingsService under the /flight-bookings prefix, GET /api/flight-bookings?group=upcoming|past|cancelled, 10 per page. Upcoming = Confirmed bookings with a flight that has not landed yet (so a round trip half flown and a flight in the air count) plus holds still waiting for payment, soonest departure first; Past = Completed bookings and Confirmed bookings whose flights have all landed (the same rule as the flight Completed job, so nothing waits for the job), most recent first; Cancelled = most recently cancelled first; Expired holds appear in no tab. Each row shows the reference, each flight (number, route, departure and arrival in UTC, cabin), the passengers' names and types, total and status; passport numbers and birth dates stay on Mostafa's GET /flight-bookings/:id. 11 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with 10 bookings in every situation: each tab right, a just-landed Confirmed booking already in Past, no passport data in the list, the other user's booking never shown, the details page still 200 for the owner and 404 for another user, 401 without a session, 400 for an unknown group or a sort parameter. Build, lint and all 886 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: ACC-12
+Prompt:
+shouldnt i wait for hazem to review the pr and push it ?? ... okay continue
+How the output was used:
+Claude explained that ACC-12 could start from develop while my HTL-20 PR (#200) waits for review, because it touches different code. It then mapped what ACC-12 already had: Hazem's DELETE /api/users/me route, login and the session guard refusing deactivated accounts, and the blog, public itineraries and comments already hiding or showing "Deleted user" for deactivated authors (reviews come with my HTL-24). The missing part was the TODO in AuthService.deactivate: blocking deactivation while the user has upcoming Confirmed bookings. Claude added HotelBookingsReaderService.hasUpcomingConfirmed (a Confirmed stay whose check-out date has not passed, so an ongoing stay and the check-out day still count), the hotel twin of Mostafa's FlightBookingsReaderService.hasUpcomingConfirmed, and made deactivate ask both and refuse with 409 before changing anything. AuthModule imports FlightBookingsModule and HotelBookingsModule for this; the app still boots without circular dependencies. The 409 is documented in Swagger. 7 unit tests cover the reader query and the allowed and refused cases. Live check against a throwaway local MongoDB in Docker (never the shared database) with six users: a hotel stay in 10 days, a stay checking out today and a flight in 5 days were refused with 409 and stayed active; no bookings, only past, cancelled or expired bookings, and only flights already flown were deactivated, and their next login was refused with 403. Build, lint and all 882 unit tests pass. I checked that this change and #200 merge cleanly in hotel-bookings.module.ts.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-23, HTL-24
+Prompt:
+yes keep them short and go to the next now
+How the output was used:
+Claude built my hotel ratings and reviews on Memo's Review schema. HTL-23: a new HotelStayCompletionJob runs every minute and sets Confirmed reservations whose check-out date has passed to Completed (the check-out day itself stays Confirmed), the hotel twin of the flight Completed job; POST /api/hotel-bookings/:id/review saves one rating (1-5) and optional text (up to 1000 characters, trimmed) for the owner's Completed reservation only (404 for others, 409 if not Completed or already reviewed); PATCH and DELETE /api/reviews/:id for the author only (404 for others). The hotel's ratingAverage and ratingCount are recalculated after every change with the same rule as Emad's moderation code (average of all reviews including hidden ones, one decimal, 0 with none). HTL-24: public GET /api/hotels/:id/reviews returns the average, the count and the visible reviews newest first, 10 per page, with a deactivated author shown as "Deleted user" (ACC-12); an unknown or inactive hotel is 404. Added the route to the route-guards public allowlist. The new files sit apart from my open PRs #200 and #201, and a simulated merge of all three is clean. 19 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database): the job completed a stay that ended yesterday within a minute and left a future one Confirmed; then 18 requests covering writing, a second review, a future stay, other users, bad ratings, editing the rating or only the text, hiding, a deactivated author, deleting, an inactive hotel, limit 11, sort and a guest writing all gave the expected status and averages (5 -> 3.5 -> 3 -> 2). Build, lint and all 894 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-22
+Prompt:
+Get up to date and continue the work for me (HTL-22).
+How the output was used:
+Claude built HTL-22 for hotel moderators in its own HotelReservationsModule (so it does not touch Memo's HotelBookingsModule or my open HTL-20 PR). GET /api/hotels/:id/reservations checks the hotel with assertOwnsProvider (403 for another hotel or another role) and then that it exists (404). It lists the hotel's paid reservations (Confirmed, Completed, Cancelled; unpaid holds left out) by check-in date, 10 per page, using Memo's { hotelId, checkIn } index, with the reference, status, guest (name and email of the user who booked, looked up from users; null for a deleted account), adults and children, dates, nights, rooms, total and cancelledAt. Optional filters: status, and from/to for stays with a night in that range (400 when to is before from). 6 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test moderator, two hotels and seven reservations: the list and its order, the guest details, the status and date filters, paging, unpaid holds and another hotel's reservation left out, 400 for a bad status or to before from, 403 for another hotel and for a regular user, 404 once the hotel was deleted, 401 without a session. Build, lint and all 924 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: HTL-21
+Prompt:
+Start HTL-21
+How the output was used:
+Claude built HTL-21 in its own HotelCancellationModule (so it does not touch Memo's HotelBookingsModule). GET /api/hotel-bookings/:id/cancellation shows the refund for cancelling now: the hotel's tier (HTL-10, Hazem's refundAmount helper) for the days left before check-in, counted in the hotel's local date (Memo's HotelSearchService.today), on the full total. POST /api/hotel-bookings/:id/cancel { refundAmount } cancels the whole reservation only if that amount is still the current one (409 otherwise, so a tier change or a new day never surprises the user). Only the owner (404 for anyone else), only Confirmed and only before the check-in date (409). One conditional update Confirmed -> Cancelled so two cancels cannot both win, then all room nights are freed (releaseBooking), the refund goes through Memo's PaymentsService.refund (PAY-03, nothing for 0) and the user gets a BOOKING_CANCELLED notification; a refund error never undoes the cancellation. I chose to require the confirmed refund amount in the body. 10 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a hotel with tiers 14/100, 2/50, 0/0 and five reservations: 50% at 10 days (45003 -> 22502 cents), 100% at 20 days, 0% the day before, 409 on the check-in day, a second cancel and a stale amount, 400 for a non-integer amount, 404 for another user's reservation, 401 without a session, the room locks of the cancelled reservation removed and the other one's kept, and both notifications. The Stripe refund itself was not called (no real payment in the throwaway database); PAY-03's own tests cover it. Build, lint and all 928 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-26
+Prompt:
+Okay continue (FLT-26, my last item).
+How the output was used:
+Claude built FLT-26 in its own FlightBookingCancellationModule (so it does not touch Mostafa's FlightBookingsModule), with the same preview-then-confirm design as my HTL-21. GET /api/flight-bookings/:id/cancellation shows the refund: the outbound airline's tier (FLT-09) for the days left before departure, counted in the departure airport's local date (Hazem's localDaysUntil), on the full total; a round trip is cancelled as a whole with the outbound tier (conventions.md). POST /api/flight-bookings/:id/cancel { refundAmount } cancels only if that amount is still the current one (409 otherwise). Only the owner (404 for anyone else), only Confirmed and only before departure (409). One conditional update Confirmed -> Cancelled that also checks the departure time, then the seats go back on every flight of the booking (never below zero), its FLT-28 seat assignments are deleted, the refund goes through Memo's PaymentsService.refund (PAY-03, nothing for 0) and the user gets a BOOKING_CANCELLED notification; a refund error never undoes the cancellation. 9 unit tests, including a departure just after midnight local time that gives 11 days in Cairo but 10 in UTC. Live check against a throwaway local MongoDB in Docker (never the shared database) with an airline with tiers 30/100, 7/50, 0/0 and four bookings: 50% for a round trip 10 days out (40001 -> 20001 cents) with seats returned on both flights and its chosen seat freed (another booking's kept), 0% three hours before departure, 409 after departure, for a second cancel and for a stale amount, 400 without an amount, 404 for another user's booking, 401 without a session, and both notifications. The Stripe refund itself was not called (no real payment in the throwaway database); PAY-03's own tests cover it. Build, lint and all 927 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-06
+Prompt:
+Yes, start FLT-06
+How the output was used:
+Claude built FLT-06 in its own FlightCancellationModule (so Hazem's FlightsModule and Mostafa's FlightBookingsModule stay untouched). POST /api/flights/:id/cancel, airline moderators only, own airline's flights (Hazem's getOwned: 404 unknown, 403 another airline's): the flight must be Scheduled and not departed (409 otherwise) and becomes Cancelled in one conditional update, so it leaves search and two cancels cannot both run. Unpaid holds on it are released through Memo's PaymentsService.releaseInventory (which cancels the PaymentIntent first). Every Confirmed booking on it becomes Cancelled (only if still Confirmed), its seats go back on every flight it was on (a round trip frees the other flight's seat too), it gets a 100% refund through PaymentsService.refund (PAY-03), and its user gets a BOOKING_CANCELLED notification. A failed booking, refund or notification never stops the others; problems are logged and returned, and a refund Stripe recorded as Failed is not counted as refunded. The live check showed my first notification text promised "fully refunded" even when the refund failed; it now says the refund was requested, since Memo's REFUND_ISSUED message reports the outcome. 9 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database, no Stripe key, so refunds were recorded as Failed): flight Cancelled with booked and held seats back to 0, a round trip's seat freed on its other flight, both Confirmed bookings Cancelled, the hold Expired, other bookings and flights untouched, notifications sent; a second cancel 409, another airline's flight 403, a regular user 403, no session 401. Build, lint and all 927 unit tests pass. A real Stripe refund still needs to be tried with the team's test key.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: FLT-29
+Prompt:
+Yes, start FLT-29
+How the output was used:
+Claude built FLT-29 for airline moderators in its own FlightPassengersModule (so it does not touch Mostafa's FlightBookingsModule or my open FLT-25 PR), reusing Hazem's FlightsService.getOwned for the ownership check (404 unknown flight, 403 another airline's flight). GET /api/flights/:id/bookings lists the flight's paid bookings (Confirmed, Completed, Cancelled; unpaid holds left out), newest first, 10 per page, with reference, passenger names, the cabin and seats on this flight (the right segment of a round trip), and the seats remaining per cabin (total - booked - held). GET /api/flights/:id/passengers/export downloads a CSV with one row per passenger of the Confirmed and Completed bookings (reference, name, type, date of birth, passport number, cabin, status), sorted by reference; every field is quoted and a value starting with = + - @ is prefixed so a spreadsheet cannot run it as a formula. 7 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test moderator, two of their flights, another airline's flight and five bookings: the list, the seat counts, the round-trip segment, the CSV headers and content (a cancelled booking and an unpaid hold left out, a quoted name and a formula-looking name made safe), 403 for another airline's flight and for a regular user, 404 for an unknown flight, 401 without a session. Build, lint and all 882 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hasan Saeid
+Tool: Claude Code
+Related Requirement: ACC-17
+Prompt:
+Yes, start ACC-17
+How the output was used:
+Claude built ACC-17 as my own AdminBookingsModule under the admin/ prefix, as the note in admin.module.ts asks. GET /api/admin/bookings (admins only, read-only) lists every flight and hotel booking in one list, newest first, 10 per page: type, reference, status, user (name, email), provider (airline name looked up, hotel name from the booking), a summary (flight routes or hotel name), travel start and end dates, amount and currency. Filters: type (flight or hotel), status, and a travel date range from/to (flight departure date in UTC or hotel check-in; from after to is 400). The two collections are combined inside MongoDB with $unionWith so filtering, sorting and paging cover both; with a type filter only that collection is read. 7 unit tests. Live check against a throwaway local MongoDB in Docker (never the shared database) with a test admin and five bookings: the combined list and its order, a round trip's route and dates, each filter, paging over the combined list, 400 for a bad type or reversed dates, 403 for a regular user, 401 without a session, no write routes. Build, lint and all 925 unit tests pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Rawda
+Tool: Claude Code
+Related Requirement: HTL-05, HTL-06, HTL-08, HTL-02
+Prompt:
+do my part in phase 2 (with the team plan PDF and the official project description attached)
+How the output was used:
+Claude read my chapter of the team plan and built my four open phase 2 items in src/hotels on top of Memo's RoomLock schema, HotelAvailabilityService and Review schema. HTL-05: PATCH /hotels/:id/rooms/:roomId edits beds, maxOccupancy and pricePerNight (reservations keep their booked price snapshot), and PATCH .../availability with `ranges` replaces the bookable ranges, refused with 409 (listing the nights) when a future Confirmed or PendingPayment night would no longer be covered; the write is conditional on updatedAt and re-checked afterwards so a hold placed in between puts the old ranges back. HTL-06: `block` / `unblock` on the same route (Blocked RoomLocks through lockNights, all or nothing, 409 over held, booked or blocked nights), isActive=false deactivation refused while a future reservation exists, and DELETE only for rooms never reserved (an unpaid expired hold does not count); the room is hidden from search during the check. HTL-08: GET /hotels/:id/availability?from&to (at most 31 nights, rooms paginated) shows each night as Available, Booked with the reservation reference, Blocked, or Unavailable (outside the bookable ranges or deactivated). HTL-02: GET /hotels/:id now adds the newest 10 visible reviews and, with checkIn and checkOut, the free rooms from freeRooms() with the stay total, using HTL-15's date rules. HotelsModule now imports HotelBookingsModule. I reviewed the rules against my chapter; unit tests cover every "Test when done" rule with mocked models.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-12, ACC-17, FLT-06, FLT-25, FLT-26, FLT-29, HTL-20, HTL-21, HTL-22, HTL-23, HTL-24, HTL-02, HTL-05, HTL-06, HTL-08
+Prompt:
+there are 12 open pull requests i want you to check them and merge them ... leave rawdas ... also do rawda but test her work
+How the output was used:
+Claude reviewed Hasan's ten feature PRs (#200, #201, #207, #209 to #214, #216) and Rawda's #215 against conventions.md: role guards, assertOwner / assertOwnsProvider, pagination, conditional updates, refunds through PAY-03, Swagger errors. It found no blocker. One at a time it merged the latest develop into each branch (AI_PROMPTS.txt rebuilt with every entry whole; app.module.ts kept both sides' module registrations), ran build, all unit tests and the read-only eslint check, pushed, waited for CI on that commit and merged with --match-head-commit. For #215 it also ran a live HTTP check against the shared database with TEST data (two TEST hotels, a TEST moderator, one Confirmed reservation), 39/39 passing for HTL-05, HTL-06, HTL-08 and HTL-02, and deleted everything afterwards. It then started the merged develop once to check the module wiring. In this tracker PR it marked the 15 requirements Done (Hasan's team columns from this PR, Rawda's test evidence added) and ran scripts/sync-tracker-xlsx.py --apply. Two follow-ups noted, not blocking: HTL-20's tabs, the HTL-23 Completed job and the ACC-12 hotel check use the UTC date rather than the hotel city's date, and FLT-06 does not free the chosen seats (FLT-28) of a cancelled round trip's other flight.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-29 (fix to Hasan's merged code, as team leader)
+Prompt:
+now iwant u to check all the review and there is no any conflict and test them then merge
+How the output was used:
+Claude's live test of the merged PRs found that the Swagger check (app e2e: a 401 example on every protected route) failed for GET /api/flights/:id/passengers/export: @ApiProduces('text/csv') moved the error responses off application/json. Claude declared the CSV on the 200 response only, as the e-ticket PDF route does; the route itself is unchanged.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: HTL-26 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+now iwant u to make the 3 remaining bonus iissues and test them then merge
+How the output was used:
+Claude added POST /api/reviews/:id/reply in its own files next to Hasan's reviews (HTL-23): the hotel moderator of the reviewed hotel replies once (another hotel's moderator 403, a second reply 409 through one conditional update, unknown review 404); the reviewer gets an in-app notification (new type REVIEW_REPLIED, also emailed by GEN-01-B); the reply shows on GET /api/hotels/:id/reviews. Unit tests and an HTTP test against a real MongoDB on a temporary CI branch.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: BON-01 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+now iwant u to make the 3 remaining bonus iissues and test them then merge
+How the output was used:
+Claude added GET /api/admin/analytics?from=&to= (admin only) next to Hasan's ACC-17 in src/admin, as the team plan says: for the bookings made in the period (UTC days, default the last 30), per airline and per hotel, the Confirmed and Completed bookings, the cancelled ones, what was paid (Succeeded payments, so FLT-27 fare differences count), the refunds (failed ones excluded) and revenue = paid - refunds, in cents, from one aggregation per booking collection with the refunds looked up. A round trip with two airlines counts for both; payments and refunds are shared by segment price. Unit tests and an HTTP test against a real MongoDB with real bookings checked against a hand calculation.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: FLT-27 (bonus, Memo's item, built at my request as team leader)
+Prompt:
+now iwant u to make the 3 remaining bonus iissues and test them then merge
+How the output was used:
+Claude added PATCH /api/flight-bookings/:id/change-flight in its own module next to Hasan's FLT-26: the user's Confirmed booking moves to other flights on the same route and cabin with the same passengers, priced like a new booking (an unchanged segment keeps its price). The new seats are held first with FLT-22's atomic hold, so a full flight is a 409 and nothing changes. A lower or equal fare is applied at once and the difference refunded (PAY-03); a higher fare waits 10 minutes for the difference, paid with Stripe as a new payment type "flight-change" (POST /api/payments), and Stripe's webhook applies it; unpaid changes expire and release the seats. Seats chosen with FLT-28 on a changed flight are freed and the user is notified (BOOKING_CHANGED). PaymentsService now links a change payment to its booking and splits a later refund (e.g. FLT-26) over the booking's payments. Unit tests, and an HTTP test against a real MongoDB on a temporary CI branch (Stripe success simulated the way its webhook reports it, since CI has no Stripe key).
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: HTL-23, HTL-20, ACC-12
+Prompt:
+what is our status right now
+Yes, open the PR
+(The code change was drafted in an earlier Claude Code session for the follow-up noted in PR #218: "HTL-20's tabs, the HTL-23 Completed job and the ACC-12 hotel check use the UTC date rather than the hotel city's date". That session's exact prompt was not kept.)
+How the output was used:
+Claude changed HotelStayCompletionJob (HTL-23) to decide that a stay is over with the date in the hotel's city (HotelSearchService.today, the same rule as HTL-15 and HTL-21) instead of the UTC date: each minute it only loads Confirmed stays whose check-out date is before the latest date anywhere on Earth (UTC+14), looks up each hotel's city once, and completes the ones whose check-out date has passed there, still conditional on Confirmed so a cancel in between wins. HTL-20's Upcoming and Past tabs and ACC-12's "Confirmed stay ahead" check now follow the status (Confirmed = upcoming, Completed = past) with no UTC date, so a stay in New York or Tokyo no longer sits in the wrong tab for hours around midnight. These are Hasan's files; the PR says so. New unit tests cover a New York and a Tokyo hotel on either side of local midnight and a deleted hotel (UTC fallback). Claude fast-forwarded the branch to the latest develop, then ran build, the read-only eslint check and all 1081 unit tests, which pass.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: FLT-27, HTL-26, BON-01, HTL-23
+Prompt:
+Yes, sync tracker
+How the output was used:
+Claude marked my three bonus items Done in requirements-tracker.csv: FLT-27 (#229), HTL-26 (#227) and BON-01 (#228), all merged on 19/11 and built by Hazem, with each PR link, its spec file and the live HTTP check on the temporary CI branch #225 as test evidence. Their issues (#122, #124, #129) were already closed by those PRs. It also noted on HTL-23's row the local-date follow-up merged in #230. Only the team columns changed. It then ran scripts/sync-tracker-xlsx.py --apply, which wrote the same values to the Tracker sheet, my sheet and the Summary counts (my bonus done 8 -> 11), and a second dry run reported the .xlsx matches the CSV.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-15, GEN-12 (project description update)
+Prompt:
+ok something happend they sent us a new project description with small edits i want u to to check if these edits will affect our implenetaiton if yes fix them i sent u old and new version assuming u dont have them
+Yes, update PDF
+How the output was used:
+Claude extracted the text of both PDFs and diffed them. The edits: the ACC-15 provider routes PATCH /api/admin/providers/:type/:id/deactivate and /reactivate with their rules (hidden from search, cannot be booked, Confirmed bookings stay valid, in-app notification), a sentence that airport IANA time zones are in Airports.csv and the supported currencies are the Countries.csv codes, and corrected requirement labels in the endpoint tables (ACC-01, ACC-19, FLT-02, HTL-09, ITN-25; ACC-03 and BLG-11 removed). It found no code change needed: Hazem's #223 already moved the ACC-15 routes, the seed reads time zones from airports.csv and the currency list matches countries.csv, our Swagger summaries already use the corrected IDs, and all 120 endpoints the new PDF lists exist in our controllers. I kept that result and had Claude replace docs/requirements/Project Description.pdf with the new version (same file name, so the README link still works). It noted one open question for Hazem: ACC-15 notifies only the provider's moderators, not travellers who have Confirmed bookings with it.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-02, GEN-05
+Prompt:
+ok now there are 9 issues that belong to ml2 so i think its better to remove them for now so we have a clean state for now what do u think
+im not even convinced that these are issues and espessialy the ml1 ones as they are not requirments
+Yes, move to M2
+How the output was used:
+Claude advised against deleting or closing the 9 open issues: it checked the official Excel and all 9 (ACC-10, GEN-02 to GEN-05, GEN-14 to GEN-17) are official Mandatory requirements, and they were already in the GitHub milestone "Milestone 2". It agreed that GEN-02 and GEN-05 were tagged M1 only by our tracker, because each had a backend half (the shared "Validation failed" error format and paginated list routes), both merged; what is left is frontend work. I kept that and had Claude change their Milestone from M1 to "M2 only" in requirements-tracker.csv and on the Tracker sheet of the .xlsx (the sync script does not edit Milestone, so it used the script's own cell helpers), then the script's dry run confirmed the .xlsx matches the CSV. Status stays In Progress. Their issues (#104, #107) got the m2-only label instead of milestone-1.
+================================================
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: Backend e2e test plan (all M1 backend requirements)
+Prompt:
+i need a test plan for the whole backend real tests ho wwould u do it
+(then several rounds of review comments from ChatGPT pasted back, each with "check it, dont just accept", and finally: put the plan in the repo as backend/test/E2E_PLAN.md on a new branch test/e2e-harness)
+How the output was used:
+Claude read the test setup (113 mocked unit specs, 2 database tests that CI never runs) and proposed real HTTP + real MongoDB e2e tests with an in-memory database, faked Stripe/SMTP/FXRatesAPI and generated route and requirement coverage gates. Each review round was checked against the code before being accepted. Rejected with evidence: a replica set (the code uses no Mongo transactions; auth.service.ts startSession is the cookie session) and an injectable Clock (idle expiry uses lastActivityAt in the database, jwt-auth.guard.ts:65-76). Added from review: requirement gate from the tracker, res.on('finish') recorder, scheduler off, network blocked, URI guard, the payment timing races (payments.service.ts:393-399), rounding (cancellation-tiers.ts:120), agent guardrails. In the saved file Claude kept 3 corrections to my final text: merge instead of rebase for stacked PRs (rebasing needs a force-push, which CLAUDE.md forbids), the webhook is not hidden from Swagger (payments.controller.ts:213-261), and the xlsx is synced with the existing scripts/sync-tracker-xlsx.py. Plan only; no code yet.
+================================================
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: Backend e2e harness (PR 1 of backend/test/E2E_PLAN.md)
+Prompt:
+Push and build harness
+(then: "Stop. Your task list skips checkpoints. Checkpoint 1 first ... report each claim from the original prompt as right or wrong, with file and line, plus the real counts of M1 requirements and routes. Then wait for my OK." ... "OK, build it")
+How the output was used:
+Checkpoint 1: Claude checked the plan against the code before writing anything and corrected it: 107 unit specs (not 113), 150 routes from Nest's router (not 148: blog.controller.ts registers 2 POST routes through an alias, HttpPost), 106 M1 requirements; the real sensitive field names (user.schema.ts), 8 notification types, the FX retry wait, and that IM-12 is not a tracker ID. After my OK it built the harness in backend/test/e2e/: an in-memory MongoDB per run, a URI guard that refuses mongodb+srv and the shared .env database, one e2e- database per test app, the scheduler stopped, outside network blocked (nock), a recorder of every response and sensitive key, a FakeStripeGateway with the real webhook signature check, an email outbox, actors and fixtures; run.ts plus check-coverage.ts with the requirement, route and sensitive-key gates and both exclusion lists (97 requirements and 144 routes "pending suite"); a self-test; the two old e2e files moved onto it; eslint-plugin-jest rules; the CI e2e step. Two bugs found by running it and fixed: an atomic rename of the route list fails on Windows (now one file per worker), and validation errors keyed "password" were flagged as leaks (field names in error details are now skipped). No backend/src change. I review the PR.
+================================================
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: Backend e2e harness (PR #234 review changes)
+Prompt:
+Checkpoint 2 looks good. Before I merge:
+1. URI guard: switch to an allow-list. Accept only 127.0.0.1 and localhost by default. Any other host requires E2E_ALLOW_ATLAS=1, and the backend/.env database stays refused even with the flag. Show me the guard refusing a *.mongodb.net URI with a different database name.
+2. Leak scan: show me the exact skip rule for error details. It must apply only to the validation-error shape our filter produces. Add a self-test proving that passwordHash inside any other details object still fails the run.
+3. For app.e2e-spec.ts and flight-hold.e2e-spec.ts, list each original assertion next to its new line, so I can confirm none was dropped or loosened.
+4. Tell me the CI result on #234 once it finishes.
+Push 1 and 2 as new commits on the same PR, then stop again.
+How the output was used:
+Claude made the URI guard an allow-list (127.0.0.1 and localhost; anything else needs E2E_ALLOW_ATLAS=1; the backend/.env database is checked first and refused even with the flag) and showed it refusing a standard-form *.mongodb.net URI with another database name. It narrowed the leak-scan skip to the exact validation body of validation.pipe.ts:33-38 and the filter's Mongoose branch (top level, 400, "Bad Request", "Validation failed", details a plain object of string lists; only the keys directly under details), and added self-tests: nine other details shapes still report passwordHash, and a recorder -> hit file -> gate run on a small Express app fails on three of them. Two commits, each tested on its own. It also listed every original assertion of the two moved e2e files next to its new line.
+================================================
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: Backend e2e harness (PR #234 review change)
+Prompt:
+Approved, with one change: refuse every host of the backend/.env cluster, whatever the database name and even with E2E_ALLOW_ATLAS=1. The flag is only for a separate throwaway cluster. Push it as a new commit on #234, update the plan line and README to match, show me the refusal, then stop.
+How the output was used:
+Claude replaced the guard's same-database check with a same-cluster check (sameCluster in test/e2e/uri-guard.ts): a URI is refused, with or without the flag, if any host:port matches a host of the .env URI (default port 27017; localhost and 127.0.0.1 count as one), or if both are on Atlas under the same cluster domain, which also links the mongodb+srv and standard forms. It matched by host and port rather than hostname so that a teammate whose .env points at a local mongod is not blocked from the in-memory server. Self-tests cover the .env database, another database, no database, other credentials and host order, a single host, the srv form, and a local .env. Plan line and README updated; the refusal shown through npm run test:e2e:full.
+================================================
+
+================================================
+Date: 2026-11-19
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ACC-06 (Swagger documentation of logout)
+Prompt:
+Can u handle the part that didnt pass in part 2
+How the output was used:
+Test plan case 2.16 (every protected route documents a 401) flagged POST /api/auth/logout: it is public by design (always 200) but declared @ApiCookieAuth, so Swagger showed it as protected. Claude removed the two Swagger cookie-auth lines and described the route as public; the route's behaviour is unchanged. Re-ran Part 2 of the test plan (20/20) before merging.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-10 (hidden content visible to its author and admins), BLG-03
+Prompt:
+Fix the problem in part 7 let all pass so fix then test and test part 8,9
+How the output was used:
+The Milestone 1 test plan (Part 9, case 9.14) found that the author of a hidden post got 404 on GET /api/posts/:id, although GEN-10 says hidden content stays visible to its author and admins: public routes never looked at the session cookie. Claude made the global JWT guard recognise a valid, current, active session on @Public routes without ever refusing the request or counting it as activity, and made GET /posts/:id show the author their own hidden posts and drafts and an admin any hidden post; visitors still see only published, visible posts. Unit tests for the guard and the service, and Part 9 of the test plan re-run.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-10 (hidden comments and reviews visible to their author and admins)
+Prompt:
+Ok in all tests we do if theres case need fix or handling handle it
+How the output was used:
+After the post fix (PR #254), Claude checked the other content types GEN-10 covers. Itineraries were already visible to their owner, but a hidden comment or review disappeared for its own author too. Claude added one helper (visibleTo in common/helpers/ownership.ts) used by GET /api/posts/:id/comments, the comments on a post's page and GET /api/hotels/:id/reviews: visitors see only visible items, the logged-in author also their own hidden ones (marked hidden: true), admins all of them; ratings are unchanged. Unit tests for the helper and a live check (test plan case 9.18) before merging.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: HTL-12 (price filter and sort use the cheapest qualifying room)
+Prompt:
+Fix any bug and test part 12
+How the output was used:
+Test plan case 12.23 found that hotel search priced a hotel at its cheapest free room even when that room could not hold the guests (3 guests in one room were priced at a 1-person room), so the price filter and sort could include or drop hotels wrongly. Claude added qualifyingRooms() in hotel-search.service.ts: a room qualifies if it, with the largest other free rooms up to the number of rooms asked for, holds every guest; fromPricePerNight is now the cheapest of those. Unit tests for the rule, and Part 12 of the test plan re-run on the branch.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-13 (backend validation), GEN-02 (validation error format)
+Prompt:
+i need to be 100% sure that i will get the full mark on milestone one so i want to pass any private test they will do
+How the output was used:
+Claude wrote a robustness sweep (test plan Part 13) that calls all 150 Swagger operations as every role with invalid, random and real ids, bad query strings and bodies broken one field at a time. It found that a JSON array sent as a PATCH body crashed five routes (500) and was accepted as a no-op on four others. The global validation pipe now rejects an array body with 400 "Validation failed" (details.body). Unit tests added; the sweep was re-run on the branch.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: ITN-18 (exchange rates fetched once a day and cached)
+Prompt:
+can i give u the acces and u make it manually
+How the output was used:
+During a manual Swagger check on Hazem's machine the budget summary answered 503 because FXRATES_API_KEY was empty and the service stopped before calling the API. FXRatesAPI's free tier answers without a key, so Claude changed ExchangeRatesService.refresh() to call it without api_key when no key is set (one warning in the log), still falling back to the cache and then 503 if the call fails. Unit tests updated; README notes the key is optional.
+================================================
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-13, ACC-11, GEN-10, ITN-20 (e2e access-control suite; also names ACC-01, ACC-13, BLG-01, BLG-02, BLG-03, BLG-05, BLG-09, BLG-12, ITN-01, ITN-21, HTL-24)
+Prompt:
+delete branch and then
+Keep the domain rule; the throwaway cluster will be in a separate Atlas project. #234 is merged.
+Start checkpoint 3: create test/e2e-access-control from the latest develop and build the access-control suite as the plan describes. Open the PR to develop, fill in the section 5 summary including the mutation check, then stop for my style review.
+How the output was used:
+Claude deleted the merged test/e2e-harness branch, branched from develop and wrote backend/test/e2e/access-control.e2e-spec.ts over real HTTP: a guard sweep (401 on every non-public route, 403 to another role on every role-restricted route) driven by a reviewed access table of all 150 routes (test/e2e/access-table.ts); an ACC-11 table of every owner-only booking and itinerary route (46 requests on 43 routes), where user B must get exactly 404, identical to a missing id, with nothing changed, and the owner reaches every read route; public lists and pages that must show only published, public and not hidden content to guests and other users; and body checks (no route accepts role, assignedProviderId, status, userId, ownerId or authorId unless its DTO declares it on purpose; MongoDB operators refused in login and search). The first mutation check showed that a removed @Roles() went unnoticed because the sweep trusted the app's own decorators; Claude added the reviewed access table so it fails. Four mutations (role guard, ownership check, hidden filter, unknown-field rejection) each fail the suite. Exclusions updated (13 requirements, 35 routes), tracker Test evidence for 15 IDs, plan section 3 corrected. No backend/src change.
+================================================
+================================================
+Date: 2026-11-19
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: ACC-11, ITN-20 (e2e access-control suite, style review changes)
+Prompt:
+Answers: 1. Only full IDs. Partially tested IDs go in the title as [partial: REQ-ID]. The gate ignores them, and e2e-coverage.md lists them per requirement. 2. Setup calls must not count. actors.ts and fixtures.ts send x-e2e-setup: 1, and the recorder records those hits but excludes them from route coverage. Put back in the exclusions any route that is then uncovered, with "pending suite". 3. Keep the access table. I'll review it myself.
+Also: One place says the owner-only table matches 50 routes, another says 46 requests on 43 routes. Explain the difference. If any owner-only route is untested, add it. Table-driven tests: when they fail, they must name the route and report all mismatches, not stop at the first. Show me one failing output as proof (temporary change, reverted). Push as new commits on #235, then stop.
+How the output was used:
+Claude made the gate ignore [partial: ...] IDs and list them per requirement in e2e-coverage.md, and made setup requests (x-e2e-setup: 1 from actors.ts and the new fixtures setup() helper) count for nothing in the route gate, with self-tests for both. Titles now name only ACC-11 and ITN-20 as fully tested; the rest are [partial: ...]. 11 requirements and 14 routes went back to the exclusions as "pending suite". The "50" was a count Claude wrote without measuring; the table had 46 requests on 43 routes. It also found untested owner-only routes (posts, comments, reviews, favourites, notifications, and records of user A named in user B's request body) and added them: 64 rows on 56 routes, with a completeness check over every user route with an :id and a reviewed NOT_OWNER_ONLY list. A new row found that attaching another user's private itinerary to one's post answers 400, not 404; it reveals nothing (identical to a missing id), so Claude opened spec question #236 and kept BLG-13 excluded. Table tests now report every mismatch with its route (the harness URI and leak-scan tables too); a temporary isOwner() mutation showed 36 named mismatches in one failure, then was reverted.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-10, ACC-11 (access-control e2e suite, PR #235)
+Prompt:
+do those Mohamad's PR #235 (an extra access-control test suite) is still open ... merge it into develop before the release
+How the output was used:
+Claude merged develop into Mohamad's branch (AI_PROMPTS.txt conflict: develop's entries kept, the branch's appended). The suite then failed one check because its hidden comment and review were written by the "other user" it reads them as, and since PR #258 an author still sees their own hidden content (GEN-10). Claude made the post's author write them, so the check again proves a non-author cannot see them, and added a check that the author does.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: GEN-13 (security and robustness), test plan Parts 16-17
+Prompt:
+Check those: performance or load testing (hundreds of users at once) and formal security testing (a penetration test)
+How the output was used:
+Claude wrote a load test (Part 16: 100 logins at once, 2,000-request search bursts, 20 s of mixed traffic, 100 users racing for 40 seats and 10 rooms) and an OWASP Top 10 security test (Part 17: forged tokens, cookies, injection, mass assignment, path traversal, uploads, webhook replay, data exposure) plus npm audit. Load passed. Security found: no security headers and X-Powered-By: Express (now set by hand, no new dependency); a 2 MB body answered 500 instead of 413 (the error filter now maps body-parser errors); mongoose 8.24.5 had a high advisory (updated to 8.24.10). The remaining moderate advisory in @nestjs/core needs a major upgrade to 12 and was left for after the milestone.
+================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: all 106 Milestone 1 requirements (test evidence), GEN-13
+Prompt:
+can u make full test (unit, integration, system) and with all possible cases and scenarios it will not be in the description requirement
+How the output was used:
+Claude moved the Milestone 1 test plan (Parts 1-13, 15 and 17, about 300 cases over real HTTP and an in-memory MongoDB) from temporary branches into backend/test/plan, and the load test (Part 16) into backend/test/load with its own npm script and CI job. It added Parts 18-20 for situations the requirements do not spell out (deleting parts of an itinerary and what points at it, paying a flight change after cancelling, sign-up races, half-finished logouts, moderator edit mistakes, uploaded files and their cleanup, upload races) and unit tests for the least-covered branches (budgets, comment and like rollbacks, Stripe gateway calls, email links and SMTP settings, flight bookings reader). Every M1 requirement is now named by a passing suite and every route has its 2xx/401/403 hits, so both exclusion lists are empty and the coverage gates pass. Hazem reviewed the results; the tracker's Test evidence column points at the suites.
+================================================
