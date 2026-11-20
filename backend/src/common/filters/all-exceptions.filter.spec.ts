@@ -78,6 +78,38 @@ describe('AllExceptionsFilter', () => {
     expect(Object.keys(body.details)).toEqual(['name']);
   });
 
+  it('maps a body over the size limit to 413, not 500 (GEN-13)', () => {
+    const tooLarge = Object.assign(new Error('request entity too large'), {
+      status: 413,
+      statusCode: 413,
+      expose: true,
+      type: 'entity.too.large',
+    });
+    const { status, body } = run(tooLarge);
+    expect(status).toBe(413);
+    expect(body).toMatchObject({
+      statusCode: 413,
+      error: 'Payload Too Large',
+      message: 'The request body is too large',
+    });
+  });
+
+  it('keeps other body-parser 4xx errors as 4xx without their internal message', () => {
+    const charset = Object.assign(new Error('unsupported charset "X"'), {
+      status: 415,
+      expose: true,
+      type: 'charset.unsupported',
+    });
+    const { status, body } = run(charset);
+    expect(status).toBe(415);
+    expect(body.message).toBe('The request body could not be read');
+  });
+
+  it('still answers 500 for an unknown error that only looks like one', () => {
+    const { status } = run(Object.assign(new Error('boom'), { status: 404 }));
+    expect(status).toBe(500);
+  });
+
   it('maps a Mongoose CastError to 400 (MI-3)', () => {
     const err = new MongooseError.CastError('ObjectId', 'not-an-id', '_id');
     const { status, body } = run(err);

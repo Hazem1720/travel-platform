@@ -2,7 +2,7 @@ import { ArgumentMetadata, BadRequestException } from '@nestjs/common';
 import { RegisterDto } from '../../auth/dto/register.dto';
 import { UpdateProfileDto } from '../../users/dto/update-profile.dto';
 import { PaginationQueryDto } from '../pagination/pagination-query.dto';
-import { createValidationPipe } from './validation.pipe';
+import { BODY_NOT_OBJECT, createValidationPipe } from './validation.pipe';
 
 async function validate(
   metatype: any,
@@ -100,5 +100,22 @@ describe('PaginationQueryDto (GEN-05, IM-11)', () => {
       expect(r.body.details.limit).toEqual([
         'limit must not be greater than 10',
       ]);
+  });
+
+  it('rejects a JSON array body with 400 (GEN-13)', async () => {
+    for (const body of [[], [validRegister]]) {
+      const r = await validate(RegisterDto, body);
+      expect(r.ok).toBe(false);
+      if (r.ok) return;
+      expect(r.body.message).toBe('Validation failed');
+      expect(r.body.details).toEqual({ body: [BODY_NOT_OBJECT] });
+    }
+    const patch = await validate(UpdateProfileDto, []);
+    expect(patch.ok).toBe(false);
+  });
+
+  it('leaves query validation unchanged', async () => {
+    const r = await validate(PaginationQueryDto, { page: '1' }, 'query');
+    expect(r.ok).toBe(true);
   });
 });

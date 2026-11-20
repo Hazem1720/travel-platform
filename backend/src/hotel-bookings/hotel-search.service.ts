@@ -86,6 +86,26 @@ export function fitsGuests(
   return capacity >= guests;
 }
 
+// HTL-12: the free rooms that can be part of a stay for these guests: a room
+// qualifies if it, plus the largest other free rooms up to `rooms` in all,
+// holds every guest. A one-room search needs a room for all the guests on
+// its own; the hotel's price is its cheapest qualifying room.
+export function qualifyingRooms<
+  R extends Pick<FreeRoom, 'maxOccupancy' | 'pricePerNight'>,
+>(freeRooms: R[], guests: number, rooms: number): R[] {
+  if (freeRooms.length < rooms) return [];
+  const bySize = freeRooms
+    .map((r, i) => ({ i, occ: r.maxOccupancy }))
+    .sort((a, b) => b.occ - a.occ);
+  return freeRooms.filter((room, i) => {
+    const others = bySize
+      .filter((o) => o.i !== i)
+      .slice(0, rooms - 1)
+      .reduce((sum, o) => sum + o.occ, 0);
+    return room.maxOccupancy + others >= guests;
+  });
+}
+
 // HTL-12: ?sort=price|rating with :asc or :desc (default price:asc). 400 for
 // anything else.
 export function parseHotelSort(sort?: string): HotelSort {
@@ -232,7 +252,12 @@ export class HotelSearchService {
         ratingCount: h.ratingCount ?? 0,
         checkInTime: h.checkInTime,
         checkOutTime: h.checkOutTime,
-        fromPricePerNight: Math.min(...rooms.map((r) => r.pricePerNight)),
+        // HTL-12: the cheapest qualifying room, not a room too small to use.
+        fromPricePerNight: Math.min(
+          ...qualifyingRooms(rooms, c.guests, c.rooms).map(
+            (r) => r.pricePerNight,
+          ),
+        ),
         freeRoomCount: rooms.length,
       };
       if (matchesHotelFilters(result, c)) results.push(result);

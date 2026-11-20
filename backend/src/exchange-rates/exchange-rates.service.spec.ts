@@ -114,11 +114,19 @@ describe('ExchangeRatesService (ITN-18)', () => {
     );
   });
 
-  it('works from the cache with no API key set', async () => {
-    global.fetch = jest.fn() as any;
+  it('calls the keyless tier when no API key is set', async () => {
+    apiAnswers(200, { success: true, base: 'USD', rates: RATES });
+    const { service } = setup({ key: '' });
+    const rates = await service.getRates();
+    expect(rates).toMatchObject({ date: TODAY, stale: false });
+    const url = String((global.fetch as jest.Mock).mock.calls[0][0]);
+    expect(url).not.toContain('api_key');
+  });
+
+  it('falls back to the cache when the keyless call fails', async () => {
+    apiAnswers(429, { success: false });
     const { service } = setup({ older: true, key: '' });
     await expect(service.getRates()).resolves.toMatchObject({ stale: true });
-    expect(global.fetch).not.toHaveBeenCalled();
   });
 
   it('converts through USD', () => {

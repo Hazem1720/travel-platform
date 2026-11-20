@@ -899,7 +899,7 @@ describe('access control', () => {
         idOf(
           (
             await setup(
-              other.agent.post(`/api/posts/${c.publishedPost}/comments`),
+              author.agent.post(`/api/posts/${c.publishedPost}/comments`),
             )
               .send({ body })
               .expect(201)
@@ -915,13 +915,15 @@ describe('access control', () => {
       await hide('itinerary', c.hiddenItinerary);
 
       // Two reviews of a hotel, from two Completed stays (arranged: the
-      // hotel suites cover how a review is written); one is hidden.
+      // hotel suites cover how a review is written); one is hidden. The
+      // author writes the comments and reviews too, so "other user" is not
+      // their author (GEN-10: an author still sees their own hidden content).
       const hotelId = await createHotel(t);
       c.hotel = String(hotelId);
       const room = await createRoom(t, hotelId);
       const stay = () =>
         t.model(HotelBooking.name).create({
-          userId: other.id,
+          userId: author.id,
           hotelId,
           hotelName: 'TEST Hotel',
           status: BookingStatus.COMPLETED,
@@ -945,7 +947,7 @@ describe('access control', () => {
         const saved = await t.model(Review.name).create({
           hotelId,
           bookingId: booking._id,
-          userId: other.id,
+          userId: author.id,
           rating: 4,
           text,
         });
@@ -1071,6 +1073,21 @@ describe('access control', () => {
       await author.agent
         .get(`/api/itineraries/${c.privateItinerary}`)
         .expect(200);
+      const ownComments = idsIn(
+        (
+          await author.agent
+            .get(`/api/posts/${c.publishedPost}/comments`)
+            .expect(200)
+        ).body,
+      );
+      const ownReviews = idsIn(
+        (await author.agent.get(`/api/hotels/${c.hotel}/reviews`).expect(200))
+          .body,
+      );
+      expect([
+        ownComments.has(c.hiddenComment),
+        ownReviews.has(c.hiddenReview),
+      ]).toEqual([true, true]);
 
       const adminSees: string[] = [];
       for (const [type, name] of [

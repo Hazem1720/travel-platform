@@ -1,12 +1,30 @@
 import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
+import { NextFunction, Request, Response } from 'express';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 import { createValidationPipe } from './common/pipes/validation.pipe';
 
 // Shared by main.ts and the e2e tests, so tests run the same pipeline as the app.
+// Security headers on every response (OWASP A05). Written by hand rather than
+// with helmet to add no dependency; Swagger UI still works with them.
+export function securityHeaders(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Referrer-Policy', 'no-referrer');
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  next();
+}
+
 export function configureApp(app: INestApplication): void {
   app.setGlobalPrefix('api');
+  // Do not announce the framework (X-Powered-By: Express).
+  app.getHttpAdapter().getInstance().disable?.('x-powered-by');
+  app.use(securityHeaders);
   app.use(cookieParser());
   app.useGlobalPipes(createValidationPipe());
   app.useGlobalFilters(new AllExceptionsFilter());
