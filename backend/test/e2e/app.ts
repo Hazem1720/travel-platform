@@ -86,6 +86,7 @@ export async function createTestApp(
   uploads.dir = join(runDir, 'uploads', dbName);
   // GEN-01-B: emails land in the outbox instead of an SMTP server.
   (app.get(EmailService) as any).transport = outbox.transport;
+  holdResponsesUntilEmailsSent(app);
 
   await app.init();
 
@@ -114,6 +115,44 @@ export async function createTestApp(
       await app.close();
     },
   };
+}
+
+// The app sends emails in the background, after the request that caused
+// them may already have answered. In tests that would make reading the
+// outbox a race. So every email the app starts is tracked, and each
+// response is held until the emails started before it are in the outbox.
+// Test-only: production behaviour is unchanged.
+const EMAIL_METHODS = [
+  'sendNotification',
+  'sendModeratorInvitation',
+  'sendEmailVerification',
+  'sendPasswordReset',
+] as const;
+
+function holdResponsesUntilEmailsSent(app: INestApplication) {
+  const email = app.get(EmailService) as any;
+  const pending = new Set<Promise<unknown>>();
+  for (const name of EMAIL_METHODS) {
+    const original = email[name].bind(email);
+    email[name] = (...args: unknown[]) => {
+      const sending: Promise<unknown> = original(...args);
+      pending.add(sending);
+      void sending.then(
+        () => pending.delete(sending),
+        () => pending.delete(sending),
+      );
+      return sending;
+    };
+  }
+  app.use((_req: unknown, res: any, next: () => void) => {
+    const end = res.end.bind(res);
+    res.end = (...args: unknown[]) => {
+      if (!pending.size) return end(...args);
+      void Promise.allSettled([...pending]).then(() => end(...args));
+      return res;
+    };
+    next();
+  });
 }
 
 // Drops the connection's database, only if it is a test database.

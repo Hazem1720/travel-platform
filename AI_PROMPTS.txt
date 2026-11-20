@@ -1431,3 +1431,13 @@ u decide and u review and merge and why is devalop has recent pushes without pr 
 How the output was used:
 Claude explained the e2e work in plain terms and checked develop's history: every commit on its main line since #234 is a PR merge, none was pushed directly (the "recent pushes" banner lists pushed branches). On my instruction it decided the open spec questions and recorded each decision on its issue: #285 (ACC-05) the 5th failure locks the account but keeps the generic message, attempts while locked get the lockout message; #287 (PAY-04) refunds round to the nearest cent, half up; #236 (BLG-13) only one's own public itineraries can be attached, and the 400 is fine since it reveals nothing. All match the current code. It then pinned #285 and #287 in the auth and money-and-time suites (ACC-05 now fully tested; the refund of 50% of 333.33 USD must be exactly 166.67 USD, and a temporary switch to rounding down made the test fail) and updated the plan text.
 ================================================
+================================================
+Date: 2026-11-20
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: GEN-01-B, GEN-08 (intermittent e2e failures)
+Prompt:
+do what u think is correct -> Yes, fix them
+How the output was used:
+Claude fixed the two intermittent failures in the plan suites. Case 15.12 counted confirmation emails right after the webhook answered, but the app sends emails in the background. Making the fake SMTP slow (200 ms, temporary) showed the same race under every suite, because actors.traveler() reads the verification link the same way. Instead of changing 45 outbox reads, createTestApp now tracks every email the app starts and holds each test response until those emails are in the outbox (test-only; no backend/src change); with the slow SMTP, 15-edge-cases (unchanged), 01-accounts, 07-payments, the auth suite and the harness all pass, while the original failed every case. Case 2.19 sent a file over 5 MB; Multer answers before the upload ends, so the client can see a connection reset. A reset now counts as refused only if no file was stored. Before this, the three merged test branches were deleted locally and on GitHub.
+================================================
