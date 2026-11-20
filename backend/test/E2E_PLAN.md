@@ -105,6 +105,11 @@ A script, `test/e2e/check-coverage.ts`, is run by `run.ts` after Jest. It reads 
    - after 30 idle minutes (`lastActivityAt` moved back), both `/me` and refresh answer 401;
    - a reset link works once, expires after 30 minutes, and a newer request makes it invalid;
    - the answer to "forgot password" is the same for unknown emails.
+   > **Status (2026-11-20):** suites 3 to 14 are covered by the team's Milestone 1 test plan suites in `backend/test/plan/` (#276 and later), not written as separate files here. A gap analysis compared each item below with what those suites assert:
+   > - 3 flight booking: `04-flight-booking`, `15-edge-cases` (15.1); 4 hotel booking: `05`, `06`; 5 payments: `07-payments`, `15-edge-cases`, `17-security` (17.18); 6–7 itineraries and providers: `03`, `05`, `08`, `18`; 8 exchange rates: `12b`; 9 uploads: `02` (2.19), `20-files`, `17-security` (17.14); 10–11 admin and notifications: `02`, `10`, `12b`, `19`; P2: `09`, `06` (6.22), `11`, `13`, `15`.
+   > - The gaps are in `backend/test/e2e/money-and-time.e2e-spec.ts`: the webhook and hold expiry racing (flights and hotels, 20 runs each), a webhook for less than the total, refund rounding (spec question #287), a New York departure date, the FX key never in a response, and an audit entry for every admin action.
+   > - Not covered: FX with no cached rates (the spec does not say what should happen) and the opt-in `stripe-live` suite.
+
 3. **`flight-booking`**:
    - search dates follow each airport's time zone (New York, London);
    - quote and hold in cents; 20 parallel holds on the last seats give exactly N winners;
