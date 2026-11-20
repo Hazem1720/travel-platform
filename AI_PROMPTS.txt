@@ -1389,3 +1389,14 @@ Check those: performance or load testing (hundreds of users at once) and formal 
 How the output was used:
 Claude wrote a load test (Part 16: 100 logins at once, 2,000-request search bursts, 20 s of mixed traffic, 100 users racing for 40 seats and 10 rooms) and an OWASP Top 10 security test (Part 17: forged tokens, cookies, injection, mass assignment, path traversal, uploads, webhook replay, data exposure) plus npm audit. Load passed. Security found: no security headers and X-Powered-By: Express (now set by hand, no new dependency); a 2 MB body answered 500 instead of 413 (the error filter now maps body-parser errors); mongoose 8.24.5 had a high advisory (updated to 8.24.10). The remaining moderate advisory in @nestjs/core needs a major upgrade to 12 and was left for after the milestone.
 ================================================
+
+================================================
+Date: 2026-11-20
+Student: Hazem Ahmed
+Tool: Claude Code
+Related Requirement: all 106 Milestone 1 requirements (test evidence), GEN-13
+Prompt:
+can u make full test (unit, integration, system) and with all possible cases and scenarios it will not be in the description requirement
+How the output was used:
+Claude moved the Milestone 1 test plan (Parts 1-13, 15 and 17, about 300 cases over real HTTP and an in-memory MongoDB) from temporary branches into backend/test/plan, and the load test (Part 16) into backend/test/load with its own npm script and CI job. It added Parts 18-20 for situations the requirements do not spell out (deleting parts of an itinerary and what points at it, paying a flight change after cancelling, sign-up races, half-finished logouts, moderator edit mistakes, uploaded files and their cleanup, upload races) and unit tests for the least-covered branches (budgets, comment and like rollbacks, Stripe gateway calls, email links and SMTP settings, flight bookings reader). Every M1 requirement is now named by a passing suite and every route has its 2xx/401/403 hits, so both exclusion lists are empty and the coverage gates pass. Hazem reviewed the results; the tracker's Test evidence column points at the suites.
+================================================
