@@ -400,7 +400,8 @@ describe('Test plan Part 2: cross-cutting rules', () => {
 
     await tc('2.13', async () => {
       const f = await anon().get(`/api/flights/${flightX._id}`);
-      const prices = JSON.stringify(f.body).match(/"price":\s*([\d.]+)/g) ?? [];
+      const prices: string[] =
+        JSON.stringify(f.body).match(/"price":\s*([\d.]+)/g) ?? [];
       check(prices.length > 0, 'flight shows a price', f);
       check(
         prices.every((p) => Number.isInteger(Number(p.split(':')[1]))),
