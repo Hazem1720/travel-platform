@@ -1441,3 +1441,13 @@ do what u think is correct -> Yes, fix them
 How the output was used:
 Claude fixed the two intermittent failures in the plan suites. Case 15.12 counted confirmation emails right after the webhook answered, but the app sends emails in the background. Making the fake SMTP slow (200 ms, temporary) showed the same race under every suite, because actors.traveler() reads the verification link the same way. Instead of changing 45 outbox reads, createTestApp now tracks every email the app starts and holds each test response until those emails are in the outbox (test-only; no backend/src change); with the slow SMTP, 15-edge-cases (unchanged), 01-accounts, 07-payments, the auth suite and the harness all pass, while the original failed every case. Case 2.19 sent a file over 5 MB; Multer answers before the upload ends, so the client can see a connection reset. A reset now counts as refused only if no file was stored. Before this, the three merged test branches were deleted locally and on GitHub.
 ================================================
+================================================
+Date: 2026-11-20
+Student: Mohamad Amr Khallaf
+Tool: Claude Code
+Related Requirement: none (README documentation)
+Prompt:
+ok i want u to check if our readme is clean and professional and correct -> Yes, fix it
+How the output was used:
+Claude checked every claim in the root README against the code and found two wrong statements: the guards example added @UseGuards(JwtAuthGuard, RolesGuard) although both guards are global (auth.module.ts APP_GUARD) and no controller uses them, and it pointed to a frontend/ folder that does not exist yet. It also found outdated workflow rules (PR titles as [REQ-ID], commit examples without IDs, one team leader, no merge rules), a vague currency and date line, and no section on tests or CI. It rewrote the README: a short description of the platform, npm ci, the three required settings instead of a partial copy of .env.example, a Tests and CI section, the real branch, commit and PR rules (including --base develop, since the repository default branch is main), the guards example without @UseGuards, USD in integer cents and airport local times, and fenced code blocks. The Stripe, SMTP, seed and Atlas instructions were kept. No backend change.
+================================================
