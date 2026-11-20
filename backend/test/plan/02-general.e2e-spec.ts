@@ -8,6 +8,8 @@ import { Airline } from '../../src/airlines/schemas/airline.schema';
 import { buildSwaggerDocument } from '../../src/app.setup';
 import { NotificationType } from '../../src/notifications/schemas/notification.schema';
 import { NotificationsService } from '../../src/notifications/notifications.service';
+import { UploadsService } from '../../src/uploads/uploads.service';
+import { readdirSync } from 'fs';
 import { createTestApp, TestApp } from '../e2e/app';
 import {
   Actor,
@@ -27,6 +29,26 @@ function check(cond: boolean, what: string, res?: Res) {
       ? ` [got ${res.status} ${JSON.stringify(res.body).slice(0, 220)}]`
       : '';
     throw new Error(what + got);
+  }
+}
+// A refused upload. Multer stops reading at its size or file-count limit
+// and answers while the client is still sending, so on some systems the
+// client sees the connection reset instead of the 400/413. A reset counts
+// as refused only if the server stored no new file.
+async function refusedUpload(
+  send: () => Promise<Res>,
+  storedFiles: () => number,
+): Promise<string> {
+  const before = storedFiles();
+  try {
+    const res = await send();
+    return `${res.status}`;
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    if (code !== 'ECONNRESET' && code !== 'EPIPE') throw err;
+    return storedFiles() === before
+      ? 'reset, nothing stored'
+      : 'reset, FILE STORED';
   }
 }
 async function tc(id: string, fn: () => Promise<string | void>) {
@@ -584,19 +606,32 @@ describe('Test plan Part 2: cross-cutting rules', () => {
         .post('/api/uploads/images')
         .attach('images', Buffer.from('hello'), 'notes.png');
       check(txt.status === 400, 'non-image named .png -> 400', txt);
+      const stored = () => {
+        try {
+          return readdirSync(t.app.get(UploadsService).dir).length;
+        } catch {
+          return 0;
+        }
+      };
       const big = Buffer.concat([PNG, Buffer.alloc(5 * 1024 * 1024 + 10)]);
-      const large = await A.agent
-        .post('/api/uploads/images')
-        .attach('images', big, 'big.png');
-      check(
-        large.status === 400 || large.status === 413,
-        'over 5 MB refused',
-        large,
+      const large = await refusedUpload(
+        () =>
+          A.agent.post('/api/uploads/images').attach('images', big, 'big.png'),
+        stored,
       );
-      const six = A.agent.post('/api/uploads/images');
-      for (let i = 0; i < 6; i++) six.attach('images', PNG, `p${i}.png`);
-      const r6 = await six;
-      check(r6.status === 400, 'more than 5 files refused', r6);
+      check(
+        ['400', '413', 'reset, nothing stored'].includes(large),
+        `over 5 MB refused (got ${large})`,
+      );
+      const r6 = await refusedUpload(() => {
+        const six = A.agent.post('/api/uploads/images');
+        for (let i = 0; i < 6; i++) six.attach('images', PNG, `p${i}.png`);
+        return six;
+      }, stored);
+      check(
+        ['400', 'reset, nothing stored'].includes(r6),
+        `more than 5 files refused (got ${r6})`,
+      );
       const anonUp = await anon()
         .post('/api/uploads/images')
         .attach('images', PNG, 'pic.png');
