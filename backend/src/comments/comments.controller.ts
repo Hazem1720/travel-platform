@@ -41,7 +41,8 @@ export class CommentsController {
   @ApiOperation({
     summary: "A published post's comments, oldest first (BLG-02, BLG-05)",
     description:
-      'Hidden comments are left out (GEN-10); a deactivated author shows ' +
+      'Hidden comments are left out (GEN-10), except for their author and ' +
+      'admins, who see them marked hidden: true; a deactivated author shows ' +
       'as "Deleted user" (ACC-12).',
   })
   @ApiOkResponse({
@@ -66,8 +67,13 @@ export class CommentsController {
     { status: 400, message: 'Validation failed' },
     { status: 404, message: 'Post not found' },
   )
-  list(@Param('id') id: string, @Query() query: PaginationQueryDto) {
-    return this.comments.listForPost(id, query);
+  list(
+    @Param('id') id: string,
+    @Query() query: PaginationQueryDto,
+    // Set only when logged in (GEN-10: authors see their hidden comments).
+    @CurrentUser() viewer?: AuthUser,
+  ) {
+    return this.comments.listForPost(id, query, viewer);
   }
 
   @Post('posts/:id/comments')

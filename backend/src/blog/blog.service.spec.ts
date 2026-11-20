@@ -187,10 +187,11 @@ describe('BLG-02 / BLG-08: browse published posts', () => {
     });
     const post = await service.findById(postId);
     expect(post.author).toEqual({ id: authorId, name: 'Sara' });
-    expect(comments.listForPost).toHaveBeenCalledWith(postId, {
-      page: 1,
-      limit: 10,
-    });
+    expect(comments.listForPost).toHaveBeenCalledWith(
+      postId,
+      { page: 1, limit: 10 },
+      undefined,
+    );
     expect(post.comments).toEqual({ data: [], meta: { total: 0 } });
   });
 
